@@ -7,8 +7,8 @@ import { EstadoErro } from '@/compartilhado/componentes/EstadoErro';
 import { useState, Fragment, memo, useCallback } from 'react';
 import { CabecalhoFuncionalidade } from '@/compartilhado/componentes/CabecalhoFuncionalidade';
 import { BarraFiltros, FiltroSelect, FiltroDataRange, FiltroToggle } from '@/compartilhado/componentes/BarraFiltros';
-import { DetalheLog } from './logs/DetalheLog';
-import { LinhaLog } from './logs/LinhaLog';
+import { DetalheLog } from '@/funcionalidades/admin/componentes/logs/DetalheLog';
+import { LinhaLog } from '@/funcionalidades/admin/componentes/logs/LinhaLog';
 
 /** Painel de auditoria com tabela semântica padronizada. */
 export const PainelLogs = memo(() => {

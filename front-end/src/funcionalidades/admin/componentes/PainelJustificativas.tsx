@@ -6,9 +6,9 @@ import { usarJustificativasAdmin } from '@/funcionalidades/admin/hooks/usarJusti
 import { CabecalhoFuncionalidade } from '@/compartilhado/componentes/CabecalhoFuncionalidade';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
 import { EstadoErro } from '@/compartilhado/componentes/EstadoErro';
-import { LinhaJustificativa } from './justificativas/LinhaJustificativa';
-import { ModalRejeicao } from './justificativas/ModalRejeicao';
-import { JustificativaCardMobile } from './justificativas/JustificativaCardMobile';
+import { LinhaJustificativa } from '@/funcionalidades/admin/componentes/justificativas/LinhaJustificativa';
+import { ModalRejeicao } from '@/funcionalidades/admin/componentes/justificativas/ModalRejeicao';
+import { JustificativaCardMobile } from '@/funcionalidades/admin/componentes/justificativas/JustificativaCardMobile';
 
 /** Mapeia o tipo técnico para rótulo amigável. */
 const formatarTipo = (tipo: string): string => {

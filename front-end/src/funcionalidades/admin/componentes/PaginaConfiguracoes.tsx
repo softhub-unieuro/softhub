@@ -7,13 +7,13 @@ import { Settings2 } from 'lucide-react';
 import { CabecalhoFuncionalidade } from '@/compartilhado/componentes/CabecalhoFuncionalidade';
 import { Alerta } from '@/compartilhado/componentes/Alerta';
 
-import { SecaoSistema } from './configuracoes/SecaoSistema';
-import { SecaoGovernanca } from './configuracoes/SecaoGovernanca';
-import { SecaoRedePonto } from './configuracoes/SecaoRedePonto';
-import { SecaoJornada } from './configuracoes/SecaoJornada';
-import { SecaoCargos } from './configuracoes/SecaoCargos';
-import { SecaoDados } from './configuracoes/SecaoDados';
-import { SecaoMatrizAcesso } from './configuracoes/SecaoMatrizAcesso';
+import { SecaoSistema } from '@/funcionalidades/admin/componentes/configuracoes/SecaoSistema';
+import { SecaoGovernanca } from '@/funcionalidades/admin/componentes/configuracoes/SecaoGovernanca';
+import { SecaoRedePonto } from '@/funcionalidades/admin/componentes/configuracoes/SecaoRedePonto';
+import { SecaoJornada } from '@/funcionalidades/admin/componentes/configuracoes/SecaoJornada';
+import { SecaoCargos } from '@/funcionalidades/admin/componentes/configuracoes/SecaoCargos';
+import { SecaoDados } from '@/funcionalidades/admin/componentes/configuracoes/SecaoDados';
+import { SecaoMatrizAcesso } from '@/funcionalidades/admin/componentes/configuracoes/SecaoMatrizAcesso';
 
 /**
  * Página de Configurações & Governança.

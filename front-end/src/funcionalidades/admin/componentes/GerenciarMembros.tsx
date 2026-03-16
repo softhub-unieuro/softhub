@@ -14,11 +14,11 @@ import { usarEquipes } from '@/funcionalidades/admin/hooks/usarEquipes';
 import { pluralizar } from '@/utilitarios/formatadores';
 
 // Novos Hooks e Sub-componentes
-import { usarGerenciarMembros } from '../hooks/usarGerenciarMembros';
-import { StatsMembros } from './membros/StatsMembros';
-import { TabelaMembros } from './membros/TabelaMembros';
-import { BarraAcoesLote } from './membros/BarraAcoesLote';
-import { ModaisMembros } from './membros/ModaisMembros';
+import { usarGerenciarMembros } from '@/funcionalidades/admin/hooks/usarGerenciarMembros';
+import { StatsMembros } from '@/funcionalidades/admin/componentes/membros/StatsMembros';
+import { TabelaMembros } from '@/funcionalidades/admin/componentes/membros/TabelaMembros';
+import { BarraAcoesLote } from '@/funcionalidades/admin/componentes/membros/BarraAcoesLote';
+import { ModaisMembros } from '@/funcionalidades/admin/componentes/membros/ModaisMembros';
 
 /**
  * Página de Administração de Membros.

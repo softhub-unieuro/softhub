@@ -11,8 +11,8 @@ import { FolderKanban, Plus } from 'lucide-react';
 import { formatarDataHora } from '@/utilitarios/formatadores';
 import { usarProjetos, Projeto } from '@/funcionalidades/projetos/hooks/usarProjetos';
 import { usarEquipes } from '@/funcionalidades/admin/hooks/usarEquipes';
-import { CardProjeto } from './projetos/CardProjeto';
-import { ModalFormularioProjeto, FormProjeto } from './projetos/ModalFormularioProjeto';
+import { CardProjeto } from '@/funcionalidades/admin/componentes/projetos/CardProjeto';
+import { ModalFormularioProjeto, FormProjeto } from '@/funcionalidades/admin/componentes/projetos/ModalFormularioProjeto';
 
 import { SubmitHandler } from 'react-hook-form';
 

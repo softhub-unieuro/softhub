@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, memo } from 'react';
 import { LayoutGrid, Users, Plus, Trash2 } from 'lucide-react';
 
 import { usarEquipes } from '@/funcionalidades/admin/hooks/usarEquipes';
-import type { Grupo } from '@/funcionalidades/admin/hooks/usarEquipes';
+import type { Grupo, Equipe } from '@/funcionalidades/admin/hooks/usarEquipes';
 import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
 import { Modal } from '@/compartilhado/componentes/Modal';
@@ -10,12 +10,12 @@ import { ConfirmacaoExclusao } from '@/compartilhado/componentes/ConfirmacaoExcl
 import { CabecalhoFuncionalidade } from '@/compartilhado/componentes/CabecalhoFuncionalidade';
 import { EstadoVazio } from '@/compartilhado/componentes/EstadoVazio';
 
-import { DetalheEquipe } from './equipes/DetalheEquipe';
-import { FormGrupoEquipe } from './equipes/FormGrupoEquipe';
-import { ModalAlocacao } from './equipes/ModalAlocacao';
-import { ModalMovimentacao } from './equipes/ModalMovimentacao';
-import { ModalSelecaoLider } from './equipes/ModalSelecaoLider';
-import { SidebarEquipes } from './equipes/SidebarEquipes';
+import { DetalheEquipe } from '@/funcionalidades/admin/componentes/equipes/DetalheEquipe';
+import { FormGrupoEquipe } from '@/funcionalidades/admin/componentes/equipes/FormGrupoEquipe';
+import { ModalAlocacao } from '@/funcionalidades/admin/componentes/equipes/ModalAlocacao';
+import { ModalMovimentacao } from '@/funcionalidades/admin/componentes/equipes/ModalMovimentacao';
+import { ModalSelecaoLider } from '@/funcionalidades/admin/componentes/equipes/ModalSelecaoLider';
+import { SidebarEquipes } from '@/funcionalidades/admin/componentes/equipes/SidebarEquipes';
 
 export const GerenciarEquipes = memo(() => {
     const {
@@ -228,7 +228,7 @@ export const GerenciarEquipes = memo(() => {
                         titulo={modalOrg.tipo === 'equipe' ? 'Equipe' : 'Grupo'}
                         tipo={modalOrg.tipo}
                         equipeAtivaId={modalOrg.dados?.equipe_id}
-                        equipes={equipesAtivas.map(e => ({ id: e.id, nome: e.nome }))}
+                        equipes={equipesAtivas.map((e: Equipe) => ({ id: e.id, nome: e.nome }))}
                         aoSalvar={handleSalvarOrg}
                         aoFechar={() => setModalOrg(null)}
                     />

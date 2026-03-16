@@ -28,10 +28,10 @@ import { CabecalhoFuncionalidade } from '@/compartilhado/componentes/CabecalhoFu
 import { Alerta } from '@/compartilhado/componentes/Alerta';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
 
-import { RelatorioPresenca } from './relatorios/RelatorioPresenca';
-import { RelatorioAusencias } from './relatorios/RelatorioAusencias';
-import { RelatorioMembros } from './relatorios/RelatorioMembros';
-import { RelatorioMapeamento } from './relatorios/RelatorioMapeamento';
+import { RelatorioPresenca } from '@/funcionalidades/admin/componentes/relatorios/RelatorioPresenca';
+import { RelatorioAusencias } from '@/funcionalidades/admin/componentes/relatorios/RelatorioAusencias';
+import { RelatorioMembros } from '@/funcionalidades/admin/componentes/relatorios/RelatorioMembros';
+import { RelatorioMapeamento } from '@/funcionalidades/admin/componentes/relatorios/RelatorioMapeamento';
 
 /**
  * Pagina de Relatórios - Versão Relatórios Essenciais e Estruturados.
