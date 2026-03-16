@@ -1,5 +1,5 @@
-import { ambiente } from '@/configuracoes/ambiente';
-import { logger } from '@/utilitarios/gerenciador-logs';
+import { ambiente } from \'@/configuracoes/ambiente\';
+import { logger } from \'@/utilitarios/gerenciador-logs\';
 
 class ApiError extends Error {
     response?: { data: any, status: number };
@@ -10,50 +10,51 @@ class ApiError extends Error {
 }
 
 async function doFetch(method: string, url: string, data?: any, config?: any) {
-    const token = localStorage.getItem('softhub_token');
+    const token = localStorage.getItem(\'softhub_token\');
     const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
+        \'Content-Type\': \'application/json\',
         ...config?.headers,
     };
 
     if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+        headers[\'Authorization\'] = `Bearer ${token}`;\
     }
 
-    let queryString = '';
-    if (config?.params) {
-        const query = new URLSearchParams();
-        Object.entries(config.params).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) query.append(key, String(value));
-        });
-        queryString = `?${query.toString()}`;
-    }
-
-    // Habilita cross-origin nativo por padrão assim como axios
-    const uri = url.startsWith('http') ? url : `${ambiente.apiUrl}${url}`;
-    const res = await fetch(`${uri}${queryString}`, {
+    const fetchOptions: RequestInit = {
         method,
         headers,
-        body: data ? JSON.stringify(data) : undefined,
-    });
+    };
 
-    // Redireciona para login se token expirar (401), exceto em rotas de autenticação ou públicas
-    const isAuthRoute = url.includes('/api/auth') || url.includes('/api/configuracoes/publico');
-    const isNoLogin = typeof window !== 'undefined' && window.location.pathname === '/login';
+    let fullUrl = url.startsWith(\'http\') ? url : `${ambiente.apiUrl}${url}`;
+
+    if (method === \'GET\' || method === \'DELETE\') {
+        if (config?.params) {
+            const query = new URLSearchParams(config.params);
+            fullUrl += `?${query.toString()}`;\
+        }
+    } else { // POST, PUT, PATCH
+        if (data) {
+            fetchOptions.body = JSON.stringify(data);
+        }
+    }
+
+    const res = await fetch(fullUrl, fetchOptions);
+
+    const isAuthRoute = url.includes(\'/api/auth\') || url.includes(\'/api/configuracoes/publico\');
+    const isNoLogin = typeof window !== \'undefined\' && window.location.pathname === \'/login\';
 
     if (res.status === 401 && !isAuthRoute && !isNoLogin) {
-        logger.aviso('API', 'Sessão expirada (401). Redirecionando para login.');
-        localStorage.removeItem('softhub_token');
-        localStorage.removeItem('softhub_usuario');
-        if (typeof window !== 'undefined') {
-            window.location.href = '/login';
+        logger.aviso(\'API\', \'Sessão expirada (401). Redirecionando para login.\');
+        localStorage.removeItem(\'softhub_token\');
+        localStorage.removeItem(\'softhub_usuario\');
+        if (typeof window !== \'undefined\') {
+            window.location.href = \'/login\';
         }
-        throw new ApiError('Não autorizado', { erro: 'Não autorizado' }, 401);
+        throw new ApiError(\'Não autorizado\', { erro: \'Não autorizado\' }, 401);
     }
 
     let resData;
     try {
-        // Tenta fazer o parse JSON
         resData = await res.json();
     } catch {
         resData = null;
@@ -63,14 +64,13 @@ async function doFetch(method: string, url: string, data?: any, config?: any) {
         throw new ApiError(`Erro HTTP ${res.status}`, resData, res.status);
     }
 
-    // Formato retrocompatível com a codebase legada (sem axios)
     return { data: resData, status: res.status };
 }
 
 export const api = {
-    get: (url: string, config?: any) => doFetch('GET', url, undefined, config),
-    post: (url: string, data?: any, config?: any) => doFetch('POST', url, data, config),
-    put: (url: string, data?: any, config?: any) => doFetch('PUT', url, data, config),
-    patch: (url: string, data?: any, config?: any) => doFetch('PATCH', url, data, config),
-    delete: (url: string, config?: any) => doFetch('DELETE', url, undefined, config),
+    get: (url: string, config?: any) => doFetch(\'GET\', url, undefined, config),
+    post: (url: string, data?: any, config?: any) => doFetch(\'POST\', url, data, config),
+    put: (url: string, data?: any, config?: any) => doFetch(\'PUT\', url, data, config),
+    patch: (url: string, data?: any, config?: any) => doFetch(\'PATCH\', url, data, config),
+    delete: (url: string, config?: any) => doFetch(\'DELETE\', url, undefined, config),
 };
