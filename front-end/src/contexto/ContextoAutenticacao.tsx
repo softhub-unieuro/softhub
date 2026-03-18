@@ -152,6 +152,32 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
     // Nunca retorne null aqui para evitar que o Outlet em rotas.tsx suma.
     // O RotaProtegida já cuida do estado de carregamento visual se necessário.
 
+    /**
+     * HEARTBEAT DE PRESENÇA (Sinal de Vida)
+     * Mantém o usuário como 'online' no sistema enquanto a aba estiver aberta.
+     */
+    useEffect(() => {
+        if (!token || !usuario) return;
+
+        const enviarPulsacao = async () => {
+            try {
+                // Endpoint silencioso apenas para registrar sinal de vida
+                await api.post('/api/perfil/presenca');
+            } catch (e) {
+                // Falha silenciosa para não incomodar o usuário
+                console.warn('[Heartbeat] Falha na pulsação de presença');
+            }
+        };
+
+        // Pulsação inicial
+        enviarPulsacao();
+
+        // Pulsação a cada 45 segundos (KV expira em 60s)
+        const intervalo = setInterval(enviarPulsacao, 45000);
+        
+        return () => clearInterval(intervalo);
+    }, [token, usuario]);
+
     return (
         <ContextoAutenticacao.Provider value={{
             usuario, token,

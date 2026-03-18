@@ -21,7 +21,6 @@ import { Avatar } from '@/compartilhado/componentes/Avatar';
 import { Modal } from '@/compartilhado/componentes/Modal';
 import { Emblema } from '@/compartilhado/componentes/Emblema';
 import { formatarDataHora } from '@/utilitarios/formatadores';
-import { RadarCompetencias } from './RadarCompetencias';
 
 interface ModalEdicaoPerfilProps {
     aberto: boolean;
@@ -34,7 +33,7 @@ interface ModalEdicaoPerfilProps {
  * Exibe informações organizacionais (Equipe, Grupo, Cargo) e mural limpo.
  */
 export const ModalEdicaoPerfil = memo(({ aberto, aoFechar }: ModalEdicaoPerfilProps) => {
-    const { perfil, atualizarPerfil, salvando, radar } = usarPerfil();
+    const { perfil, atualizarPerfil, salvando } = usarPerfil();
     const [editando, setEditando] = useState(false);
     
     // Estados para Edição
@@ -317,11 +316,6 @@ export const ModalEdicaoPerfil = memo(({ aberto, aoFechar }: ModalEdicaoPerfilPr
                                         <p className="text-lg font-medium text-slate-600 leading-relaxed italic pr-4">
                                             "{perfil.bio || 'Preparando minha jornada profissional na Fábrica...'}"
                                         </p>
-                                    </div>
-
-                                    {/* Radar de Competências (Fase 3) */}
-                                    <div className="grid grid-cols-1 gap-6 pt-4">
-                                        <RadarCompetencias dados={radar || []} />
                                     </div>
 
                                     {/* Link de Portfólio Externo */}

@@ -9,24 +9,37 @@ import { obterConfiguracao } from '../servicos/servico-configuracoes';
 
 const rotasAdmin = new Hono<{ Bindings: Env; Variables: { usuario: any } }>();
 
-const RoleSchema = z.object({
-    role: z.enum(['ADMIN', 'COORDENADOR', 'GESTOR', 'LIDER', 'SUBLIDER', 'MEMBRO']),
-});
+const ROLES_VALIDAS = ['ADMIN', 'COORDENADOR', 'GESTOR', 'LIDER', 'SUBLIDER', 'MEMBRO'];
 
 /**
  * Altera a role (cargo) de um membro.
+ * Suporta chaves com ou sem acento, normalizando para ASCII antes de salvar.
  */
-rotasAdmin.patch('/:id/role', autenticacaoRequerida(), verificarPermissao('membros:alterar_role'), zValidator('json', RoleSchema), async (c: Context) => {
+rotasAdmin.patch('/:id/role', autenticacaoRequerida(), verificarPermissao(['membros:alterar_role', 'membros:gerenciar']), async (c: Context) => {
     const { DB, softhub_kv } = c.env;
     const usuarioLogado = c.get('usuario') as any;
     const id = c.req.param('id');
-    const { role } = (c.req as any).valid('json');
-
+    
     try {
+        const body = await c.req.json();
+        let role = body.role?.toUpperCase() || '';
+
+        // Normalização: Remove acentos para salvar a chave ASCII no banco
+        const roleNormalizada = role.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+        if (!ROLES_VALIDAS.includes(roleNormalizada)) {
+            return c.json({ erro: `Cargo '${role}' é inválido para o sistema.` }, 400);
+        }
+
         const atual = await DB.prepare('SELECT role FROM usuarios WHERE id = ?').bind(id).first() as any;
         if (!atual) return c.json({ erro: 'Usuário não encontrado.' }, 404);
 
-        await DB.prepare('UPDATE usuarios SET role = ? WHERE id = ?').bind(role, id).run();
+        // Se estiver tentando se promover para ADMIN sem ser ADMIN, bloqueia
+        if (roleNormalizada === 'ADMIN' && usuarioLogado.role !== 'ADMIN') {
+            return c.json({ erro: 'Apenas Administradores podem conceder o cargo de ADMIN.' }, 403);
+        }
+
+        await DB.prepare('UPDATE usuarios SET role = ? WHERE id = ?').bind(roleNormalizada, id).run();
 
         // Invalida cache de sessão
         if (softhub_kv) await softhub_kv.delete(`sessao:${id}`);
@@ -35,7 +48,7 @@ rotasAdmin.patch('/:id/role', autenticacaoRequerida(), verificarPermissao('membr
             usuarioId: id,
             tipo: 'sistema',
             titulo: 'Cargo Atualizado',
-            mensagem: `Seu cargo foi atualizado para ${role} pela administração.`,
+            mensagem: `Seu cargo foi atualizado para ${roleNormalizada} pela administração.`,
             link: '/app/membros'
         }, softhub_kv);
 
@@ -43,7 +56,7 @@ rotasAdmin.patch('/:id/role', autenticacaoRequerida(), verificarPermissao('membr
             usuarioId: usuarioLogado.id,
             acao: 'MEMBRO_ROLE_ALTERADA',
             modulo: 'admin',
-            descricao: `Role do membro ${id} alterada de ${atual.role} para ${role}`,
+            descricao: `Role do membro ${id} alterada de ${atual.role} para ${roleNormalizada}`,
             ip: c.req.header('CF-Connecting-IP') ?? '',
             entidadeTipo: 'usuarios',
             entidadeId: id
@@ -52,7 +65,7 @@ rotasAdmin.patch('/:id/role', autenticacaoRequerida(), verificarPermissao('membr
         return c.json({ sucesso: true });
     } catch (erro) {
         console.error('[ERRO] PATCH /api/usuarios/:id/role', erro);
-        return c.json({ erro: 'Erro ao alterar cargo.' }, 500);
+        return c.json({ erro: 'Erro ao processar alteração de cargo.' }, 400); // 400 em caso de JSON malformado
     }
 });
 
@@ -94,7 +107,7 @@ rotasAdmin.delete('/:id', autenticacaoRequerida(), verificarPermissao('membros:d
 
 const PreCadastroSchema = z.object({
     email: z.string().email(),
-    role: z.enum(['ADMIN', 'COORDENADOR', 'GESTOR', 'LIDER', 'SUBLIDER', 'MEMBRO'])
+    role: z.string().min(1)
 });
 
 /**
@@ -103,10 +116,17 @@ const PreCadastroSchema = z.object({
 rotasAdmin.post('/', autenticacaoRequerida(), verificarPermissao('membros:gerenciar'), zValidator('json', PreCadastroSchema), async (c: Context) => {
     const { DB, BOOTSTRAP_ADMIN_EMAIL } = c.env;
     const usuarioLogado = c.get('usuario') as any;
-    const { email, role } = (c.req as any).valid('json');
+    const { email, role: roleRaw } = (c.req as any).valid('json');
     const emailLimpo = email.toLowerCase().trim();
 
     try {
+        // Normalização: Remove acentos e joga pra maiúsculo
+        const role = roleRaw.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+        if (!ROLES_VALIDAS.includes(role)) {
+            return c.json({ erro: `Cargo '${roleRaw}' inválido.` }, 400);
+        }
+
         // Validação de domínios via serviço centralizado
         const dominios = await obterConfiguracao(c.env, 'dominios_autorizados') || ['unieuro.com.br', 'unieuro.edu.br'];
         

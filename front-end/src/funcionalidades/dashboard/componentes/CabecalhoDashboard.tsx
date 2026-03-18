@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { ModalEdicaoPerfil } from '@/funcionalidades/perfil/componentes/ModalEdicaoPerfil';
 import { usarPerfil } from '@/funcionalidades/perfil/hooks/usarPerfil';
+import { LABELS_ROLES } from '@/utilitarios/constantes';
 
 interface CabecalhoDashboardProps {
     nomeUsuario: string;
@@ -73,7 +74,7 @@ export const CabecalhoDashboard = memo(({ nomeUsuario, projetosAtivos, metricas 
                                 {perfil?.equipe_nome || 'S/ Equipe'}
                             </span>
                             <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest mt-1 opacity-60">
-                                {perfil?.role || 'Membro'}
+                                {(LABELS_ROLES as any)[perfil?.role || 'MEMBRO'] || perfil?.role || 'Membro'}
                             </span>
                         </div>
                     </div>

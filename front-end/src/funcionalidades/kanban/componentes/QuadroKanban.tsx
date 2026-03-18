@@ -8,11 +8,10 @@ import {
     useSensor,
     useSensors,
     DragStartEvent,
-    DragEndEvent,
-    useDroppable
+    DragEndEvent
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { FolderKanban, Circle, Zap, Search, CheckCircle2, Plus, Layers } from 'lucide-react';
+import { FolderKanban, Search, Plus, Layers, FileText } from 'lucide-react';
 import { useSearchParams } from 'react-router';
 
 import { usarKanban } from '@/funcionalidades/kanban/hooks/usarKanban';
@@ -22,18 +21,21 @@ import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
 import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 import { usarProjetos } from '@/funcionalidades/projetos/hooks/usarProjetos';
 import { COLUNAS_KANBAN } from '@/utilitarios/constantes';
-import type { ColunaKanban as ColunaTipo } from '@/utilitarios/constantes';
 
 import { CabecalhoFuncionalidade } from '@/compartilhado/componentes/CabecalhoFuncionalidade';
 import { CartaoTarefa } from './CartaoTarefa';
 import { PainelFiltrosKanban } from './PainelFiltrosKanban';
 import { ModalDetalhesTarefa } from './ModalDetalhesTarefa';
 import { ModalCriarTarefa } from '@/funcionalidades/backlog/componentes/ModalCriarTarefa';
+import { DocumentosProjetoModal } from '@/funcionalidades/projetos/componentes/DocumentosProjetoModal';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
 import { EstadoVazio } from '@/compartilhado/componentes/EstadoVazio';
 import { EstadoErro } from '@/compartilhado/componentes/EstadoErro';
 import { ModalEdicaoPerfil } from '@/funcionalidades/perfil/componentes/ModalEdicaoPerfil';
 import { PerfilProvider } from '@/funcionalidades/perfil/contexto/PerfilContexto';
+import { ColunaDropZone } from './ColunaDropZone';
+import { KanbanVazioProjetos } from './KanbanVazioProjetos';
+import { Skeleton, SkeletonCard } from '@/compartilhado/componentes/Skeleton';
 
 const LABELS_COLUNAS: Record<string, string> = {
     backlog: 'Planejamento',
@@ -43,10 +45,11 @@ const LABELS_COLUNAS: Record<string, string> = {
     concluida: 'Finalizado'
 };
 
-import { ColunaDropZone } from './ColunaDropZone';
-import { KanbanVazioProjetos } from './KanbanVazioProjetos';
-import { Skeleton, SkeletonCard } from '@/compartilhado/componentes/Skeleton';
-
+/**
+ * Quadro Kanban Principal.
+ * Gerencia a visualização e movimentação de tarefas entre colunas.
+ * Segue o padrão estético premium do sistema.
+ */
 export const QuadroKanban = memo(() => {
     const { projetoAtivoId } = usarAutenticacao();
     const { projetos, carregando: carregandoProjetos } = usarProjetos();
@@ -56,10 +59,12 @@ export const QuadroKanban = memo(() => {
     const [activeTarefa, setActiveTarefa] = useState<Tarefa | null>(null);
     const [tarefaDetalhes, setTarefaDetalhes] = useState<Tarefa | null>(null);
     const [modalCriarAberto, setModalCriarAberto] = useState(false);
+    const [modalDocsAberto, setModalDocsAberto] = useState(false);
     const [idPerfilParaVer, setIdPerfilParaVer] = useState<string | null>(null);
 
     const podeMover = usarPermissaoAcesso('tarefas:mover');
     const podeCriar = usarPermissaoAcesso('tarefas:criar');
+    const podeVerDocumentos = usarPermissaoAcesso('projetos:documentos');
     const podeGerenciarProjetos = usarPermissaoAcesso('projetos:visualizar');
 
     const [searchParams, setSearchParams] = useSearchParams();
@@ -115,7 +120,6 @@ export const QuadroKanban = memo(() => {
     const handleFiltrar = useCallback((f: any) => setFiltros(f), []);
     const handleFecharDetalhes = useCallback(() => {
         setTarefaDetalhes(null);
-        // Remove o ID da tarefa da URL ao fechar o modal
         if (tarefaIdUrl) {
             const novosParams = new URLSearchParams(searchParams);
             novosParams.delete('tarefa');
@@ -153,65 +157,77 @@ export const QuadroKanban = memo(() => {
         );
     }
 
-    return (
-        <div className="flex flex-col h-full w-full overflow-hidden bg-background/50">
-            <div className="shrink-0">
-                {/* Título Básico */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
-                    <div>
-                        <h1 className="text-2xl font-black text-foreground tracking-tight">Kanban</h1>
-                        <p className="text-muted-foreground text-xs uppercase tracking-widest mt-1">Organize e acompanhe o dia a dia do projeto.</p>
-                    </div>
+    const projeto = projetos.find(p => p.id === projetoAtivoId);
 
-                    <div className="flex items-center gap-4">
-                        {podeCriar && (
-                            <button
-                                onClick={handleAbrirCriar}
-                                className="h-11 px-6 bg-primary text-primary-foreground rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all"
-                            >
-                                <Plus size={18} strokeWidth={3} />
-                                <span>Nova Tarefa</span>
-                            </button>
-                        )}
-                    </div>
+    return (
+        <div className="flex flex-col flex-1 min-h-0 h-full w-full overflow-hidden">
+            <CabecalhoFuncionalidade
+                titulo="Quadro Kanban"
+                subtitulo={`Visão geral e execução das tarefas do projeto ${projeto?.nome || 'não identificado'}.`}
+                icone={FolderKanban}
+            >
+                <div className="flex gap-2.5">
+                    {podeVerDocumentos && (
+                        <button 
+                            onClick={() => setModalDocsAberto(true)}
+                            className="h-11 px-6 bg-primary/5 text-primary border border-primary/20 hover:bg-primary/10 rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest hover:-translate-y-0.5 active:scale-95 transition-all"
+                        >
+                            <FileText size={18} strokeWidth={2} />
+                            <span>Arquivos e Docs</span>
+                        </button>
+                    )}
+                    {podeCriar && (
+                        <button
+                            onClick={handleAbrirCriar}
+                            className="h-11 px-6 bg-primary text-primary-foreground rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all"
+                        >
+                            <Plus size={18} strokeWidth={3} />
+                            <span>Nova Tarefa</span>
+                        </button>
+                    )}
                 </div>
+            </CabecalhoFuncionalidade>
+
+            <div className="shrink-0 mb-6">
+                <PainelFiltrosKanban filtros={filtros} aoFiltrar={handleFiltrar} />
             </div>
 
             {!carregandoProjetos && projetos.length === 0 ? (
                 <KanbanVazioProjetos podeGerenciarProjetos={podeGerenciarProjetos} />
             ) : (
-                <>
-                    <div className="shrink-0 px-0.5">
-                        <PainelFiltrosKanban filtros={filtros} aoFiltrar={handleFiltrar} />
-                    </div>
-                    <div className="flex-1 min-h-0">
-                        {carregando && tarefas.length === 0 ? (
-                            <div className="h-full grid grid-cols-1 md:grid-cols-4 gap-6">
-                                {[1, 2, 3, 4].map(i => (
-                                    <div key={i} className="space-y-4">
-                                        <Skeleton className="h-6 w-1/2 mx-auto" />
-                                        <SkeletonCard />
-                                        <SkeletonCard />
-                                        <SkeletonCard />
+                <div className="flex-1 min-h-0 flex flex-col">
+                    {carregando && tarefas.length === 0 ? (
+                        <div className="h-full grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                            {[1, 2, 3, 4, 5].map(i => (
+                                <div key={i} className="space-y-4">
+                                    <Skeleton className="h-6 w-1/2 mx-auto rounded-lg" />
+                                    <SkeletonCard />
+                                    <SkeletonCard />
+                                </div>
+                            ))}
+                        </div>
+                    ) : erro ? (
+                        <div className="h-full flex items-center justify-center p-12">
+                            <EstadoErro titulo="Erro no Kanban" mensagem={erro} />
+                        </div>
+                    ) : (
+                        <div className="h-full flex flex-col min-h-0">
+                            {tarefas.length === 0 && temFiltroAtivo && (
+                                <div className="mb-6">
+                                    <div className="bg-card/20 border border-border/50 rounded-[32px] flex items-center justify-center py-6">
+                                        <EstadoVazio 
+                                            tipo="pesquisa" 
+                                            titulo="Nenhuma tarefa encontrada" 
+                                            descricao="Não há tarefas que correspondam aos filtros ou termo de busca aplicados." 
+                                            compacto={true} 
+                                            acao={{ rotulo: "Limpar todos os filtros", aoClicar: handleLimparFiltros }} 
+                                        />
                                     </div>
-                                ))}
-                            </div>
-                        ) : erro ? (
-                            <div className="h-full flex items-center justify-center p-12">
-                                <EstadoErro titulo="Erro no Kanban" mensagem={erro} />
-                            </div>
-                        ) : tarefas.length === 0 ? (
-                            <div className="h-full bg-card/20 border border-border/50 rounded-2xl flex items-center justify-center">
-                                {temFiltroAtivo ? (
-                                    <EstadoVazio tipo="pesquisa" titulo="Nenhuma tarefa encontrada" descricao="Não há tarefas que correspondam aos filtros ou termo de busca aplicados." compacto={true} acao={{ rotulo: "Limpar todos os filtros", aoClicar: handleLimparFiltros }} />
-                                ) : (
-                                    <EstadoVazio titulo="Sem tarefas" descricao="Ainda não há tarefas cadastradas. Comece adicionando novas atividades na lista." />
-                                )}
-                            </div>
-                        ) : (
-                            <div className="h-full flex flex-col">
-                                <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-                                    <div className="h-full flex justify-between gap-6 overflow-x-auto pb-6 custom-scrollbar px-1">
+                                </div>
+                            )}
+                            <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                                <div className="flex-1 min-h-0 w-full overflow-hidden">
+                                    <div className="flex h-full w-full gap-4 pb-4">
                                         {COLUNAS_KANBAN.map((coluna, index) => (
                                             <ColunaDropZone 
                                                 key={coluna} 
@@ -225,23 +241,22 @@ export const QuadroKanban = memo(() => {
                                         ))}
                                         <DragOverlay dropAnimation={null}>
                                             {activeTarefa ? (
-                                                <div className="rotate-[3deg] scale-[1.03] shadow-2xl opacity-90 transition-transform">
+                                                <div className="scale-[1.03] shadow-2xl opacity-90 transition-transform">
                                                     <CartaoTarefa tarefa={activeTarefa} />
                                                 </div>
                                             ) : null}
                                         </DragOverlay>
                                     </div>
-                                </DndContext>
-                            </div>
-                        )}
-                    </div>
-                </>
+                                </div>
+                            </DndContext>
+                        </div>
+                    )}
+                </div>
             )}
 
             <ModalDetalhesTarefa tarefa={tarefaDetalhes} aberto={!!tarefaDetalhes} aoFechar={handleFecharDetalhes} />
             <ModalCriarTarefa aberto={modalCriarAberto} aoFechar={handleFecharCriar} aoCriar={handleCriarTarefa} />
 
-            {/* Modal de Detalhes do Perfil (Fase 4) */}
             {idPerfilParaVer && (
                 <PerfilProvider customUsuarioId={idPerfilParaVer}>
                     <ModalEdicaoPerfil 
@@ -249,6 +264,14 @@ export const QuadroKanban = memo(() => {
                         aoFechar={handleFecharPerfil} 
                     />
                 </PerfilProvider>
+            )}
+
+            {projeto && (
+                <DocumentosProjetoModal
+                    projeto={projeto}
+                    aberto={modalDocsAberto}
+                    aoFechar={() => setModalDocsAberto(false)}
+                />
             )}
         </div>
     );

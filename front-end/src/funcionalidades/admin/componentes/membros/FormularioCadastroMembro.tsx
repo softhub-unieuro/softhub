@@ -1,5 +1,6 @@
 import { memo, useState, FormEvent } from 'react';
 import { Mail, Shield, ChevronDown, Loader2, Lock, Unlock } from 'lucide-react';
+import { LABELS_ROLES } from '@/utilitarios/constantes';
 
 interface FormularioCadastroProps {
     modoInicial?: 'individual' | 'lote';
@@ -115,7 +116,11 @@ export const FormularioCadastroMembro = memo(({ modoInicial = 'individual', aoCa
                             onChange={e => setRole(e.target.value)}
                             className="h-11 w-full bg-background border border-border rounded-2xl pl-11 pr-10 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer shadow-sm hover:bg-muted/30"
                         >
-                            {roles.map(r => <option key={r} value={r}>{r}</option>)}
+                            {roles.map(r => (
+                                <option key={r} value={r}>
+                                    {(LABELS_ROLES as any)[r] || r}
+                                </option>
+                            ))}
                         </select>
                         <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={16} />
                     </div>

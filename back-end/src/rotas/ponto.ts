@@ -28,15 +28,17 @@ rotasPonto.get('/', autenticacaoRequerida(), verificarPermissao('ponto:visualiza
 });
 
 /**
- * Lista todos os membros que estão "online" (deram entrada hoje e não saíram).
- * Requer permissão de 'ADMIN'.
+ * Lista todos os membros que estão com a aba do sistema aberta (Heartbeat ativo).
+ * Retorna dados básicos de perfil de cada um.
  */
-rotasPonto.get('/online', autenticacaoRequerida('ADMIN'), async (c: Context) => {
-    const { DB, softhub_kv } = c.env;
+rotasPonto.get('/online', autenticacaoRequerida(), async (c: Context) => {
+    const { softhub_kv } = c.env;
+
+    if (!softhub_kv) return c.json({ online: [] });
 
     try {
-        // 🚀 Busca no KV quem está online
-        const lista = await softhub_kv.list({ prefix: 'presenca:' });
+        // Busca TODA presença ativa no sistema via KV (heartbeat de 60s)
+        const lista = await softhub_kv.list({ prefix: 'online:' });
         const membros = [];
 
         for (const key of lista.keys) {
@@ -44,30 +46,8 @@ rotasPonto.get('/online', autenticacaoRequerida('ADMIN'), async (c: Context) => 
             if (dados) membros.push(dados);
         }
 
-        // Se o KV estiver vazio (ex: expirou ou acabou de configurar), 
-        // poderíamos buscar no D1 como fallback, mas o ideal é que o KV seja a fonte da verdade para o "agora".
-        // Para garantir robustez inicial, se membros[] vazio, fazemos a query uma vez e populamos o KV.
-        if (membros.length === 0) {
-            const query = `
-                SELECT u.id, u.nome, u.email, u.foto_perfil, p.registrado_em as entrada_em
-                FROM usuarios u
-                JOIN ponto_registros p ON u.id = p.usuario_id
-                WHERE p.id IN (
-                    SELECT id FROM (
-                        SELECT id, ROW_NUMBER() OVER(PARTITION BY usuario_id ORDER BY registrado_em DESC) as rn
-                        FROM ponto_registros
-                        WHERE DATE(registrado_em, '-3 hours') = DATE('now', '-3 hours')
-                    ) WHERE rn = 1
-                )
-                AND p.tipo = 'entrada'
-            `;
-            const { results } = await DB.prepare(query).all();
-            
-            for (const u of (results as any[])) {
-                await softhub_kv.put(`presenca:${u.id}`, JSON.stringify(u), { expirationTtl: 28800 }); // 8h
-                membros.push(u);
-            }
-        }
+        // Ordenar por nome para consistência
+        membros.sort((a: any, b: any) => a.nome?.localeCompare(b.nome));
 
         return c.json({ online: membros });
     } catch (erro: any) {

@@ -10,8 +10,8 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { SincronizadorGlobal } from './SincronizadorGlobal';
 import { Breadcrumbs } from './Breadcrumbs';
 import { usarGuardiaoSessao } from '../hooks/usarGuardiaoSessao';
+import { usarSaidaAutomatica } from '@/funcionalidades/ponto/hooks/usarSaidaAutomatica';
 import { ShieldAlert, LogOut, Clock } from 'lucide-react';
-
 
 interface LayoutPrincipalProps {
     children: ReactNode;
@@ -27,6 +27,9 @@ export function LayoutPrincipal({ children }: LayoutPrincipalProps) {
     const { projetoAtivoId } = usarAutenticacao();
     const { projetos } = usarProjetos();
     const { sessaoExpirando, continuarLogado, sairAgora } = usarGuardiaoSessao();
+
+    // Inicia o hook de monitoramento para saída automática ao fechar a página
+    usarSaidaAutomatica();
 
     // Dinamismo Inteligente: Atualiza o título da aba com o nome do projeto ativo
     useEffect(() => {
@@ -118,7 +121,7 @@ export function LayoutPrincipal({ children }: LayoutPrincipalProps) {
                     <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto">
                         <ShieldAlert className="text-amber-500" size={32} />
                     </div>
-                    
+
                     <div className="space-y-2">
                         <h3 className="text-lg font-black text-foreground">Sessão Inativa</h3>
                         <p className="text-sm text-muted-foreground leading-relaxed">

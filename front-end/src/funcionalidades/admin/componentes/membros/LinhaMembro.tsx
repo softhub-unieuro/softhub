@@ -4,7 +4,16 @@ import { Avatar } from '@/compartilhado/componentes/Avatar';
 import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
 import type { Membro } from '@/funcionalidades/admin/hooks/usarMembros';
+import { LABELS_ROLES, VARIANTE_COR_ROLES } from '@/utilitarios/constantes';
 
+// Mapeamento de variantes de cores para classes Tailwind (BG e TEXT)
+const MAPA_CORES_ROLES: Record<string, { bg: string, bgHover: string, text: string, chevron: string }> = {
+    rose: { bg: 'bg-rose-500/5', bgHover: 'group-hover/sel:bg-rose-500/10', text: 'text-rose-500', chevron: 'text-rose-300' },
+    blue: { bg: 'bg-blue-500/5', bgHover: 'group-hover/sel:bg-blue-500/10', text: 'text-blue-500', chevron: 'text-blue-300' },
+    indigo: { bg: 'bg-indigo-500/5', bgHover: 'group-hover/sel:bg-indigo-500/10', text: 'text-indigo-500', chevron: 'text-indigo-300' },
+    amber: { bg: 'bg-amber-500/5', bgHover: 'group-hover/sel:bg-amber-500/10', text: 'text-amber-500', chevron: 'text-amber-300' },
+    emerald: { bg: 'bg-emerald-500/5', bgHover: 'group-hover/sel:bg-emerald-500/10', text: 'text-emerald-500', chevron: 'text-emerald-300' },
+};
 
 interface LinhaMembroProps {
     membro: Membro;
@@ -18,11 +27,19 @@ interface LinhaMembroProps {
     rolesDisponiveis: string[];
 }
 
+/**
+ * Linha da Tabela de Membros.
+ * Exibe dados do usuário e permite ações administrativas como troca de cargo.
+ */
 export const LinhaMembro = memo(({ membro, salvando, selecionado, onToggleSelect, onAlterarRole, onRemover, onVerPerfil, onAlocar, rolesDisponiveis }: LinhaMembroProps) => {
     const { usuario } = usarAutenticacao();
     const ehOMesmoUsuario = usuario?.id === membro.id;
     const podeAlterarRole = usarPermissaoAcesso('membros:alterar_role');
     const podeDesativar = usarPermissaoAcesso('membros:desativar');
+
+    // Resolve a cor e label da role atual
+    const variante = (VARIANTE_COR_ROLES as any)[membro.role] || 'emerald';
+    const classesCores = MAPA_CORES_ROLES[variante] || MAPA_CORES_ROLES.emerald;
 
     return (
         <tr className={`group transition-colors ${salvando ? 'opacity-40 grayscale pointer-events-none' : 'hover:bg-muted/5'} ${selecionado ? 'bg-primary/5' : ''}`}>
@@ -59,25 +76,14 @@ export const LinhaMembro = memo(({ membro, salvando, selecionado, onToggleSelect
             {/* Role / Cargo */}
             <td className="px-5 py-3.5">
                 <div className="inline-flex relative group/sel">
-                    <div className={`
-                        absolute inset-0 rounded-full transition-all duration-300
-                        ${membro.role === 'ADMIN' ? 'bg-rose-500/5 group-hover/sel:bg-rose-500/10' :
-                            membro.role === 'COORDENADOR' || membro.role === 'GESTOR' ? 'bg-blue-500/5 group-hover/sel:bg-blue-500/10' :
-                                membro.role === 'LIDER' ? 'bg-indigo-500/5 group-hover/sel:bg-indigo-500/10' :
-                                    membro.role === 'SUBLIDER' ? 'bg-amber-500/5 group-hover/sel:bg-amber-500/10' :
-                                        'bg-emerald-500/5 group-hover/sel:bg-emerald-500/10'}
-                    `} />
+                    <div className={`absolute inset-0 rounded-full transition-all duration-300 ${classesCores.bg} ${classesCores.bgHover}`} />
 
                     <select
                         className={`
                             relative appearance-none bg-transparent border-none 
                             rounded-full px-3.5 py-1.5 pr-7 text-[9px] font-bold uppercase tracking-wider 
-                            outline-none transition-all z-10
-                            ${membro.role === 'ADMIN' ? 'text-rose-500' :
-                                membro.role === 'COORDENADOR' || membro.role === 'GESTOR' ? 'text-blue-500' :
-                                    membro.role === 'LIDER' ? 'text-indigo-500' :
-                                        membro.role === 'SUBLIDER' ? 'text-amber-500' :
-                                            'text-emerald-500'}
+                            outline-none transition-all z-10 
+                            ${classesCores.text}
                             ${podeAlterarRole ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
                         `}
                         value={membro.role}
@@ -86,7 +92,7 @@ export const LinhaMembro = memo(({ membro, salvando, selecionado, onToggleSelect
                     >
                         {rolesDisponiveis.map(r => (
                             <option key={r} value={r} className="bg-white text-slate-900 font-bold">
-                                {r}
+                                {(LABELS_ROLES as any)[r] || r}
                             </option>
                         ))}
                     </select>
@@ -94,14 +100,7 @@ export const LinhaMembro = memo(({ membro, salvando, selecionado, onToggleSelect
                     {podeAlterarRole && (
                         <ChevronDown
                             size={11}
-                            className={`
-                                absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none z-20 transition-all duration-300
-                                ${membro.role === 'ADMIN' ? 'text-rose-300' :
-                                    membro.role === 'COORDENADOR' || membro.role === 'GESTOR' ? 'text-blue-300' :
-                                        membro.role === 'LIDER' ? 'text-indigo-300' :
-                                            membro.role === 'SUBLIDER' ? 'text-amber-300' :
-                                                'text-emerald-300'}
-                            `}
+                            className={`absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none z-20 transition-all duration-300 ${classesCores.chevron}`}
                         />
                     )}
                 </div>
@@ -111,7 +110,7 @@ export const LinhaMembro = memo(({ membro, salvando, selecionado, onToggleSelect
             <td className="px-5 py-3.5 hidden xl:table-cell">
                 <div className="flex flex-wrap gap-1">
                     {membro.equipe_nome ? (
-                        membro.equipe_nome.split(',').map((eq, i) => (
+                        membro.equipe_nome.split(',').map((eq: string, i: number) => (
                             <span key={i} className="px-2 py-0.5 rounded-md bg-muted/30 text-[9px] font-medium text-muted-foreground/60">
                                 {eq.trim()}
                             </span>
@@ -164,3 +163,5 @@ export const LinhaMembro = memo(({ membro, salvando, selecionado, onToggleSelect
         </tr>
     );
 });
+
+export default LinhaMembro;

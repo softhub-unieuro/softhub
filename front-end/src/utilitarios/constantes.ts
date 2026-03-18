@@ -36,6 +36,26 @@ export const GRAFICO_COR_SUCESSO = '#10B981';
 export const GRAFICO_COR_ALERTA = '#F59E0B';
 export const GRAFICO_COR_PERIGO = '#EF4444';
 
+// Hierarquia Administrativa: Labels amigáveis em PT-BR
+export const LABELS_ROLES = {
+    ADMIN: 'Admin',
+    COORDENADOR: 'Coordenador',
+    GESTOR: 'Gestor',
+    LIDER: 'Líder',
+    SUBLIDER: 'Sublíder',
+    MEMBRO: 'Membro',
+} as const;
+
+// Variantes de cores para as roles (seguindo padrão de autoridade)
+export const VARIANTE_COR_ROLES = {
+    ADMIN: 'rose',         // Vermelho/Rosa (Poder Total)
+    COORDENADOR: 'blue',   // Azul (Estratégico)
+    GESTOR: 'blue',        // Azul (Gestão Macro)
+    LIDER: 'indigo',       // Índigo (Liderança de Grupo)
+    SUBLIDER: 'amber',     // Amarelo (Apoio à Liderança)
+    MEMBRO: 'emerald',     // Verde (Operação)
+} as const;
+
 // ID de Referência (Opcional — o sistema agora é dinâmico)
 // Se houver projetos no banco, o sistema selecionará o primeiro automaticamente.
 export const PROJETO_PADRAO_ID = ''; 

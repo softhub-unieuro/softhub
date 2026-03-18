@@ -1,18 +1,15 @@
 import { memo } from 'react';
 import { usarDashboard } from '@/funcionalidades/dashboard/hooks/usarDashboard';
-import { usarPerfil } from '@/funcionalidades/perfil/hooks/usarPerfil';
-import { RadarCompetencias } from '@/funcionalidades/perfil/componentes/RadarCompetencias';
 import { usarProjetos } from '@/funcionalidades/projetos/hooks/usarProjetos';
 import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
-import { Carregando } from '@/compartilhado/componentes/Carregando';
 import { EstadoVazio } from '@/compartilhado/componentes/EstadoVazio';
 import { EstadoErro } from '@/compartilhado/componentes/EstadoErro';
 import { DashboardVazio } from './DashboardVazio';
 import { ComunicadosPrioritarios } from './ComunicadosPrioritarios';
 import { MinhasTarefasLista } from './MinhasTarefasLista';
 import { ResumoPessoalDashboard } from './ResumoPessoalDashboard';
-import { Skeleton, SkeletonCard, SkeletonRow } from '@/compartilhado/componentes/Skeleton';
+import { Skeleton } from '@/compartilhado/componentes/Skeleton';
 import { CabecalhoDashboard } from './CabecalhoDashboard';
 import { pluralizar } from '@/utilitarios/formatadores';
 
@@ -25,7 +22,6 @@ export const PaginaDashboard = memo(() => {
     const { projetos, carregando: carregandoProjetos } = usarProjetos();
     const podeGerenciarProjetos = usarPermissaoAcesso('projetos:visualizar');
     const { metricas, avisos, minhasTarefas, projetosAtivos, carregando, erro } = usarDashboard(projetoAtivoId);
-    const { radar } = usarPerfil();
 
     return (
         <div className="w-full animate-in fade-in duration-700 max-w-[1600px] mx-auto">
@@ -80,8 +76,6 @@ export const PaginaDashboard = memo(() => {
                     <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
                         {/* Coluna Central: Burndown e Avisos (SPAN 8) */}
                         <div className="xl:col-span-8 space-y-12">
-
-                            
                             {/* Mural de Avisos */}
                             <div className="space-y-4">
                                 <div className="flex items-center gap-3 px-1">
@@ -92,7 +86,7 @@ export const PaginaDashboard = memo(() => {
                             </div>
                         </div>
 
-                        {/* Coluna Lateral: Ações e Radar (SPAN 4) */}
+                        {/* Coluna Lateral: Ações (SPAN 4) */}
                         <div className="xl:col-span-4 space-y-8 xl:sticky xl:top-6">
                             {/* Minhas Tarefas (Ação Imediata) */}
                             <div className="space-y-4">
@@ -106,25 +100,6 @@ export const PaginaDashboard = memo(() => {
                                     </span>
                                 </div>
                                 <MinhasTarefasLista minhasTarefas={minhasTarefas} />
-                            </div>
-
-                            {/* Radar de Competências (Visualização de Longo Prazo) */}
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3 px-1">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                                    <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Minhas Habilidades</h3>
-                                </div>
-                                <div className="card-glass card-glass-hover p-5">
-                                    <RadarCompetencias dados={radar || []} />
-                                </div>
-                            </div>
-                            
-                            {/* Cartão de Ajuda */}
-                            <div className="p-6 bg-gradient-to-br from-primary/5 to-transparent border border-primary/10 rounded-[32px] overflow-hidden relative">
-                                <div className="relative z-10">
-                                    <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Dica de Produtividade</p>
-                                    <p className="text-xs text-muted-foreground leading-relaxed">Foque nas tarefas de prioridade <span className="text-rose-500 font-bold">Urgente</span> para manter a produtividade da equipe.</p>
-                                </div>
                             </div>
                         </div>
                     </div>
