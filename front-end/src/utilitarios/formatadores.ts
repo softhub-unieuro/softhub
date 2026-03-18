@@ -1,4 +1,4 @@
-import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
+import { format, formatDistanceToNow, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 /**
@@ -8,6 +8,9 @@ import { ptBR } from 'date-fns/locale';
  */
 export function formatarDataHora(data: string | Date): string {
     const d = typeof data === 'string' ? new Date(data) : data;
+    if (!isValid(d)) {
+        return 'Data inválida';
+    }
     return format(d, "dd/MM/yy 'às' HH:mm", { locale: ptBR });
 }
 
@@ -19,6 +22,9 @@ export function formatarDataHora(data: string | Date): string {
  */
 export function formatarTempoAtras(data: string | Date): string {
     const d = typeof data === 'string' ? new Date(data) : data;
+    if (!isValid(d)) {
+        return 'Tempo inválido';
+    }
     return formatDistanceToNow(d, { addSuffix: true, locale: ptBR });
 }
 

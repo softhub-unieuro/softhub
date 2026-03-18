@@ -43,7 +43,7 @@ export default defineConfig(({ mode }) => {
         server: {
             proxy: {
                 '/api': {
-                    target: env.VITE_API || 'https://api.softhub.workers.dev',
+                    target: 'https://api.softhub.workers.dev',
                     changeOrigin: true,
                     secure: false,
                 },
