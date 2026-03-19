@@ -56,6 +56,35 @@ rotasPonto.get('/online', autenticacaoRequerida(), async (c: Context) => {
     }
 });
 
+/**
+ * Registra o "sinal de vida" do usuário para o monitor de membros online.
+ * Atualiza o KV 'online:ID' com expiração de 60 segundos.
+ */
+rotasPonto.post('/presenca', autenticacaoRequerida(), async (c: Context) => {
+    const { softhub_kv } = c.env;
+    const usuario = c.get('usuario') as any;
+
+    if (!softhub_kv) return c.json({ erro: 'KV não configurado' }, 500);
+
+    try {
+        const dados = {
+            id: usuario.id,
+            nome: usuario.nome,
+            email: usuario.email,
+            foto_perfil: usuario.foto_perfil,
+            ultima_vez: new Date().toISOString()
+        };
+
+        // Registra presença por 60 segundos (KV expira automaticamente)
+        await softhub_kv.put(`online:${usuario.id}`, JSON.stringify(dados), { expirationTtl: 60 });
+        
+        return c.json({ sucesso: true });
+    } catch (e) {
+        console.error('[HEARTBEAT] Falha ao registrar presença:', e);
+        return c.json({ erro: 'Falha ao registrar presença' }, 500);
+    }
+});
+
 const BaterPontoSchema = z.object({
     tipo: z.enum(['entrada', 'saida'])
 });
@@ -112,21 +141,26 @@ rotasPonto.post('/',
         const inicioMinutos = converterParaMinutos(horaInicio);
         const fimMinutos = converterParaMinutos(horaFim);
 
-        if (agoraMinutos < inicioMinutos || agoraMinutos > fimMinutos) {
-            return c.json({ 
-                erro: 'Fora do horário permitido.', 
-                detalhe: `O registro de ponto está autorizado apenas entre ${horaInicio} e ${horaFim}.` 
-            }, 403);
-        }
-
         try {
             const usuario = c.get('usuario') as any;
             const ipOrigem = c.req.header('CF-Connecting-IP') || '127.0.0.1';
 
             // Validação de sequência
             const ultimo = await DB.prepare(`SELECT tipo FROM ponto_registros WHERE usuario_id = ? AND DATE(registrado_em) = DATE('now', '-3 hours') ORDER BY registrado_em DESC LIMIT 1`).bind(usuario.id).first() as any;
+            
             if (ultimo?.tipo === tipo) {
                 return c.json({ erro: `Você já registrou sua ${tipo} hoje.` }, 400);
+            }
+
+            // REGRA DE OURO: Se for SAÍDA e houver uma ENTRADA aberta, permitimos registrar MESMO fora do horário.
+            // Isso evita que o usuário fique "preso" no sistema se esquecer de bater o ponto ou se o expediente acabar.
+            const permitirForaDoHorario = tipo === 'saida' && ultimo?.tipo === 'entrada';
+
+            if (!permitirForaDoHorario && (agoraMinutos < inicioMinutos || agoraMinutos > fimMinutos)) {
+                return c.json({ 
+                    erro: 'Fora do horário permitido.', 
+                    detalhe: `O registro de ponto está autorizado apenas entre ${horaInicio} e ${horaFim}.` 
+                }, 403);
             }
 
             // Inserção no banco

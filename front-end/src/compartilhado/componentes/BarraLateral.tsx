@@ -19,7 +19,7 @@ interface BarraLateralProps {
  * Barra lateral com navegação principal, notificações, tema e perfil.
  * Refatorada para modularização.
  */
-export function BarraLateral({ aoNavegar }: BarraLateralProps) {
+export function BarraLateral({ aoNavegar, aoAbrirScanner }: BarraLateralProps) {
     const location = useLocation();
     const { usuario, sair, projetoAtivoId } = usarAutenticacao();
     const { notificacoes, marcarComoLida, limparTodas } = usarNotificacoes();
@@ -93,6 +93,7 @@ export function BarraLateral({ aoNavegar }: BarraLateralProps) {
                 usuario={usuario} 
                 sair={sair} 
                 setModalNotificacoes={setModalNotificacoes} 
+                aoAbrirScanner={aoAbrirScanner}
                 totalNaoLidas={notificacoes.length} 
             />
 

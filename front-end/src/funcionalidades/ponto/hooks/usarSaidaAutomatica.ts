@@ -1,22 +1,24 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 import { ambiente } from '@/configuracoes/ambiente';
 import { useQueryClient } from '@tanstack/react-query';
+import { api } from '@/compartilhado/servicos/api';
 import type { RegistroPonto } from './usarPonto';
 
 /**
- * Hook que monitora o fechamento da página para registrar a saída do ponto.
- * Dispara apenas quando a aba é fechada ou descarregada.
+ * Hook que monitora o fechamento da página e o fim do expediente para registrar a saída do ponto.
+ * Dispara quando a aba é fechada ou quando o horário limite de saída é atingido.
  */
 export function usarSaidaAutomatica() {
     const { usuario } = usarAutenticacao();
     const queryClient = useQueryClient();
+    const jaProcessouFimExpediente = useRef(false);
 
     useEffect(() => {
         if (!usuario) return;
 
-        const registrarSaida = () => {
-            const token = localStorage.getItem('token_acesso');
+        const registrarSaida = async (motivo: 'fechamento' | 'expediente' = 'fechamento') => {
+            const token = localStorage.getItem('softhub_token');
             if (!token) return;
 
             // Só tenta sair se a última batida foi uma entrada para evitar registros desnecessários
@@ -32,34 +34,69 @@ export function usarSaidaAutomatica() {
                     return;
                 }
             } else {
-                // Se a pagina fechou antes de carregar o ponto (ex: na dashboard), 
-                // não enviamos cegamente para não bagunçar com orfãos.
                 return;
             }
 
+            console.log(`[Ponto] Registrando saída automática (${motivo})...`);
+
             // Usamos keepalive=true para que a conexao continue apos fechar a pagina
             const url = `${ambiente.apiUrl}/api/ponto`;
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ tipo: 'saida' }),
-                keepalive: true
-            }).catch(() => {
-                // Não logamos erro pois a página já estará sendo fechada
-            });
+            try {
+                await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ tipo: 'saida' }),
+                    keepalive: true
+                });
+                
+                // Se for por expediente, invalidamos o cache para atualizar a UI
+                if (motivo === 'expediente') {
+                    queryClient.invalidateQueries({ queryKey: ['ponto'] });
+                }
+            } catch (e) {
+                // Silencioso
+            }
         };
 
-        // pagehide e beforeunload cobrem tanto navegadores mobile como desktop
-        window.addEventListener('pagehide', registrarSaida);
-        // beforeunload as vezes é mais rapido no desktop
-        window.addEventListener('beforeunload', registrarSaida);
+        // 1. Monitoramento de Horário (Fim de Expediente)
+        const monitorarHorario = async () => {
+            try {
+                const res = await api.get('/api/configuracoes/publico');
+                const horaFim = res.data.hora_fim_ponto;
+                if (!horaFim) return;
+
+                const [hFim, mFim] = horaFim.split(':').map(Number);
+                const agora = new Date();
+                const hAgora = agora.getHours();
+                const mAgora = agora.getMinutes();
+
+                // Se já passou do horário e ainda não processamos nesta sessão
+                if ((hAgora > hFim || (hAgora === hFim && mAgora >= mFim)) && !jaProcessouFimExpediente.current) {
+                    jaProcessouFimExpediente.current = true;
+                    registrarSaida('expediente');
+                }
+            } catch (e) {
+                // Silencioso
+            }
+        };
+
+        // Verifica a cada 1 minuto
+        const interval = setInterval(monitorarHorario, 60000);
+        monitorarHorario(); // Check inicial
+
+        const handleFechamento = () => registrarSaida('fechamento');
+
+        // 2. Monitoramento de Fechamento de Aba
+        window.addEventListener('pagehide', handleFechamento);
+        window.addEventListener('beforeunload', handleFechamento);
         
         return () => {
-             window.removeEventListener('pagehide', registrarSaida);
-             window.removeEventListener('beforeunload', registrarSaida);
+             clearInterval(interval);
+             window.removeEventListener('pagehide', handleFechamento);
+             window.removeEventListener('beforeunload', handleFechamento);
         };
     }, [usuario, queryClient]);
 }

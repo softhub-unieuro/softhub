@@ -162,7 +162,7 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
         const enviarPulsacao = async () => {
             try {
                 // Endpoint silencioso apenas para registrar sinal de vida
-                await api.post('/api/perfil/presenca');
+                await api.post('/api/ponto/presenca');
             } catch (e) {
                 // Falha silenciosa para não incomodar o usuário
                 console.warn('[Heartbeat] Falha na pulsação de presença');

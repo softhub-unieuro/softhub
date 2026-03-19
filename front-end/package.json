@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:live": "cross-env VITE_PROXY_TARGET=https://softhub.madebycotrim-67c.workers.dev npm run dev",
+    "dev:live": "cross-env VITE_PROXY_TARGET=https://fabricadesoftware.pages.dev/ npm run dev",
     "build": "vite build",
     "typecheck": "tsc -b",
     "lint": "eslint .",

@@ -45,38 +45,38 @@ export const HistoricoAbasPonto = memo(({
     }, [justificativas, busca]);
 
     return (
-        <div className="card-glass p-8 flex flex-col card-glass-hover max-h-[540px]">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-6 shrink-0">
-                <div className="space-y-1">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Linha do Tempo</h3>
-                    <p className="text-[24px] font-black text-slate-900 tracking-tight">
+        <div className="card-glass p-4 sm:p-8 flex flex-col card-glass-hover max-h-[600px] sm:max-h-[540px]">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4 sm:gap-6 shrink-0">
+                <div className="space-y-0.5 sm:space-y-1">
+                    <h3 className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Linha do Tempo</h3>
+                    <p className="text-lg sm:text-[24px] font-black text-slate-900 tracking-tight">
                         {abaAtiva === 'registro' ? 'Atividade da Semana' : 'Justificativas Enviadas'}
                     </p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full sm:w-auto">
                     {abaAtiva === 'registro' && semanasDisponiveis.length > 1 && (
-                        <div className="flex items-center gap-2 bg-slate-950/[0.03] p-1.5 rounded-2xl border border-slate-950/5 backdrop-blur-sm">
+                        <div className="flex items-center justify-between sm:justify-start gap-2 bg-slate-950/[0.03] p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-slate-950/5 backdrop-blur-sm w-full sm:w-auto">
                             <button 
                                 onClick={onSemanaAnterior}
                                 disabled={indiceSemanaAtual <= 0}
-                                className="p-1.5 hover:bg-white hover:shadow-sm rounded-xl transition-all disabled:opacity-20 disabled:cursor-not-allowed text-slate-600"
+                                className="p-1.5 hover:bg-white hover:shadow-sm rounded-lg sm:rounded-xl transition-all disabled:opacity-20 disabled:cursor-not-allowed text-slate-600"
                             >
-                                <ChevronLeft size={18} strokeWidth={2.5} />
+                                <ChevronLeft className="w-4 h-4 sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
                             </button>
-                            <div className="px-3 min-w-[120px] text-center">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap">
+                            <div className="px-2 sm:px-3 flex-1 sm:flex-none sm:min-w-[120px] text-center">
+                                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap">
                                     {isSameDay(new Date(semanaSelecionada), startOfWeek(new Date(), { weekStartsOn: 1 })) 
                                         ? 'Esta Semana' 
-                                        : format(new Date(semanaSelecionada), "'Semana de' dd/MM", { locale: ptBR })}
+                                        : format(new Date(semanaSelecionada), "'Semana' dd/MM", { locale: ptBR })}
                                 </span>
                             </div>
                             <button 
                                 onClick={onSemanaProxima}
                                 disabled={indiceSemanaAtual >= semanasDisponiveis.length - 1}
-                                className="p-1.5 hover:bg-white hover:shadow-sm rounded-xl transition-all disabled:opacity-20 disabled:cursor-not-allowed text-slate-600"
+                                className="p-1.5 hover:bg-white hover:shadow-sm rounded-lg sm:rounded-xl transition-all disabled:opacity-20 disabled:cursor-not-allowed text-slate-600"
                             >
-                                <ChevronRight size={18} strokeWidth={2.5} />
+                                <ChevronRight className="w-4 h-4 sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
                             </button>
                         </div>
                     )}
@@ -85,22 +85,23 @@ export const HistoricoAbasPonto = memo(({
                         <BarraBusca
                             valor={busca}
                             aoMudar={onMudarBusca}
-                            placeholder="Buscar registros..."
+                            placeholder="Buscar..."
                         />
                     </div>
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto scrollbar-none pr-1">
+            <div className="flex-1 overflow-x-auto sm:overflow-y-auto scrollbar-none pb-2 sm:pb-0 sm:pr-1">
                 {abaAtiva === 'registro' ? (
-                    <div className="grid grid-cols-5 gap-3 w-full">
+                    <div className="flex sm:grid sm:grid-cols-5 gap-3 w-max sm:w-full min-w-full">
                         {registrosAgrupados.map(({ dia, registros }) => (
-                            <DayCard
-                                key={dia.toISOString()}
-                                dia={dia}
-                                registros={registros}
-                                hoje={isToday(dia)}
-                            />
+                            <div key={dia.toISOString()} className="w-[140px] sm:w-full shrink-0">
+                                <DayCard
+                                    dia={dia}
+                                    registros={registros}
+                                    hoje={isToday(dia)}
+                                />
+                            </div>
                         ))}
                     </div>
                 ) : (

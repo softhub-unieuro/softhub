@@ -56,24 +56,15 @@ export function LayoutPrincipal({ children }: LayoutPrincipalProps) {
                     className="fixed inset-0 z-50 lg:hidden"
                     onClick={() => setSidebarAberta(false)}
                 >
-                    {/* Backdrop */}
-                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm animar-entrada" />
+                    {/* Backdrop com Blur e Fade In */}
+                    <div className="absolute inset-0 bg-background/60 animate-backdrop-in" />
 
-                    {/* Drawer Content */}
+                    {/* Drawer Content com Slide In */}
                     <div
-                        className="absolute inset-y-0 left-0 w-[280px] bg-sidebar border-r border-sidebar-border animar-entrada"
+                        className="absolute inset-y-0 left-0 w-[280px] bg-sidebar border-r border-sidebar-border shadow-2xl animate-sidebar-in"
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="flex flex-col h-full relative">
-                            {/* Botão fechar móvel */}
-                            <Tooltip texto="Fechar" posicao="right">
-                                <button
-                                    onClick={() => setSidebarAberta(false)}
-                                    className="absolute top-4 right-4 z-50 p-2 text-sidebar-foreground/40 hover:text-primary transition-colors bg-sidebar-accent/30 rounded-2xl"
-                                >
-                                    <X size={20} />
-                                </button>
-                            </Tooltip>
                             <BarraLateral
                                 aoNavegar={() => setSidebarAberta(false)}
                                 aoAbrirScanner={() => setScannerAberto(true)}
@@ -92,7 +83,7 @@ export function LayoutPrincipal({ children }: LayoutPrincipalProps) {
                     <Menu size={20} strokeWidth={2.5} />
                 </button>
 
-                <main className="flex-1 p-6 overflow-y-auto relative z-10 transition-all overflow-x-hidden animar-entrada scrollbar-none bg-background/50 min-w-0">
+                <main className="flex-1 p-6 pt-20 lg:pt-6 overflow-y-auto relative z-10 transition-all overflow-x-hidden animar-entrada scrollbar-none bg-background/50 min-w-0">
                     <Breadcrumbs />
                     <ErrorBoundary modulo="Módulo Selecionado">
                         {children}

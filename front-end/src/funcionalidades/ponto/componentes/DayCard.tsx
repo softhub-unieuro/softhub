@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react';
 import { format, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Timer } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { formatarHoras } from '@/utilitarios/formatadores';
 import type { RegistroPonto } from '../hooks/usarPonto';
 
@@ -35,7 +35,7 @@ export const DayCard = memo(({ dia, registros, hoje }: DayCardProps) => {
 
     return (
         <div className={`
-            flex flex-col items-center w-full p-5 rounded-2xl border transition-all duration-500 relative group
+            flex flex-col items-center w-full p-4 sm:p-5 rounded-2xl border transition-all duration-500 relative group
             ${hoje
                 ? 'bg-white border-primary/20 shadow-[0_25px_60px_-15px_rgba(var(--primary-rgb),0.15)] ring-1 ring-primary/5'
                 : 'bg-white/40 border-slate-200/60 hover:bg-white hover:border-slate-300 hover:shadow-xl'
@@ -43,26 +43,26 @@ export const DayCard = memo(({ dia, registros, hoje }: DayCardProps) => {
         `}>
             {/* Top Identity Line */}
             {hoje && (
-                <div className="absolute top-0 inset-x-12 h-1 bg-gradient-to-r from-transparent via-primary to-transparent rounded-b-full opacity-60" />
+                <div className="absolute top-0 inset-x-8 sm:inset-x-12 h-1 bg-gradient-to-r from-transparent via-primary to-transparent rounded-b-full opacity-60" />
             )}
 
             {/* Header: Clean Typography */}
-            <div className="flex flex-col items-center justify-center w-full mb-6 pt-2">
-                <span className={`text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${hoje ? 'text-primary' : 'text-slate-400'}`}>
+            <div className="flex flex-col items-center justify-center w-full mb-4 sm:mb-6 pt-1 sm:pt-2">
+                <span className={`text-[8px] sm:text-[10px] font-black uppercase tracking-[0.2em] mb-1 sm:mb-2 ${hoje ? 'text-primary' : 'text-slate-400'}`}>
                     {format(dia, 'EEEE', { locale: ptBR }).split('-')[0]}
                 </span>
                 <div className="relative flex items-center justify-center mb-1">
-                    <span className={`text-5xl font-black tabular-nums tracking-tighter transition-all ${hoje ? 'text-slate-900 scale-105' : 'text-slate-200'}`}>
+                    <span className={`text-4xl sm:text-5xl font-black tabular-nums tracking-tighter transition-all ${hoje ? 'text-slate-900 scale-105' : 'text-slate-200'}`}>
                         {format(dia, 'dd')}
                     </span>
                     {hoje && (
-                        <div className="absolute -right-3 -top-1 w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.8)] animate-pulse" />
+                        <div className="absolute -right-2 sm:-right-3 -top-1 w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.8)] animate-pulse" />
                     )}
                 </div>
                 {temRegistros && (
-                    <div className={`flex items-center gap-2 px-2.5 py-1 rounded-full border ${hoje ? 'bg-primary/5 border-primary/10 text-primary' : 'bg-slate-50 border-slate-100 text-slate-500'}`}>
-                        <Timer size={13} strokeWidth={2.5} />
-                        <span className="text-[11px] font-black tabular-nums tracking-tight">
+                    <div className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border ${hoje ? 'bg-primary/5 border-primary/10 text-primary' : 'bg-slate-50 border-slate-100 text-slate-500'}`}>
+                        <Clock size={11} className="sm:w-[13px] sm:h-[13px]" strokeWidth={2.5} />
+                        <span className="text-[10px] sm:text-[11px] font-black tabular-nums tracking-tight">
                             {formatarHoras(totalMinutos)}
                         </span>
                     </div>
@@ -70,7 +70,7 @@ export const DayCard = memo(({ dia, registros, hoje }: DayCardProps) => {
             </div>
 
             {/* activity records - chronological log ribbon with internal scroll */}
-            <div className="flex flex-col w-full h-[200px] px-1 overflow-y-auto scrollbar-none scroll-smooth">
+            <div className="flex flex-col w-full h-[160px] sm:h-[200px] px-1 overflow-y-auto scrollbar-none scroll-smooth">
                 {temRegistros ? (
                     <div className="flex flex-col gap-5 py-2">
                         {registrosOrdenados.map((reg, idx, arr) => (

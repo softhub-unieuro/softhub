@@ -84,8 +84,14 @@ export function usarInterfacePonto() {
         const inicioMinutos = converterParaMinutos(janelaTrabalho.inicio);
         const fimMinutos = converterParaMinutos(janelaTrabalho.fim);
 
+        // Se o próximo tipo for 'saida' e houver uma entrada hoje, não bloqueamos visualmente.
+        const ultimo = registrosHoje.length > 0 ? registrosHoje[0] : null;
+        if (proximoTipo === 'saida' && ultimo?.tipo === 'entrada') {
+            return false;
+        }
+
         return agoraMinutos < inicioMinutos || agoraMinutos > fimMinutos;
-    }, [agoraRelogio, janelaTrabalho]);
+    }, [agoraRelogio, janelaTrabalho, proximoTipo, registrosHoje]);
 
     const semanasDisponiveis = useMemo(() => {
         const mapa = new Set<number>();

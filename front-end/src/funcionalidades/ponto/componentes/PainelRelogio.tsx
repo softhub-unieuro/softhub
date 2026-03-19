@@ -66,7 +66,7 @@ export const PainelRelogio = memo(({
             <div
                 className={`
                     card-glass flex flex-col items-center justify-center text-center relative overflow-hidden group 
-                    h-[400px] transition-all duration-700
+                    h-[320px] sm:h-[400px] transition-all duration-700
                     animate-fade-up hover:bg-card/60 hover:border-primary/30 hover:shadow-primary/5
                     ${tentativaBloqueada ? 'animate-shake border-rose-500/40 shadow-rose-500/5' : ''}
                 `}
@@ -82,22 +82,22 @@ export const PainelRelogio = memo(({
                 {/* Aurora Accent */}
                 <div className="absolute -top-10 -right-10 w-64 h-64 bg-primary/10 rounded-full blur-[120px] z-0 opacity-20 pointer-events-none group-hover:opacity-40 transition-all duration-1000 group-hover:scale-125" />
 
-                <div className="relative z-10 space-y-12 w-full">
-                    <div className="space-y-5">
+                <div className="relative z-10 space-y-8 sm:space-y-12 w-full px-6">
+                    <div className="space-y-3 sm:space-y-5">
                         <div className="inline-flex items-center gap-3 px-5 py-2 bg-slate-950/[0.04] rounded-full border border-slate-900/5 mb-2 backdrop-blur-sm group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
                             <div className={`w-2 h-2 rounded-full ${foraDaRede || foraDoHorario ? 'bg-rose-500' : 'bg-primary animate-pulse'}`} />
-                            <span className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-500 group-hover:text-primary transition-colors">
+                            <span className="text-[9px] sm:text-[11px] font-black uppercase tracking-[0.25em] text-slate-500 group-hover:text-primary transition-colors">
                                 {foraDaRede || foraDoHorario ? 'Acesso Restrito' : 'Horário de Brasília'}
                             </span>
                         </div>
                         <div className="flex flex-col items-center">
-                            <h2 className="text-7xl sm:text-8xl font-black tracking-[-0.05em] text-foreground tabular-nums flex items-baseline justify-center drop-shadow-sm">
+                            <h2 className="text-6xl sm:text-8xl font-black tracking-[-0.05em] text-foreground tabular-nums flex items-baseline justify-center drop-shadow-sm">
                                 {agoraRelogio.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                <span className="text-xl sm:text-2xl text-muted-foreground/40 font-bold ml-3 select-none tracking-widest">
+                                <span className="text-lg sm:text-2xl text-muted-foreground/40 font-bold ml-2 sm:ml-3 select-none tracking-widest">
                                     {agoraRelogio.toLocaleTimeString('pt-BR', { second: '2-digit' })}
                                 </span>
                             </h2>
-                            <div className="w-20 h-1 bg-muted/30 rounded-full mt-4 overflow-hidden relative border border-border/20">
+                            <div className="w-16 sm:w-20 h-1 bg-muted/30 rounded-full mt-3 sm:mt-4 overflow-hidden relative border border-border/20">
                                 <div
                                     className="absolute inset-y-0 left-0 bg-primary transition-all duration-1000"
                                     style={{ width: `${(agoraRelogio.getSeconds() / 60) * 100}%` }}
@@ -113,7 +113,7 @@ export const PainelRelogio = memo(({
                             onClick={aoBaterPonto}
                             disabled={carregando || salvando || foraDaRede || foraDoHorario || !podeRegistrar}
                             className={`
-                                w-full py-4 rounded-3xl text-[11px] font-black uppercase tracking-[0.3em] 
+                                w-full py-3.5 sm:py-4 rounded-2xl sm:rounded-3xl text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] 
                                 transition-all active:scale-[0.97] border shadow-xl relative z-10
                                 disabled:cursor-not-allowed
                                 ${proximoTipo === 'entrada'
@@ -126,13 +126,13 @@ export const PainelRelogio = memo(({
                             {salvando ? (
                                 <Carregando Centralizar={false} tamanho="sm" className="border-t-white border-white/30" />
                             ) : (
-                                <div className="flex items-center justify-center gap-3">
+                                <div className="flex items-center justify-center gap-2 sm:gap-3">
                                     {foraDaRede || foraDoHorario ? (
-                                        <AlertTriangle size={16} strokeWidth={3} />
+                                        <AlertTriangle size={14} className="sm:w-4 sm:h-4" strokeWidth={3} />
                                     ) : proximoTipo === 'entrada' ? (
-                                        <LogIn size={16} strokeWidth={3} />
+                                        <LogIn size={14} className="sm:w-4 sm:h-4" strokeWidth={3} />
                                     ) : (
-                                        <LogOut size={16} strokeWidth={3} />
+                                        <LogOut size={14} className="sm:w-4 sm:h-4" strokeWidth={3} />
                                     )}
                                     <span>Registrar {proximoTipo}</span>
                                 </div>

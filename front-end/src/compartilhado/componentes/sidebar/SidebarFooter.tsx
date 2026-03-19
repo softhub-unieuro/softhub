@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Bell, LogOut } from 'lucide-react';
+import { Bell, LogOut, QrCode } from 'lucide-react';
 import { Avatar } from '@/compartilhado/componentes/Avatar';
 import { MembrosOnline } from './MembrosOnline';
 
@@ -7,6 +7,7 @@ interface SidebarFooterProps {
     usuario: any;
     sair: () => void;
     setModalNotificacoes: (b: boolean) => void;
+    aoAbrirScanner?: () => void;
     totalNaoLidas: number;
 }
 
@@ -14,11 +15,14 @@ export const SidebarFooter = memo(({
     usuario,
     sair,
     setModalNotificacoes,
+    aoAbrirScanner,
     totalNaoLidas
 }: SidebarFooterProps) => {
     return (
         <div className="shrink-0 px-4 pb-3 pt-2 mt-auto relative z-10 space-y-2 border-t border-sidebar-border/20">
-            <MembrosOnline />
+            <div className="hidden lg:block">
+                <MembrosOnline />
+            </div>
 
             <button
                 onClick={() => setModalNotificacoes(true)}
@@ -36,6 +40,20 @@ export const SidebarFooter = memo(({
                     )}
                 </div>
             </button>
+
+            {aoAbrirScanner && (
+                <button
+                    onClick={aoAbrirScanner}
+                    className="lg:hidden w-full flex items-center justify-between px-2 group/qr"
+                >
+                    <span className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">
+                        Scannear QR
+                    </span>
+                    <div className="relative p-1.5 text-muted-foreground/30 group-hover/qr:text-primary transition-colors">
+                        <QrCode size={16} />
+                    </div>
+                </button>
+            )}
 
             <div className="flex items-center gap-3 p-2.5 bg-white/40 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-sidebar-border/40">
                 <Avatar nome={usuario?.nome || 'User'} fotoPerfil={usuario?.foto_perfil} tamanho="sm" />

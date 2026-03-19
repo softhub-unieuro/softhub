@@ -122,6 +122,7 @@ rotasPerfil.patch('/me', autenticacaoRequerida(), zValidator('json', UpdatePerfi
     }
 });
 
+
 // ─── GET /:id ──────────────────────────────────────────────────────────────────
 rotasPerfil.get('/:id', autenticacaoRequerida(), async (c: Context) => {
     const { DB } = c.env;
@@ -218,31 +219,6 @@ rotasPerfil.get('/:id/radar', autenticacaoRequerida(), async (c: Context) => {
     } catch (e) {
         console.error('[ERRO Radar]', e);
         return c.json({ erro: 'Falha ao gerar radar de competências' }, 500);
-    }
-});
-
-// ─── POST /presenca ──────────────────────────────────────────────────────────── (Heartbeat)
-rotasPerfil.post('/presenca', autenticacaoRequerida(), async (c: Context) => {
-    const { softhub_kv } = c.env;
-    const usuario = c.get('usuario');
-
-    if (!softhub_kv) return c.json({ erro: 'KV não configurado' }, 500);
-
-    try {
-        const dados = {
-            id: usuario.id,
-            nome: usuario.nome,
-            email: usuario.email,
-            foto_perfil: usuario.foto_perfil,
-            ultima_vez: new Date().toISOString()
-        };
-
-        // Registra presença por 60 segundos
-        await softhub_kv.put(`online:${usuario.id}`, JSON.stringify(dados), { expirationTtl: 60 });
-        
-        return c.json({ sucesso: true });
-    } catch (e) {
-        return c.json({ erro: 'Falha ao registrar presença' }, 500);
     }
 });
 
