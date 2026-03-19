@@ -9,7 +9,7 @@ import { obterConfiguracao } from '../servicos/servico-configuracoes';
 
 const rotasAdmin = new Hono<{ Bindings: Env; Variables: { usuario: any } }>();
 
-const ROLES_VALIDAS = ['ADMIN', 'COORDENADOR', 'GESTOR', 'LIDER', 'SUBLIDER', 'MEMBRO'];
+const ROLES_VALIDAS = ['ADMIN', 'COORDENADOR', 'GESTOR', 'LIDER', 'SUBLIDER', 'SUB-LIDER', 'MEMBRO', 'LIDER-TECNICO'];
 
 /**
  * Altera a role (cargo) de um membro.

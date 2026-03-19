@@ -13,6 +13,7 @@ const MAPA_CORES_ROLES: Record<string, { bg: string, bgHover: string, text: stri
     indigo: { bg: 'bg-indigo-500/5', bgHover: 'group-hover/sel:bg-indigo-500/10', text: 'text-indigo-500', chevron: 'text-indigo-300' },
     amber: { bg: 'bg-amber-500/5', bgHover: 'group-hover/sel:bg-amber-500/10', text: 'text-amber-500', chevron: 'text-amber-300' },
     emerald: { bg: 'bg-emerald-500/5', bgHover: 'group-hover/sel:bg-emerald-500/10', text: 'text-emerald-500', chevron: 'text-emerald-300' },
+    roxo: { bg: 'bg-violet-500/5', bgHover: 'group-hover/sel:bg-violet-500/10', text: 'text-violet-500', chevron: 'text-violet-300' },
 };
 
 interface LinhaMembroProps {
