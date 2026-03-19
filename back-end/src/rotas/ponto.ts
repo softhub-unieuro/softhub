@@ -145,21 +145,37 @@ rotasPonto.post('/',
             const usuario = c.get('usuario') as any;
             const ipOrigem = c.req.header('CF-Connecting-IP') || '127.0.0.1';
 
-            // Validação de sequência
-            const ultimo = await DB.prepare(`SELECT tipo FROM ponto_registros WHERE usuario_id = ? AND DATE(registrado_em) = DATE('now', '-3 hours') ORDER BY registrado_em DESC LIMIT 1`).bind(usuario.id).first() as any;
+            // Validação de sequência com Debounce de 30 segundos
+            const ultimo = await DB.prepare(`
+                SELECT tipo, registrado_em FROM ponto_registros 
+                WHERE usuario_id = ? 
+                AND DATE(registrado_em, '-3 hours') = DATE('now', '-3 hours') 
+                ORDER BY registrado_em DESC LIMIT 1
+            `).bind(usuario.id).first() as any;
             
-            if (ultimo?.tipo === tipo) {
-                return c.json({ erro: `Você já registrou sua ${tipo} hoje.` }, 400);
+            if (ultimo) {
+                const agoraMs = new Date().getTime();
+                const ultimoMs = new Date(ultimo.registrado_em).getTime();
+                const segundosPassados = Math.abs(agoraMs - ultimoMs) / 1000;
+
+                if (ultimo.tipo === tipo) {
+                    return c.json({ erro: `Você já registrou uma ${tipo} agora mesmo.` }, 403);
+                }
+
+                if (segundosPassados < 30) {
+                    return c.json({ erro: 'Aguarde pelo menos 30 segundos entre registros de ponto.' }, 429);
+                }
             }
 
             // REGRA DE OURO: Se for SAÍDA e houver uma ENTRADA aberta, permitimos registrar MESMO fora do horário.
             // Isso evita que o usuário fique "preso" no sistema se esquecer de bater o ponto ou se o expediente acabar.
             const permitirForaDoHorario = tipo === 'saida' && ultimo?.tipo === 'entrada';
 
-            if (!permitirForaDoHorario && (agoraMinutos < inicioMinutos || agoraMinutos > fimMinutos)) {
+            const TOLERANCIA = 15; // 15 minutos de flexibilidade
+            if (!permitirForaDoHorario && (agoraMinutos < (inicioMinutos - TOLERANCIA) || agoraMinutos > (fimMinutos + TOLERANCIA))) {
                 return c.json({ 
                     erro: 'Fora do horário permitido.', 
-                    detalhe: `O registro de ponto está autorizado apenas entre ${horaInicio} e ${horaFim}.` 
+                    detalhe: `O registro de ponto está autorizado apenas entre ${horaInicio} e ${horaFim} (com tolerância de ${TOLERANCIA}min).` 
                 }, 403);
             }
 

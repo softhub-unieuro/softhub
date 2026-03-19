@@ -103,6 +103,8 @@ export function usarInterfacePonto() {
     }, [historico]);
 
     const handleBaterPonto = useCallback(async () => {
+        if (salvando) return; // Trava preventiva contra duplo clique
+        
         setErroPonto(null);
         setSalvando(true);
         try {
@@ -112,7 +114,7 @@ export function usarInterfacePonto() {
         } finally {
             setSalvando(false);
         }
-    }, [baterPonto, proximoTipo]);
+    }, [baterPonto, proximoTipo, salvando]);
 
     const handleSalvarJustificativa = useCallback(async (dados: any) => {
         if (justificativaEditando) {

@@ -78,7 +78,7 @@ export function BarraLateral({ aoNavegar, aoAbrirScanner }: BarraLateralProps) {
 
     return (
         <aside className="w-full h-full flex flex-col relative overflow-hidden animar-entrada bg-sidebar border-r border-sidebar-border/30">
-            <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/[0.1] blur-[80px] rounded-full pointer-events-none" />
+            {/* Removido o brilho absoluto que causava manchas visuais em resoluções menores */}
 
             <SidebarLogo />
 

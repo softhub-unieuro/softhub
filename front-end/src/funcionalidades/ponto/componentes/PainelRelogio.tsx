@@ -91,6 +91,13 @@ export const PainelRelogio = memo(({
                             </span>
                         </div>
                         <div className="flex flex-col items-center">
+                            {/* Aviso de Fim de Semana */}
+                            {[0, 6].includes(agoraRelogio.getDay()) && (
+                                <div className="mb-4 flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full animate-in fade-in zoom-in duration-500">
+                                    <AlertTriangle className="w-3 h-3 text-amber-500" />
+                                    <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Atenção: Final de Semana</span>
+                                </div>
+                            )}
                             <h2 className="text-6xl sm:text-8xl font-black tracking-[-0.05em] text-foreground tabular-nums flex items-baseline justify-center drop-shadow-sm">
                                 {agoraRelogio.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                 <span className="text-lg sm:text-2xl text-muted-foreground/40 font-bold ml-2 sm:ml-3 select-none tracking-widest">

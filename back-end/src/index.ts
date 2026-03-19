@@ -146,4 +146,24 @@ app.get('/', (c) => c.json({
     timestamp: new Date().toISOString(),
 }));
 
-export default app;
+import { processarFechamentoAutomatico, enviarLembreteSaida } from './servicos/servico-ponto-auto';
+
+/**
+ * Ponto de Entrada da Worker (Fetch + Cron)
+ */
+export default {
+    fetch: app.fetch,
+    async scheduled(event: any, env: Env, ctx: any) {
+        console.log(`[SCHEDULED] Executando tarefa agendada: ${event.cron}`);
+        
+        // Tarefa: Fechamento de Ponto às 23:59 (Brasília)
+        if (event.cron === "59 23 * * *") {
+            ctx.waitUntil(processarFechamentoAutomatico(env.DB, env.softhub_kv));
+        }
+
+        // Tarefa: Lembrete de Saída às 16:45 (Brasília)
+        if (event.cron === "45 16 * * *") {
+            ctx.waitUntil(enviarLembreteSaida(env.DB, env.softhub_kv));
+        }
+    }
+};

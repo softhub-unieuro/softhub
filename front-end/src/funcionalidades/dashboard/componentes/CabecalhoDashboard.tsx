@@ -43,7 +43,13 @@ export const CabecalhoDashboard = memo(({ nomeUsuario, projetosAtivos, metricas 
                         <h1 className="text-3xl font-black tracking-tighter text-foreground sm:text-5xl drop-shadow-sm">
                             Olá, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-blue-400 to-indigo-400">{primeiroNome}</span>! 👋
                         </h1>
-                        {ehGlobal && (
+                        {perfil?.esta_em_expediente && (
+                            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-full animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                                <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Em Expediente</span>
+                            </div>
+                        )}
+                        {ehGlobal && !perfil?.esta_em_expediente && (
                             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-primary/20 border border-primary/30 rounded-full animate-pulse">
                                 <Zap className="w-3 h-3 text-primary fill-primary" />
                                 <span className="text-[9px] font-black text-primary uppercase tracking-widest">Global</span>
@@ -69,14 +75,9 @@ export const CabecalhoDashboard = memo(({ nomeUsuario, projetosAtivos, metricas 
 
                     <div className="flex items-center gap-2.5 px-5 py-3 bg-primary/5 border border-primary/10 rounded-3xl backdrop-blur-sm">
                         <Briefcase className="w-4 h-4 text-primary" />
-                        <div className="flex flex-col">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-primary leading-none">
-                                {perfil?.equipe_nome || 'S/ Equipe'}
-                            </span>
-                            <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest mt-1 opacity-60">
-                                {(LABELS_ROLES as any)[perfil?.role || 'MEMBRO'] || perfil?.role || 'Membro'}
-                            </span>
-                        </div>
+                        <span className="text-[11px] font-black uppercase tracking-widest text-primary leading-none">
+                            {perfil?.equipe_nome || 'S/ Equipe'}
+                        </span>
                     </div>
                 </div>
             </div>

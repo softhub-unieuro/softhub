@@ -55,22 +55,22 @@ export const SidebarFooter = memo(({
                 </button>
             )}
 
-            <div className="flex items-center gap-3 p-2.5 bg-white/40 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-sidebar-border/40">
-                <Avatar nome={usuario?.nome || 'User'} fotoPerfil={usuario?.foto_perfil} tamanho="sm" />
+            <div className="flex items-center gap-3 p-3 bg-white/40 dark:bg-white/[0.04] backdrop-blur-xl rounded-2xl border border-sidebar-border/30 hover:bg-white/60 dark:hover:bg-white/[0.08] transition-all duration-300 shadow-sm group/footer">
+                <Avatar nome={usuario?.nome || 'User'} fotoPerfil={usuario?.foto_perfil} tamanho="sm" className="ring-2 ring-white/10 dark:ring-black/10 shrink-0" />
                 <div className="flex flex-col min-w-0 flex-1">
-                    <span className="text-[12px] font-bold text-sidebar-foreground truncate leading-tight">
+                    <span className="text-[10px] font-black text-sidebar-foreground truncate leading-tight uppercase tracking-tight">
                         {usuario?.nome}
                     </span>
-                    <span className="text-[10px] text-primary/60 truncate leading-tight mt-0.5">
+                    <span className="text-[9px] text-muted-foreground/60 truncate leading-none mt-1">
                         {usuario?.email}
                     </span>
                 </div>
                 <button
                     onClick={sair}
-                    className="p-1.5 text-muted-foreground/30 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-all active:scale-90 shrink-0"
+                    className="p-1.5 text-muted-foreground/40 group-hover/footer:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all active:scale-90 shrink-0"
                     title="Sair"
                 >
-                    <LogOut size={15} />
+                    <LogOut size={14} />
                 </button>
             </div>
         </div>

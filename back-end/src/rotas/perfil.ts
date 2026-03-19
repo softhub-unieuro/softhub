@@ -14,7 +14,7 @@ rotasPerfil.get('/me', autenticacaoRequerida(), async (c: Context) => {
 
     try {
         // OTIMIZAÇÃO: Batch de todas as consultas do perfil em uma única ida ao banco
-        const [resUsuario, resOrg, resStatsTarefas, resStatsPonto] = await DB.batch([
+        const [resUsuario, resOrg, resStatsTarefas, resStatsPonto, resUltimoPonto] = await DB.batch([
             DB.prepare(`SELECT id, nome, email, role, foto_perfil, foto_banner, bio, criado_em, github_url, linkedin_url, website_url FROM usuarios WHERE id = ?`).bind(usuarioLogado.id),
             DB.prepare(`
                 SELECT 
@@ -26,13 +26,15 @@ rotasPerfil.get('/me', autenticacaoRequerida(), async (c: Context) => {
                 WHERE uo.usuario_id = ?
             `).bind(usuarioLogado.id),
             DB.prepare(`SELECT COUNT(*) as total, SUM(CASE WHEN t.status = 'concluida' THEN 1 ELSE 0 END) as concluidas FROM tarefas t JOIN tarefas_responsaveis tr ON tr.tarefa_id = t.id WHERE tr.usuario_id = ?`).bind(usuarioLogado.id),
-            DB.prepare(`SELECT COUNT(*) as batidas FROM ponto_registros WHERE usuario_id = ? AND strftime('%m', registrado_em) = strftime('%m', 'now')`).bind(usuarioLogado.id)
+            DB.prepare(`SELECT COUNT(*) as batidas FROM ponto_registros WHERE usuario_id = ? AND strftime('%m', registrado_em) = strftime('%m', 'now')`).bind(usuarioLogado.id),
+            DB.prepare(`SELECT tipo FROM ponto_registros WHERE usuario_id = ? AND DATE(registrado_em, '-3 hours') = DATE('now', '-3 hours') ORDER BY registrado_em DESC LIMIT 1`).bind(usuarioLogado.id)
         ]);
 
         const usuario = resUsuario.results[0] as any;
         const organizacao = resOrg.results[0] as any;
         const statsTarefas = resStatsTarefas.results[0] as any;
         const statsPonto = resStatsPonto.results[0] as any;
+        const ultimoPonto = resUltimoPonto.results[0] as any;
 
         if (!usuario) {
             console.error(`[PERFIL] Usuário não encontrado no banco: ${usuarioLogado.id}`);
@@ -46,7 +48,8 @@ rotasPerfil.get('/me', autenticacaoRequerida(), async (c: Context) => {
             perfil: {
                 ...usuario,
                 equipe_nome: organizacao?.equipe_nome || 'S/ Equipe',
-                grupo_nome: organizacao?.grupo_nome || 'S/ Grupo'
+                grupo_nome: organizacao?.grupo_nome || 'S/ Grupo',
+                esta_em_expediente: ultimoPonto?.tipo === 'entrada'
             },
             stats: {
                 tarefas: {
@@ -130,7 +133,7 @@ rotasPerfil.get('/:id', autenticacaoRequerida(), async (c: Context) => {
 
     try {
         // OTIMIZAÇÃO: Batch de todas as consultas do perfil em uma única ida ao banco
-        const [resUsuario, resOrg, resStatsTarefas, resStatsPonto] = await DB.batch([
+        const [resUsuario, resOrg, resStatsTarefas, resStatsPonto, resUltimoPonto] = await DB.batch([
             DB.prepare(`SELECT id, nome, email, role, foto_perfil, foto_banner, bio, criado_em, github_url, linkedin_url, website_url FROM usuarios WHERE id = ?`).bind(id),
             DB.prepare(`
                 SELECT 
@@ -142,13 +145,15 @@ rotasPerfil.get('/:id', autenticacaoRequerida(), async (c: Context) => {
                 WHERE uo.usuario_id = ?
             `).bind(id),
             DB.prepare(`SELECT COUNT(*) as total, SUM(CASE WHEN t.status = 'concluida' THEN 1 ELSE 0 END) as concluidas FROM tarefas t JOIN tarefas_responsaveis tr ON tr.tarefa_id = t.id WHERE tr.usuario_id = ?`).bind(id),
-            DB.prepare(`SELECT COUNT(*) as batidas FROM ponto_registros WHERE usuario_id = ? AND strftime('%m', registrado_em) = strftime('%m', 'now')`).bind(id)
+            DB.prepare(`SELECT COUNT(*) as batidas FROM ponto_registros WHERE usuario_id = ? AND strftime('%m', registrado_em) = strftime('%m', 'now')`).bind(id),
+            DB.prepare(`SELECT tipo FROM ponto_registros WHERE usuario_id = ? AND DATE(registrado_em, '-3 hours') = DATE('now', '-3 hours') ORDER BY registrado_em DESC LIMIT 1`).bind(id)
         ]);
 
         const usuario = resUsuario.results[0] as any;
         const organizacao = resOrg.results[0] as any;
         const statsTarefas = resStatsTarefas.results[0] as any;
         const statsPonto = resStatsPonto.results[0] as any;
+        const ultimoPonto = resUltimoPonto.results[0] as any;
 
         if (!usuario) return c.json({ erro: 'Usuário não encontrado.' }, 404);
 
@@ -159,7 +164,8 @@ rotasPerfil.get('/:id', autenticacaoRequerida(), async (c: Context) => {
             perfil: {
                 ...usuario,
                 equipe_nome: organizacao?.equipe_nome || 'S/ Equipe',
-                grupo_nome: organizacao?.grupo_nome || 'S/ Grupo'
+                grupo_nome: organizacao?.grupo_nome || 'S/ Grupo',
+                esta_em_expediente: ultimoPonto?.tipo === 'entrada'
             },
             stats: {
                 tarefas: {
