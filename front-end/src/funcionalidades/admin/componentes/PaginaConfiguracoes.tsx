@@ -110,6 +110,7 @@ export const PaginaConfiguracoes = memo(() => {
                         atualizarConfiguracao={atualizarConfiguracao} 
                         renomearCargo={renomearCargo}
                         podeEditar={podeEditar}
+                        isAdmin={isAdmin}
                         roles={roles}
                     />
 

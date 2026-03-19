@@ -3,6 +3,7 @@ import { Env } from '../index';
 import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
 import { registrarLog } from '../servicos/servico-logs';
 import { criarNotificacoes, removerNotificacoesPorEntidade } from '../servicos/servico-notificacoes';
+import { sincronizarLiderancaUsuario } from '../servicos/servico-liderancas';
 
 const rotasEquipes = new Hono<{ Bindings: Env; Variables: { usuario: any } }>();
 
@@ -69,6 +70,10 @@ rotasEquipes.post('/equipes', autenticacaoRequerida(), verificarPermissao('equip
             entidadeId: id,
             dadosNovos: { nome, descricao, lider_id, sub_lider_id },
         });
+
+        // Sincronizar roles de liderança (Regra: Auto-cargo ao designar Líder/Sublíder)
+        if (lider_id) await sincronizarLiderancaUsuario(c.env, lider_id);
+        if (sub_lider_id) await sincronizarLiderancaUsuario(c.env, sub_lider_id);
 
         return c.json({ sucesso: true, id }, 201);
     } catch (erro: any) {
@@ -141,6 +146,17 @@ rotasEquipes.patch('/equipes/:id', autenticacaoRequerida(), verificarPermissao('
             dadosNovos: { nome, descricao, lider_id, sub_lider_id },
         });
 
+        // Sincronizar roles de liderança (Regra: Auto-cargo ao designar Líder/Sublíder)
+        const usuariosParaSincronizar = new Set<string>();
+        if (atual.lider_id) usuariosParaSincronizar.add(atual.lider_id);
+        if (lider_id) usuariosParaSincronizar.add(lider_id);
+        if (atual.sub_lider_id) usuariosParaSincronizar.add(atual.sub_lider_id);
+        if (sub_lider_id) usuariosParaSincronizar.add(sub_lider_id);
+
+        for (const uid of usuariosParaSincronizar) {
+            await sincronizarLiderancaUsuario(c.env, uid);
+        }
+
         return c.json({ sucesso: true });
     } catch (erro: any) {
         console.error('[ERRO] PATCH /api/equipes/equipes/:id', erro);
@@ -157,9 +173,15 @@ rotasEquipes.delete('/equipes/:id', autenticacaoRequerida(), verificarPermissao(
     const id = c.req.param('id');
 
     try {
+        const atual = await DB.prepare('SELECT lider_id, sub_lider_id FROM equipes WHERE id = ?').bind(id).first() as any;
+        
         await DB.prepare('DELETE FROM equipes WHERE id = ?').bind(id).run();
 
         if (id) await removerNotificacoesPorEntidade(DB, id);
+
+        // Sincronizar roles após remoção
+        if (atual?.lider_id) await sincronizarLiderancaUsuario(c.env, atual.lider_id);
+        if (atual?.sub_lider_id) await sincronizarLiderancaUsuario(c.env, atual.sub_lider_id);
 
         await registrarLog(DB, {
             usuarioId: usuarioLogado.id,

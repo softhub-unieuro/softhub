@@ -12,27 +12,30 @@ import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
  * Uso: const podeEditar = usarPermissao('LIDER');
  */
 export function usarPermissao(roleMinimoRequerido: string | null): boolean {
-    const { usuario, configuracoes } = usarAutenticacao();
+    const { usuario, configuracoes, roleVisualizacao } = usarAutenticacao();
     const { hierarquia_roles } = configuracoes;
 
     return useMemo(() => {
         // Sem role mínimo requerido — qualquer autenticado tem acesso
         if (!roleMinimoRequerido) return true;
 
+        // Se estiver em modo de previsualização, usa a role mockada
+        const roleEfetiva = roleVisualizacao || usuario?.role;
+
         // Sem usuário ou sem role — nega
-        if (!usuario?.role) return false;
+        if (!roleEfetiva) return false;
 
-        // ADMIN sempre tem permissão total por hierarquia
-        if (usuario.role === 'ADMIN') return true;
+        // ADMIN sempre tem permissão total por hierarquia (cargo real ou visualizado)
+        if (roleEfetiva === 'ADMIN') return true;
 
-        const indiceUsuario = hierarquia_roles.indexOf(usuario.role);
+        const indiceUsuario = hierarquia_roles.indexOf(roleEfetiva);
         const indiceRequerido = hierarquia_roles.indexOf(roleMinimoRequerido);
 
         // Role inválido (não existe na hierarquia) — nega por segurança
         if (indiceUsuario === -1 || indiceRequerido === -1) return false;
 
         return indiceUsuario >= indiceRequerido;
-    }, [usuario, roleMinimoRequerido, hierarquia_roles]);
+    }, [usuario, roleMinimoRequerido, hierarquia_roles, roleVisualizacao]);
 }
 
 
@@ -42,12 +45,12 @@ export function usarPermissao(roleMinimoRequerido: string | null): boolean {
  * @example const podeCriarTarefa = usarPermissaoAcesso('tarefas:criar');
  */
 export function usarPermissaoAcesso(chavePermissao: string): boolean {
-    const { usuario, configuracoes } = usarAutenticacao();
+    const { usuario, configuracoes, roleVisualizacao } = usarAutenticacao();
     const { permissoes_roles } = configuracoes;
-    const role = usuario?.role || 'MEMBRO';
+    const roleEfetiva = roleVisualizacao || usuario?.role || 'MEMBRO';
 
     // ADMIN sempre tem acesso total, independente da matriz.
-    if (role === 'ADMIN') {
+    if (roleEfetiva === 'ADMIN') {
         return true;
     }
 
@@ -58,12 +61,12 @@ export function usarPermissaoAcesso(chavePermissao: string): boolean {
         }
 
         // Verifica se a permissão está habilitada para a role específica do usuário
-        const temPermissaoRole = permissoes_roles[role]?.[chavePermissao] === true;
+        const temPermissaoRole = permissoes_roles[roleEfetiva]?.[chavePermissao] === true;
 
         // Verifica se a permissão é universal (habilitada para 'TODOS')
         const temPermissaoUniversal = permissoes_roles['TODOS']?.[chavePermissao] === true;
 
         return temPermissaoRole || temPermissaoUniversal;
 
-    }, [role, chavePermissao, permissoes_roles]);
+    }, [roleEfetiva, chavePermissao, permissoes_roles]);
 }

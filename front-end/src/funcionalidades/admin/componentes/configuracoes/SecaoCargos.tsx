@@ -1,5 +1,6 @@
 import { useState, useCallback, type FormEvent } from 'react';
-import { ShieldCheck, Plus, Check, X, Pencil, Trash2 } from 'lucide-react';
+import { ShieldCheck, Plus, Check, X, Pencil, Trash2, Eye } from 'lucide-react';
+import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 import type { ConfiguracoesSistema } from '@/funcionalidades/admin/hooks/usarConfiguracoes';
 
 export const CARGOS_FIXOS = ['ADMIN', 'TODOS'];
@@ -9,10 +10,12 @@ interface Props {
     atualizarConfiguracao: (chave: keyof ConfiguracoesSistema, valor: any) => Promise<any>;
     renomearCargo: (antigo: string, novo: string) => Promise<any>;
     podeEditar: boolean;
+    isAdmin: boolean;
     roles: string[];
 }
 
-export function SecaoCargos({ configuracoes, atualizarConfiguracao, renomearCargo, podeEditar, roles }: Props) {
+export function SecaoCargos({ configuracoes, atualizarConfiguracao, renomearCargo, podeEditar, isAdmin, roles }: Props) {
+    const { setRoleVisualizacao } = usarAutenticacao();
     const [novoCargo, setNovoCargo] = useState('');
     const [editandoRole, setEditandoRole] = useState<string | null>(null);
     const [nomeRoleTemp, setNomeRoleTemp] = useState('');
@@ -132,15 +135,27 @@ export function SecaoCargos({ configuracoes, atualizarConfiguracao, renomearCarg
                                         )}
                                     </div>
                                 </div>
-                                
-                                {!CARGOS_FIXOS.includes(role) && podeEditar && editandoRole !== role && (
-                                    <button
-                                        onClick={() => handleRemoverCargo(role)}
-                                        className="opacity-0 group-hover/card:opacity-100 p-1.5 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all"
-                                    >
-                                        <Trash2 size={12} />
-                                    </button>
-                                )}
+                                <div className="flex items-center gap-1">
+                                    {/* Botão de Previsualização (Discord Style) */}
+                                    {!CARGOS_FIXOS.includes(role) && isAdmin && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setRoleVisualizacao(role); }}
+                                            title={`Ver sistema como ${role}`}
+                                            className="opacity-0 group-hover/card:opacity-100 p-2 text-indigo-500 hover:text-white hover:bg-indigo-500 rounded-xl transition-all active:scale-90"
+                                        >
+                                            <Eye size={12} strokeWidth={2.5} />
+                                        </button>
+                                    )}
+
+                                    {!CARGOS_FIXOS.includes(role) && podeEditar && editandoRole !== role && (
+                                        <button
+                                            onClick={() => handleRemoverCargo(role)}
+                                            className="opacity-0 group-hover/card:opacity-100 p-2 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all active:scale-95"
+                                        >
+                                            <Trash2 size={12} />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         ))}
                     </div>

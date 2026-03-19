@@ -23,7 +23,9 @@ interface ContextoAutenticacaoContrato {
     carregando: boolean;
     configuracoes: IConfiguracoesUX;
     projetoAtivoId: string;
+    roleVisualizacao: string | null;
     setProjetoAtivoId: (id: string) => void;
+    setRoleVisualizacao: (role: string | null) => void;
     entrar: (usuario: Usuario, token: string) => void;
     sair: () => void;
     atualizarUsuarioLocalmente: (usuario: Usuario) => void;
@@ -86,6 +88,9 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
         return localStorage.getItem(CHAVE_PROJETO) || '';
     });
 
+    // Estado para "Ver como cargo" (Preview de role)
+    const [roleVisualizacao, setRoleVisualizacao] = useState<string | null>(null);
+
     const setProjetoAtivoId = useCallback((id: string) => {
         setProjetoAtivoIdInterno(id);
         if (id) {
@@ -94,6 +99,16 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
             localStorage.removeItem(CHAVE_PROJETO);
         }
     }, []);
+
+    const setRoleVisualizacaoProtegido = useCallback((role: string | null) => {
+        // Regra Crítica: Apenas quem é ADMIN REAL pode usar o modo de previsualização
+        // Se role for null, estamos desativando o modo, o que é sempre permitido.
+        if (usuario?.role === 'ADMIN' || role === null) {
+            setRoleVisualizacao(role);
+        } else {
+            console.warn('[Segurança] Tentativa não autorizada de ativar previsualização de cargo.');
+        }
+    }, [usuario]);
 
     const buscarConfiguracoesPublicas = useCallback(async () => {
         try {
@@ -185,7 +200,9 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
             carregando,
             configuracoes,
             projetoAtivoId,
+            roleVisualizacao,
             setProjetoAtivoId,
+            setRoleVisualizacao: setRoleVisualizacaoProtegido,
             entrar, sair,
             atualizarUsuarioLocalmente,
         }}>

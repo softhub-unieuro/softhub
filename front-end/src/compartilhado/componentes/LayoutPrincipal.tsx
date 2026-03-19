@@ -12,6 +12,7 @@ import { Breadcrumbs } from './Breadcrumbs';
 import { usarGuardiaoSessao } from '../hooks/usarGuardiaoSessao';
 import { usarSaidaAutomatica } from '@/funcionalidades/ponto/hooks/usarSaidaAutomatica';
 import { ShieldAlert, LogOut, Clock } from 'lucide-react';
+import { BarraPrevisualizacaoCargo } from './BarraPrevisualizacaoCargo';
 
 interface LayoutPrincipalProps {
     children: ReactNode;
@@ -42,53 +43,59 @@ export function LayoutPrincipal({ children }: LayoutPrincipalProps) {
     }, [projetoAtivoId, projetos]);
 
     return (
-        <div className="flex h-screen bg-background text-foreground overflow-hidden transition-colors duration-300 font-sans">
-            <SincronizadorGlobal />
+        <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden transition-colors duration-300 font-sans">
+            <BarraPrevisualizacaoCargo />
+            
+            <div className="flex flex-1 overflow-hidden">
+                <SincronizadorGlobal />
 
-            {/* Sidebar Desktop */}
-            <div className="hidden lg:flex shrink-0 w-[280px]">
-                <BarraLateral aoAbrirScanner={() => setScannerAberto(true)} />
-            </div>
+                {/* Sidebar Desktop */}
+                <div className="hidden lg:flex shrink-0 w-[280px]">
+                    <BarraLateral aoAbrirScanner={() => setScannerAberto(true)} />
+                </div>
 
-            {/* Mobile: Overlay & Drawer Sidebar */}
-            {sidebarAberta && (
-                <div
-                    className="fixed inset-0 z-50 lg:hidden"
-                    onClick={() => setSidebarAberta(false)}
-                >
-                    {/* Backdrop com Blur e Fade In */}
-                    <div className="absolute inset-0 bg-background/60 animate-backdrop-in" />
-
-                    {/* Drawer Content com Slide In */}
+                {/* Mobile: Overlay & Drawer Sidebar */}
+                {sidebarAberta && (
                     <div
-                        className="absolute inset-y-0 left-0 w-[280px] bg-sidebar border-r border-sidebar-border shadow-2xl animate-sidebar-in"
-                        onClick={e => e.stopPropagation()}
+                        className="fixed inset-0 z-50 lg:hidden"
+                        onClick={() => setSidebarAberta(false)}
                     >
-                        <div className="flex flex-col h-full relative">
-                            <BarraLateral
-                                aoNavegar={() => setSidebarAberta(false)}
-                                aoAbrirScanner={() => setScannerAberto(true)}
-                            />
+                        {/* Backdrop com Blur e Fade In */}
+                        <div className="absolute inset-0 bg-background/60 animate-backdrop-in" />
+
+                        {/* Drawer Content com Slide In */}
+                        <div
+                            className="absolute inset-y-0 left-0 w-[280px] bg-sidebar border-r border-sidebar-border shadow-2xl animate-sidebar-in"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="flex flex-col h-full relative">
+                                <BarraLateral
+                                    aoNavegar={() => setSidebarAberta(false)}
+                                    aoAbrirScanner={() => setScannerAberto(true)}
+                                />
+                            </div>
                         </div>
                     </div>
+                )}
+
+                <div className="flex flex-col flex-1 overflow-hidden relative min-w-0">
+                    {/* Botão de menu mobile flutuante - Ajustado para descer se a barra estiver ativa */}
+                    <button
+                        onClick={() => setSidebarAberta(true)}
+                        className={`lg:hidden fixed left-4 z-40 p-2.5 bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl shadow-lg text-muted-foreground hover:text-primary transition-all active:scale-95 ${
+                            usarAutenticacao().roleVisualizacao ? 'top-16' : 'top-4'
+                        }`}
+                    >
+                        <Menu size={20} strokeWidth={2.5} />
+                    </button>
+
+                    <main className="flex-1 p-6 pt-20 lg:pt-6 overflow-y-auto relative z-10 transition-all overflow-x-hidden animar-entrada scrollbar-none bg-background/50 min-w-0">
+                        <Breadcrumbs />
+                        <ErrorBoundary modulo="Módulo Selecionado">
+                            {children}
+                        </ErrorBoundary>
+                    </main>
                 </div>
-            )}
-
-            <div className="flex flex-col flex-1 overflow-hidden relative min-w-0">
-                {/* Botão de menu mobile flutuante */}
-                <button
-                    onClick={() => setSidebarAberta(true)}
-                    className="lg:hidden fixed top-4 left-4 z-40 p-2.5 bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl shadow-lg text-muted-foreground hover:text-primary transition-all active:scale-95"
-                >
-                    <Menu size={20} strokeWidth={2.5} />
-                </button>
-
-                <main className="flex-1 p-6 pt-20 lg:pt-6 overflow-y-auto relative z-10 transition-all overflow-x-hidden animar-entrada scrollbar-none bg-background/50 min-w-0">
-                    <Breadcrumbs />
-                    <ErrorBoundary modulo="Módulo Selecionado">
-                        {children}
-                    </ErrorBoundary>
-                </main>
             </div>
 
             {/* Modal Scanner QR (Global via Layout) */}

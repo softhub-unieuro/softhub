@@ -1,9 +1,10 @@
 import { useState, useMemo, useCallback, Fragment } from 'react';
-import { Lock, ShieldCheck, Globe, Plus, Shield } from 'lucide-react';
+import { Lock, ShieldCheck, Globe, Plus, Shield, Eye } from 'lucide-react';
 import { pluralizar } from '@/utilitarios/formatadores';
 import { 
     FolderKanban, Clock, LayoutDashboard, LayoutGrid, FileText, Database, UserCircle, MessageSquare, Settings2 
 } from 'lucide-react';
+import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 import type { ConfiguracoesSistema } from '@/funcionalidades/admin/hooks/usarConfiguracoes';
 
 export const PERMISSOES_SISTEMA = [
@@ -131,6 +132,7 @@ interface Props {
 }
 
 export function SecaoMatrizAcesso({ configuracoes, atualizarConfiguracao, podeEditar, isAdmin, temAcessoCritico, rolesMatriz, onErroTemporario }: Props) {
+    const { setRoleVisualizacao } = usarAutenticacao();
     const [buscaPermissao, setBuscaPermissao] = useState('');
     const [salvando, setSalvando] = useState<string | null>(null);
 
@@ -216,11 +218,24 @@ export function SecaoMatrizAcesso({ configuracoes, atualizarConfiguracao, podeEd
                             </th>
                             {rolesMatriz.map(role => (
                                 <th key={role} className={`px-6 py-4 text-center min-w-[140px] border-r border-border/30 last:border-0 ${role === 'TODOS' ? 'bg-emerald-500/[0.03]' : ''}`}>
-                                    <div className="flex flex-col items-center gap-2">
+                                    <div className="flex flex-col items-center gap-2 group/rolehead">
                                         {role === 'TODOS' && <Globe size={14} className="text-emerald-500 mb-1" />}
-                                        <span className={`text-[10px] font-black tracking-widest uppercase transition-colors ${role === 'ADMIN' ? 'text-primary' : role === 'TODOS' ? 'text-emerald-600' : 'text-foreground/80'}`}>
-                                            {role}
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-[10px] font-black tracking-widest uppercase transition-colors ${role === 'ADMIN' ? 'text-primary' : role === 'TODOS' ? 'text-emerald-600' : 'text-foreground/80'}`}>
+                                                {role}
+                                            </span>
+                                            
+                                            {/* Botão de Previsualização (Discord Style) */}
+                                            {role !== 'ADMIN' && role !== 'TODOS' && isAdmin && (
+                                                <button
+                                                    onClick={() => setRoleVisualizacao(role)}
+                                                    title={`Ver sistema como ${role}`}
+                                                    className="p-1 px-1.5 bg-indigo-500/10 text-indigo-500 rounded-md opacity-0 group-hover/rolehead:opacity-100 hover:bg-indigo-500 hover:text-white transition-all scale-90 hover:scale-100 shadow-sm"
+                                                >
+                                                    <Eye size={10} strokeWidth={3} />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </th>
                             ))}
