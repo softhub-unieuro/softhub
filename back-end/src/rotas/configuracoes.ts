@@ -1,6 +1,7 @@
 import { Hono, Context } from 'hono';
 import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
 import { Env } from '../index';
+import { salvarConfiguracao } from '../servicos/servico-configuracoes';
 
 const rotasConfiguracoes = new Hono<{ Bindings: Env }>();
 
@@ -92,31 +93,18 @@ rotasConfiguracoes.post('/', autenticacaoRequerida(), verificarPermissao('config
         return c.json({ erro: 'Corpo da requisição inválido' }, 400);
     }
 
-    const transacoes = Object.entries(body).map(([chave, valor]) => {
-        const valorFinal = valor === undefined ? null : valor;
-        return DB.prepare(`
-            INSERT INTO configuracoes_sistema (id, chave, valor) 
-            VALUES (?, ?, ?) 
-            ON CONFLICT(chave) DO UPDATE SET valor = excluded.valor
-        `).bind(crypto.randomUUID(), chave, JSON.stringify(valorFinal));
-    });
-
     try {
-        await DB.batch(transacoes);
-        
-        // Limpa cache KV de forma resiliente
-        if (softhub_kv) {
-            await softhub_kv.delete('configs_publicas');
-            for (const chave of Object.keys(body)) {
-                try {
-                    await softhub_kv.delete(chave);
-                } catch (kvErro) {
-                    console.error(`[CONFIG] Falha ao limpar KV para ${chave}:`, kvErro);
-                }
-            }
+        // Usa o serviço para cada chave, garantindo a invalidação do KV
+        for (const [chave, valor] of Object.entries(body)) {
+            await salvarConfiguracao({ DB, softhub_kv }, chave, valor);
         }
         
-        return c.json({ sucesso: true, mensagem: 'Configurações salvas com sucesso.' });
+        // Invalida o cache público global
+        if (softhub_kv) {
+            await softhub_kv.delete('configs_publicas');
+        }
+        
+        return c.json({ sucesso: true, mensagem: 'Configurações salvas com sucesso (Cache validado).' });
     } catch (e: any) {
         console.error('[CONFIG] Erro no batch POST /:', e);
         return c.json({ erro: 'Falha ao salvar configurações', detalhe: e.message }, 500);
@@ -125,7 +113,6 @@ rotasConfiguracoes.post('/', autenticacaoRequerida(), verificarPermissao('config
 
 /**
  * Atualiza uma configuração específica identificada pela chave.
- * Possui travas de segurança para configurações críticas como 'permissoes_roles'.
  */
 rotasConfiguracoes.patch('/:chave', autenticacaoRequerida(), verificarPermissao('configuracoes:editar'), async (c) => {
     const { DB, softhub_kv } = c.env;
@@ -143,7 +130,6 @@ rotasConfiguracoes.patch('/:chave', autenticacaoRequerida(), verificarPermissao(
             const permissoesAtuais = resAtual ? JSON.parse(resAtual.valor) : {};
             const permissoesNovas = valor;
 
-            // Percorre todas as roles para ver se houve tentativa de mudar 'configuracoes:matriz_governanca'
             const roles = new Set([...Object.keys(permissoesAtuais), ...Object.keys(permissoesNovas)]);
             
             for (const role of roles) {
@@ -161,26 +147,14 @@ rotasConfiguracoes.patch('/:chave', autenticacaoRequerida(), verificarPermissao(
     }
 
     try {
-        const valorFinal = valor === undefined ? null : valor;
-        await DB.prepare(`
-            INSERT INTO configuracoes_sistema (id, chave, valor) 
-            VALUES (?, ?, ?) 
-            ON CONFLICT(chave) DO UPDATE SET valor = excluded.valor
-        `)
-            .bind(crypto.randomUUID(), chave, JSON.stringify(valorFinal))
-            .run();
+        await salvarConfiguracao({ DB, softhub_kv }, chave, valor);
         
-        // Limpa cache no KV de forma resiliente
+        // Invalida o cache público global
         if (softhub_kv) {
-            try {
-                await softhub_kv.delete('configs_publicas');
-                await softhub_kv.delete(chave);
-            } catch (kvErro) {
-                console.error(`[CONFIG] Falha ao limpar KV para ${chave}:`, kvErro);
-            }
+            await softhub_kv.delete('configs_publicas');
         }
         
-        return c.json({ sucesso: true, mensagem: `Configuração ${chave} atualizada.` });
+        return c.json({ sucesso: true, mensagem: `Configuração ${chave} atualizada no banco e KV.` });
     } catch (e: any) {
         console.error(`[CONFIG] Erro ao atualizar ${chave}:`, e);
         return c.json({ erro: 'Falha ao atualizar configuração', detalhe: e.message }, 500);
@@ -189,8 +163,6 @@ rotasConfiguracoes.patch('/:chave', autenticacaoRequerida(), verificarPermissao(
 
 /**
  * Renomeia um cargo (role) em todo o sistema.
- * Atualiza permissões, hierarquia e todos os usuários vinculados.
- * Requer permissão de 'ADMIN'.
  */
 rotasConfiguracoes.patch('/roles/:antigo/renomear', autenticacaoRequerida('ADMIN'), async (c) => {
     const { DB, softhub_kv } = c.env;
@@ -202,18 +174,15 @@ rotasConfiguracoes.patch('/roles/:antigo/renomear', autenticacaoRequerida('ADMIN
     }
 
     try {
-        // 1. Buscar permissões e hierarquia atuais
         const resPermissoes = await DB.prepare('SELECT valor FROM configuracoes_sistema WHERE chave = ?').bind('permissoes_roles').first<{ valor: string }>();
         const resHierarquia = await DB.prepare('SELECT valor FROM configuracoes_sistema WHERE chave = ?').bind('hierarquia_roles').first<{ valor: string }>();
-
-        const batch = [];
 
         if (resPermissoes) {
             const permissoes = JSON.parse(resPermissoes.valor);
             if (permissoes[antigo]) {
                 permissoes[novo] = permissoes[antigo];
                 delete permissoes[antigo];
-                batch.push(DB.prepare('UPDATE configuracoes_sistema SET valor = ? WHERE chave = ?').bind(JSON.stringify(permissoes), 'permissoes_roles'));
+                await salvarConfiguracao({ DB, softhub_kv }, 'permissoes_roles', permissoes);
             }
         }
 
@@ -222,29 +191,16 @@ rotasConfiguracoes.patch('/roles/:antigo/renomear', autenticacaoRequerida('ADMIN
             const index = hierarquia.indexOf(antigo);
             if (index !== -1) {
                 hierarquia[index] = novo;
-                batch.push(DB.prepare('UPDATE configuracoes_sistema SET valor = ? WHERE chave = ?').bind(JSON.stringify(hierarquia), 'hierarquia_roles'));
+                await salvarConfiguracao({ DB, softhub_kv }, 'hierarquia_roles', hierarquia);
             }
         }
 
-        // 2. Atualizar todos os usuários que possuem este cargo (Migração de Role)
-        batch.push(DB.prepare('UPDATE usuarios SET role = ? WHERE role = ?').bind(novo, antigo));
+        await DB.prepare('UPDATE usuarios SET role = ? WHERE role = ?').bind(novo, antigo).run();
 
-        if (batch.length === 0) {
-            return c.json({ erro: 'Cargo não encontrado nas configurações ou sem usuários vinculados.' }, 404);
-        }
-
-        await DB.batch(batch);
-
-        // 3. Invalidar caches para refletir a mudança imediatamente
         if (softhub_kv) {
             await softhub_kv.delete('configs_publicas');
-            await softhub_kv.delete('permissoes_roles');
-            await softhub_kv.delete('hierarquia_roles');
         }
         
-        // Nota: usuários logados podem precisar de novo token se a role for validada no JWT, 
-        // mas aqui a role é buscada no banco por ID no middleware autenticacaoRequerida, então será imediato.
-
         return c.json({ sucesso: true, mensagem: `Cargo renomeado de '${antigo}' para '${novo}' com sucesso.` });
     } catch (e: any) {
         return c.json({ erro: 'Falha crítica ao renomear cargo', detalhe: e.message }, 500);

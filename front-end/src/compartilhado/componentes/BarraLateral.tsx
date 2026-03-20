@@ -73,8 +73,8 @@ export function BarraLateral({ aoNavegar, aoAbrirScanner }: BarraLateralProps) {
 
         return todosGrupos
             .map(g => ({ ...g, links: g.links.filter(l => l.visivel) }))
-            .filter(g => g.label === 'Administração' ? (usuario?.role === 'ADMIN' || g.links.length > 0) : g.links.length > 0);
-    }, [usuario, podeVerDashboard, podeVerBacklog, podeVerAvisos, podeVerProjetoDetalhes, podeVerKanban, podeVerPonto, podeVerJustificativas, podeVerMembrosAdmin, podeVerEquipes, podeVerProjetosAdmin, podeVerRelatorios, podeVerLogs, podeVerConfiguracoes]);
+            .filter(g => g.links.length > 0);
+    }, [podeVerDashboard, podeVerBacklog, podeVerAvisos, podeVerProjetoDetalhes, podeVerKanban, podeVerPonto, podeVerJustificativas, podeVerMembrosAdmin, podeVerEquipes, podeVerProjetosAdmin, podeVerRelatorios, podeVerLogs, podeVerConfiguracoes]);
 
     return (
         <aside className="w-full h-full flex flex-col relative overflow-hidden animar-entrada bg-sidebar border-r border-sidebar-border/30">

@@ -28,6 +28,7 @@ interface ContextoAutenticacaoContrato {
     setRoleVisualizacao: (role: string | null) => void;
     entrar: (usuario: Usuario, token: string) => void;
     sair: () => void;
+    sincronizarPerfil: () => Promise<void>;
     atualizarUsuarioLocalmente: (usuario: Usuario) => void;
 }
 
@@ -100,6 +101,40 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
         }
     }, []);
 
+    const sair = useCallback(() => {
+        setUsuario(null);
+        setToken(null);
+        localStorage.removeItem(CHAVE_TOKEN);
+        localStorage.removeItem(CHAVE_USUARIO);
+        localStorage.removeItem(CHAVE_CONFIGS);
+        localStorage.removeItem(CHAVE_PROJETO);
+
+        // Apenas redireciona localmente, sem deslogar da conta Microsoft global
+        window.location.href = '/login';
+    }, []);
+
+    const sincronizarPerfil = useCallback(async () => {
+        if (!localStorage.getItem(CHAVE_TOKEN)) return;
+        try {
+            const { data } = await api.get('/api/perfil/me');
+            if (data.perfil) {
+                const perfilAtualizado = {
+                    id: data.perfil.id,
+                    nome: data.perfil.nome,
+                    email: data.perfil.email,
+                    role: data.perfil.role,
+                    foto_perfil: data.perfil.foto_perfil
+                };
+                setUsuario(perfilAtualizado);
+                localStorage.setItem(CHAVE_USUARIO, JSON.stringify(perfilAtualizado));
+            }
+        } catch (error: any) {
+            if (error.response?.status === 401 || error.response?.status === 404) {
+                sair();
+            }
+        }
+    }, [sair]);
+
     const setRoleVisualizacaoProtegido = useCallback((role: string | null) => {
         // Regra Crítica: Apenas quem é ADMIN REAL pode usar o modo de previsualização
         // Se role for null, estamos desativando o modo, o que é sempre permitido.
@@ -129,10 +164,11 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (token) {
             buscarConfiguracoesPublicas();
+            sincronizarPerfil();
         } else {
             setCarregando(false);
         }
-    }, [token, buscarConfiguracoesPublicas]);
+    }, [token, buscarConfiguracoesPublicas, sincronizarPerfil]);
 
     const entrar = useCallback((novoUsuario: Usuario, novoToken: string) => {
         logger.sucesso('Sessão', `Usuário conectado: ${novoUsuario?.email}`);
@@ -145,18 +181,6 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
         localStorage.setItem(CHAVE_TOKEN, novoToken);
         localStorage.setItem(CHAVE_USUARIO, JSON.stringify(novoUsuario));
         localStorage.setItem(CHAVE_LEMBRAR, 'true');
-    }, []);
-
-    const sair = useCallback(() => {
-        setUsuario(null);
-        setToken(null);
-        localStorage.removeItem(CHAVE_TOKEN);
-        localStorage.removeItem(CHAVE_USUARIO);
-        localStorage.removeItem(CHAVE_CONFIGS);
-        localStorage.removeItem(CHAVE_PROJETO);
-
-        // Apenas redireciona localmente, sem deslogar da conta Microsoft global
-        window.location.href = '/login';
     }, []);
 
     const atualizarUsuarioLocalmente = useCallback((atualizado: Usuario) => {
@@ -204,6 +228,7 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
             setProjetoAtivoId,
             setRoleVisualizacao: setRoleVisualizacaoProtegido,
             entrar, sair,
+            sincronizarPerfil,
             atualizarUsuarioLocalmente,
         }}>
             {children}

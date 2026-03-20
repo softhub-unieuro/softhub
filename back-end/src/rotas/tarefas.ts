@@ -76,4 +76,44 @@ rotasTarefas.get('/', autenticacaoRequerida(), verificarPermissao(['tarefas:visu
     }
 });
 
+/**
+ * Registra uma trava de edição (Lock) para a tarefa no KV.
+ * Impede que múltiplos usuários editem o mesmo card simultaneamente.
+ */
+rotasTarefas.post('/:id/lock', autenticacaoRequerida(), async (c: Context) => {
+    const { softhub_kv } = c.env;
+    const id = c.req.param('id');
+    const usuario = c.get('usuario');
+
+    if (!id) return c.json({ erro: 'ID da tarefa não informado.' }, 400);
+    if (!softhub_kv) return c.json({ sucesso: true });
+
+    const { prenderTrava } = await import('../servicos/servico-acesso');
+    const sucesso = await prenderTrava(softhub_kv, 'tarefa', id, usuario.id);
+
+    if (!sucesso) {
+        return c.json({ erro: 'Esta tarefa está sendo editada por outro membro no momento.' }, 423);
+    }
+
+    return c.json({ sucesso: true });
+});
+
+/**
+ * Libera a trava de edição (Unlock) da tarefa no KV.
+ */
+rotasTarefas.delete('/:id/lock', autenticacaoRequerida(), async (c: Context) => {
+    const { softhub_kv } = c.env;
+    const id = c.req.param('id');
+    const usuario = c.get('usuario');
+
+    if (!id) return c.json({ erro: 'ID da tarefa não informado.' }, 400);
+
+    if (softhub_kv) {
+        const { soltarTrava } = await import('../servicos/servico-acesso');
+        await soltarTrava(softhub_kv, 'tarefa', id, usuario.id);
+    }
+
+    return c.json({ sucesso: true });
+});
+
 export default rotasTarefas;

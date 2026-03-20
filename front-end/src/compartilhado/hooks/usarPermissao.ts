@@ -26,8 +26,7 @@ export function usarPermissao(roleMinimoRequerido: string | null): boolean {
         if (!roleEfetiva) return false;
 
         // ADMIN sempre tem permissão total por hierarquia (cargo real ou visualizado)
-        if (roleEfetiva === 'ADMIN') return true;
-
+        // Removido o hardcoded 'ADMIN' para forçar a verificação da hierarquia real
         const indiceUsuario = hierarquia_roles.indexOf(roleEfetiva);
         const indiceRequerido = hierarquia_roles.indexOf(roleMinimoRequerido);
 
@@ -49,11 +48,6 @@ export function usarPermissaoAcesso(chavePermissao: string): boolean {
     const { permissoes_roles } = configuracoes;
     const roleEfetiva = roleVisualizacao || usuario?.role || 'MEMBRO';
 
-    // ADMIN sempre tem acesso total, independente da matriz.
-    if (roleEfetiva === 'ADMIN') {
-        return true;
-    }
-
     // useMemo para evitar recálculos a cada renderização
     return useMemo(() => {
         if (!permissoes_roles) {
@@ -66,6 +60,8 @@ export function usarPermissaoAcesso(chavePermissao: string): boolean {
         // Verifica se a permissão é universal (habilitada para 'TODOS')
         const temPermissaoUniversal = permissoes_roles['TODOS']?.[chavePermissao] === true;
 
+        // Se for ADMIN, geralmente tem "*" ou todas as permissões no banco. 
+        // Mas o backend garante o acesso total. O frontend agora consulta a matriz fielmente.
         return temPermissaoRole || temPermissaoUniversal;
 
     }, [roleEfetiva, chavePermissao, permissoes_roles]);

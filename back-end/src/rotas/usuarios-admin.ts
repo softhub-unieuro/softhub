@@ -6,6 +6,7 @@ import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
 import { registrarLog } from '../servicos/servico-logs';
 import { criarNotificacoes } from '../servicos/servico-notificacoes';
 import { obterConfiguracao } from '../servicos/servico-configuracoes';
+import { invalidarSessaoCache } from '../servicos/servico-acesso';
 
 const rotasAdmin = new Hono<{ Bindings: Env; Variables: { usuario: any } }>();
 
@@ -20,6 +21,8 @@ rotasAdmin.patch('/:id/role', autenticacaoRequerida(), verificarPermissao(['memb
     const usuarioLogado = c.get('usuario') as any;
     const id = c.req.param('id');
     
+    if (!id) return c.json({ erro: 'ID do membro não fornecido.' }, 400);
+
     try {
         const body = await c.req.json();
         let role = body.role?.toUpperCase() || '';
@@ -41,8 +44,10 @@ rotasAdmin.patch('/:id/role', autenticacaoRequerida(), verificarPermissao(['memb
 
         await DB.prepare('UPDATE usuarios SET role = ? WHERE id = ?').bind(roleNormalizada, id).run();
 
-        // Invalida cache de sessão
-        if (softhub_kv) await softhub_kv.delete(`sessao:${id}`);
+        // Invalida cache de sessão usando o serviço centralizado
+        if (softhub_kv) {
+            await invalidarSessaoCache(softhub_kv, id);
+        }
 
         await criarNotificacoes(DB, {
             usuarioId: id,
@@ -65,7 +70,7 @@ rotasAdmin.patch('/:id/role', autenticacaoRequerida(), verificarPermissao(['memb
         return c.json({ sucesso: true });
     } catch (erro) {
         console.error('[ERRO] PATCH /api/usuarios/:id/role', erro);
-        return c.json({ erro: 'Erro ao processar alteração de cargo.' }, 400); // 400 em caso de JSON malformado
+        return c.json({ erro: 'Erro ao processar alteração de cargo.' }, 400);
     }
 });
 
@@ -73,10 +78,11 @@ rotasAdmin.patch('/:id/role', autenticacaoRequerida(), verificarPermissao(['memb
  * Remove um membro permanentemente.
  */
 rotasAdmin.delete('/:id', autenticacaoRequerida(), verificarPermissao('membros:desativar'), async (c: Context) => {
-    const { DB } = c.env;
+    const { DB, softhub_kv } = c.env;
     const usuarioLogado = c.get('usuario') as any;
     const id = c.req.param('id');
 
+    if (!id) return c.json({ erro: 'ID do membro não fornecido.' }, 400);
     if (usuarioLogado.id === id) return c.json({ erro: 'Não é possível excluir a própria conta.' }, 400);
 
     try {
@@ -86,8 +92,8 @@ rotasAdmin.delete('/:id', autenticacaoRequerida(), verificarPermissao('membros:d
         await DB.prepare('DELETE FROM usuarios WHERE id = ?').bind(id).run();
         
         // Invalida cache de sessão
-        const { softhub_kv } = c.env;
-        if (softhub_kv) await softhub_kv.delete(`sessao:${id}`);
+        if (softhub_kv) await invalidarSessaoCache(softhub_kv, id);
+
         await registrarLog(DB, {
             usuarioId: usuarioLogado.id,
             acao: 'MEMBRO_REMOVIDO_HARD',
@@ -114,20 +120,18 @@ const PreCadastroSchema = z.object({
  * Pré-cadastro de membro individual.
  */
 rotasAdmin.post('/', autenticacaoRequerida(), verificarPermissao('membros:gerenciar'), zValidator('json', PreCadastroSchema), async (c: Context) => {
-    const { DB, BOOTSTRAP_ADMIN_EMAIL } = c.env;
+    const { DB, BOOTSTRAP_ADMIN_EMAIL, softhub_kv } = c.env;
     const usuarioLogado = c.get('usuario') as any;
     const { email, role: roleRaw } = (c.req as any).valid('json');
     const emailLimpo = email.toLowerCase().trim();
 
     try {
-        // Normalização: Remove acentos e joga pra maiúsculo
         const role = roleRaw.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
         if (!ROLES_VALIDAS.includes(role)) {
             return c.json({ erro: `Cargo '${roleRaw}' inválido.` }, 400);
         }
 
-        // Validação de domínios via serviço centralizado
         const dominios = await obterConfiguracao(c.env, 'dominios_autorizados') || ['unieuro.com.br', 'unieuro.edu.br'];
         
         if (!dominios.some((d: string) => emailLimpo.endsWith(`@${d}`))) {
