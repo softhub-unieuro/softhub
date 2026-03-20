@@ -16,3 +16,6 @@ binding = "AI"
 
 [triggers]
 crons = ["45 16 * * *", "59 23 * * *"]
+
+[vars]
+BOOTSTRAP_ADMIN_EMAIL = "mateus099803@unieuro.com.br"
