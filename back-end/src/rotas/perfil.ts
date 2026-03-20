@@ -47,6 +47,7 @@ rotasPerfil.get('/me', autenticacaoRequerida(), async (c: Context) => {
         return c.json({
             perfil: {
                 ...usuario,
+                role: usuarioLogado.role, // 🛡️ USA A ROLE DO MIDDLEWARE (QUE POSSUI OVERRIDE DE BOOTSTRAP)
                 equipe_nome: organizacao?.equipe_nome || 'S/ Equipe',
                 grupo_nome: organizacao?.grupo_nome || 'S/ Grupo',
                 esta_em_expediente: ultimoPonto?.tipo === 'entrada'
@@ -191,7 +192,6 @@ rotasPerfil.get('/:id/radar', autenticacaoRequerida(), async (c: Context) => {
     const usuarioLogado = c.get('usuario');
     let id = c.req.param('id');
 
-    // Se o ID for 'me', usamos o ID do usuário autenticado
     if (id === 'me') {
         id = usuarioLogado.id;
     }
@@ -210,7 +210,6 @@ rotasPerfil.get('/:id/radar', autenticacaoRequerida(), async (c: Context) => {
         `;
         const { results } = await DB.prepare(query).bind(id).all();
 
-        // Se não houver dados, retorna um radar vazio padrão para não quebrar a UI
         if (!results || results.length === 0) {
             return c.json([
                 { area: 'Back-end', nota: 0, entregas: 0 },

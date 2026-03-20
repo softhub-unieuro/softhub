@@ -7,12 +7,13 @@ export interface UsuarioAutenticado {
     role: string;
     email: string;
     nome: string;
-    isSimulacao?: boolean; // Flag para indicar que o cargo é simulado
+    isSimulacao?: boolean; 
+    ehDonoReal?: boolean; 
 }
 
 type HonoEnv = { Bindings: Env; Variables: { usuario: UsuarioAutenticado } };
 
-// ─── Funções Auxiliares (com cache) ──────────────────────────────────────────
+// ─── Funções Auxiliares ──────────────────────────────────────────────────────
 
 async function getHierarquiaRoles(c: Context<HonoEnv>): Promise<string[] | null> {
     const { DB, softhub_kv } = c.env;
@@ -22,19 +23,12 @@ async function getHierarquiaRoles(c: Context<HonoEnv>): Promise<string[] | null>
         if (resConfig) {
             hierarquiaJson = resConfig.valor;
             await softhub_kv.put('hierarquia_roles', hierarquiaJson, { expirationTtl: 3600 });
-        } else {
-            console.error('[AUTH] CRÍTICO: hierarquia_roles não encontrada no banco de dados.');
-            return null;
-        }
+        } else return null;
     }
     try {
         const hierarquia = JSON.parse(hierarquiaJson);
-        if (!Array.isArray(hierarquia)) throw new Error('O valor não é um array.');
-        return hierarquia;
-    } catch (e) {
-        console.error('[AUTH] CRÍTICO: Falha ao parsear hierarquia_roles do banco.', e);
-        return null;
-    }
+        return Array.isArray(hierarquia) ? hierarquia : null;
+    } catch { return null; }
 }
 
 async function getPermissoesRoles(c: Context<HonoEnv>): Promise<Record<string, any> | null> {
@@ -45,42 +39,27 @@ async function getPermissoesRoles(c: Context<HonoEnv>): Promise<Record<string, a
         if (resConfig) {
             permissoesJson = resConfig.valor;
             await softhub_kv.put('permissoes_roles', permissoesJson, { expirationTtl: 3600 });
-        } else {
-            console.error('[AUTH] CRÍTICO: permissoes_roles não encontradas no banco de dados.');
-            return null;
-        }
+        } else return null;
     }
-    try {
-        return JSON.parse(permissoesJson);
-    } catch (e) {
-        console.error('[AUTH] CRÍTICO: Falha ao parsear permissoes_roles do banco.', e);
-        return null;
-    }
+    try { return JSON.parse(permissoesJson); } catch { return null; }
 }
 
-// ─── Middleware Principal de Autenticação ───────────────────────────────────
+// ─── Middleware de Autenticação ──────────────────────────────────────────────
 
 export function autenticacaoRequerida(roleMinimoRequerido?: string) {
     return async (c: Context<HonoEnv>, next: Next) => {
         const authHeader = c.req.header('Authorization');
-        const roleSimuladaHeader = c.req.header('X-Role-Simulada'); // Cabeçalho de simulação
+        const roleSimuladaHeader = c.req.header('X-Role-Simulada'); 
 
-        if (!authHeader?.startsWith('Bearer ')) {
-            return c.json({ erro: 'Token de autenticação ausente.' }, 401);
-        }
+        if (!authHeader?.startsWith('Bearer ')) return c.json({ erro: 'Não autenticado.' }, 401);
         const token = authHeader.slice(7);
         const segredo = c.env.JWT_SECRET;
-        if (!segredo) {
-            console.error('[Auth Middleware] JWT_SECRET não definido.');
-            return c.json({ erro: 'Erro interno de configuração.' }, 500);
-        }
+        if (!segredo) return c.json({ erro: 'Erro de configuração no servidor.' }, 500);
 
         let payload: any;
         try {
             payload = await verify(token, segredo, 'HS256');
-        } catch {
-            return c.json({ erro: 'Token inválido ou expirado.' }, 401);
-        }
+        } catch { return c.json({ erro: 'Sessão inválida ou expirada.' }, 401); }
 
         const chaveCache = `sessao:${payload.id}`;
         let resUsuario: any;
@@ -92,23 +71,35 @@ export function autenticacaoRequerida(roleMinimoRequerido?: string) {
 
         if (!resUsuario) {
             resUsuario = await c.env.DB.prepare('SELECT id, nome, email, role, versao_token FROM usuarios WHERE id = ?').bind(payload.id).first<any>();
-            if (!resUsuario) return c.json({ erro: 'Usuário não encontrado.' }, 401);
+            if (!resUsuario) return c.json({ erro: 'Usuário não mapeado.' }, 401);
             if (c.env.softhub_kv) await c.env.softhub_kv.put(chaveCache, JSON.stringify(resUsuario), { expirationTtl: 3600 });
         }
 
         if (payload.versao_token !== undefined && resUsuario.versao_token !== payload.versao_token) {
-            return c.json({ erro: 'Sua sessão foi encerrada porque você entrou em outro dispositivo.' }, 401);
+            return c.json({ erro: 'Sessão encerrada por login em outro local.' }, 401);
         }
 
-        // 🛡️ LÓGICA DE SIMULAÇÃO (Discord Style)
-        let roleEfetiva = resUsuario.role;
+        // 🛡️ REGRAS DE OURO: BOOTSTRAP OVERRIDE (Com logs de depuração)
+        const rawBootstrap = (c.env.BOOTSTRAP_ADMIN_EMAIL || '');
+        const listaBootstrap = rawBootstrap.toLowerCase().split(',').map((e: string) => e.trim());
+        const emailUsuario = resUsuario.email.toLowerCase().trim();
+        const ehMembroBootstrap = listaBootstrap.includes(emailUsuario);
+
+        if (ehMembroBootstrap) {
+            console.log(`[BOOTSTRAP] Usuário ${emailUsuario} identificado como DONO (Override Admin)`);
+        } else {
+            // Log para ajudar a identificar inconsistências de e-mail
+            // console.log(`[AUTH] Usuário ${emailUsuario} não está na lista bootstrap: [${listaBootstrap.join(', ')}]`);
+        }
+
+        const roleAutentica = ehMembroBootstrap ? 'ADMIN' : resUsuario.role;
+
+        let roleEfetiva = roleAutentica;
         let isSimulacao = false;
 
-        // Regra de Ouro: Apenas quem é ADMIN real pode simular outros cargos
-        if (resUsuario.role === 'ADMIN' && roleSimuladaHeader) {
+        if (roleAutentica === 'ADMIN' && roleSimuladaHeader && roleSimuladaHeader.trim() !== '') {
             roleEfetiva = roleSimuladaHeader.toUpperCase();
             isSimulacao = true;
-            console.log(`[AUTH] Admin ${resUsuario.email} simulando cargo: ${roleEfetiva}`);
         }
 
         c.set('usuario', { 
@@ -116,25 +107,25 @@ export function autenticacaoRequerida(roleMinimoRequerido?: string) {
             role: roleEfetiva, 
             email: resUsuario.email, 
             nome: resUsuario.nome,
-            isSimulacao 
+            isSimulacao,
+            ehDonoReal: ehMembroBootstrap
         });
 
-        // Se for ADMIN REAL e NÃO estiver simulando, bypass total
-        if (resUsuario.role === 'ADMIN' && !isSimulacao) {
+        // Bypass total se for ADMIN REAL e não estiver simulando
+        if (roleAutentica === 'ADMIN' && !isSimulacao) {
             return await next();
         }
 
-        // Se estiver simulando ou não for Admin, passa pelos checks normais de cargo
+        // Checks de cargo se não for bypass
         if (roleMinimoRequerido) {
-            const hierarquiaRoles = await getHierarquiaRoles(c);
-            if (!hierarquiaRoles) return c.json({ erro: 'Sistema não configurado.' }, 500);
+            const hierarquia = await getHierarquiaRoles(c);
+            if (!hierarquia) return c.json({ erro: 'Hierarquia não configurada.' }, 500);
             
-            const indiceUsuario = hierarquiaRoles.indexOf(roleEfetiva as any);
-            const indiceRequerido = hierarquiaRoles.indexOf(roleMinimoRequerido as any);
+            const idxUser = hierarquia.indexOf(roleEfetiva);
+            const idxReq = hierarquia.indexOf(roleMinimoRequerido);
             
-            if (indiceUsuario === -1 || indiceRequerido === -1 || indiceUsuario < indiceRequerido) {
-                console.warn(`[AUTH] Acesso negado (${isSimulacao ? 'Simulado' : 'Real'}): Usuário ${resUsuario.nome} tentou recurso que exige ${roleMinimoRequerido}`);
-                return c.json({ erro: 'Permissão insuficiente.' }, 403);
+            if (idxUser === -1 || idxReq === -1 || idxUser < idxReq) {
+                return c.json({ erro: 'Você não tem o cargo necessário para esta função.' }, 403);
             }
         }
 
@@ -142,30 +133,35 @@ export function autenticacaoRequerida(roleMinimoRequerido?: string) {
     };
 }
 
-// ─── Middleware de Verificação de Permissão Específica ──────────────────────
+// ─── Middleware de Permissão ────────────────────────────────────────────────
 
 export function verificarPermissao(permissaoRequerida: string | string[]) {
     return async (c: Context<HonoEnv>, next: Next) => {
         const usuario = c.get('usuario');
-        if (!usuario || !usuario.role) return c.json({ erro: 'Usuário não autenticado.' }, 401);
+        if (!usuario) return c.json({ erro: 'Acesso negado.' }, 401);
 
-        // Se for ADMIN e NÃO estiver simulando nada, bypass total sempre
-        // (Isso garante que um admin simulando um Membro seja BLOQUEADO conforme o cargo simulado)
+        // Bypass se a role EFETIVA for ADMIN e não for simulação
         if (usuario.role === 'ADMIN' && !usuario.isSimulacao) return await next();
 
-        const permissoes_roles = await getPermissoesRoles(c);
-        if (!permissoes_roles) return c.json({ erro: 'Configurações de permissão não encontradas.' }, 500);
+        const matriz = await getPermissoesRoles(c);
+        if (!matriz) return c.json({ erro: 'Tabela de governança indisponível.' }, 500);
 
         const permissoes = Array.isArray(permissaoRequerida) ? permissaoRequerida : [permissaoRequerida];
-        const configRole = permissoes_roles[usuario.role] || {};
-        const configTodos = permissoes_roles['TODOS'] || {};
+        const configRole = matriz[usuario.role] || {};
+        const configTodos = matriz['TODOS'] || {};
 
         const temAcesso = permissoes.some(p => {
             const [modulo, acao] = p.split(':');
+            
+            // 1. Curinga role ou universal
             if (configRole['*'] === true || configTodos['*'] === true) return true;
+            
+            // 2. Permissão direta
             if (configRole[p] === true || configTodos[p] === true) return true;
-            if ((configRole[modulo] && typeof configRole[modulo] === 'object' && configRole[modulo][acao] === true) ||
-                (configTodos[modulo] && typeof configTodos[modulo] === 'object' && configTodos[modulo][acao] === true)) {
+            
+            // 3. Permissão aninhada (objeto)
+            if ((configRole[modulo] && typeof configRole[modulo] === 'object' && (configRole[modulo] as any)[acao] === true) ||
+                (configTodos[modulo] && typeof configTodos[modulo] === 'object' && (configTodos[modulo] as any)[acao] === true)) {
                 return true;
             }
             return false;
@@ -173,7 +169,7 @@ export function verificarPermissao(permissaoRequerida: string | string[]) {
 
         if (temAcesso) return await next();
 
-        console.warn(`[AUTH] Acesso negado (${usuario.isSimulacao ? 'Simulado' : 'Real'}): Usuário ${usuario.nome} (Role: ${usuario.role}) tentou '${permissaoRequerida}'`);
+        console.warn(`[AUTH] Acesso negado para ${usuario.email} (${usuario.role}) a '${permissaoRequerida}'. Simulação: ${usuario.isSimulacao}`);
         return c.json({ erro: 'Você não tem permissão para esta tela.' }, 403);
     };
 }
