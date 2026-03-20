@@ -17,7 +17,7 @@ const ROLES_VALIDAS = ['ADMIN', 'COORDENADOR', 'GESTOR', 'LIDER', 'SUBLIDER', 'S
  * Suporta chaves com ou sem acento, normalizando para ASCII antes de salvar.
  */
 rotasAdmin.patch('/:id/role', autenticacaoRequerida(), verificarPermissao(['membros:alterar_role', 'membros:gerenciar']), async (c: Context) => {
-    const { DB, softhub_kv } = c.env;
+    const { DB, softhub_kv, BOOTSTRAP_ADMIN_EMAIL } = c.env;
     const usuarioLogado = c.get('usuario') as any;
     const id = c.req.param('id');
     
@@ -34,12 +34,28 @@ rotasAdmin.patch('/:id/role', autenticacaoRequerida(), verificarPermissao(['memb
             return c.json({ erro: `Cargo '${role}' é inválido para o sistema.` }, 400);
         }
 
-        const atual = await DB.prepare('SELECT role FROM usuarios WHERE id = ?').bind(id).first() as any;
+        const atual = await DB.prepare('SELECT email, role FROM usuarios WHERE id = ?').bind(id).first() as any;
         if (!atual) return c.json({ erro: 'Usuário não encontrado.' }, 404);
 
-        // Se estiver tentando se promover para ADMIN sem ser ADMIN, bloqueia
-        if (roleNormalizada === 'ADMIN' && usuarioLogado.role !== 'ADMIN') {
-            return c.json({ erro: 'Apenas Administradores podem conceder o cargo de ADMIN.' }, 403);
+        const listaBootstrap = (BOOTSTRAP_ADMIN_EMAIL || '').toLowerCase().split(',').map((e: string) => e.trim());
+        const ehMembroBootstrap = listaBootstrap.includes(atual.email.toLowerCase());
+
+        // 🛡️ REGRA CRÍTICA: ADMINS SÃO DEFINIDOS APENAS VIA BOOTSTRAP
+        
+        // 1. Bloqueia promoção para ADMIN se não estiver no bootstrap
+        if (roleNormalizada === 'ADMIN' && !ehMembroBootstrap) {
+            return c.json({ 
+                erro: 'Acesso negado: Cargo Crítico.',
+                detalhe: 'Apenas membros autorizados na lista de segurança (Bootstrap) podem ser Administradores.' 
+            }, 403);
+        }
+
+        // 2. Bloqueia alteração de cargo de um ADMIN de bootstrap (para evitar "demissão" acidental ou por malícia)
+        if (atual.role === 'ADMIN' && ehMembroBootstrap && roleNormalizada !== 'ADMIN') {
+            return c.json({ 
+                erro: 'Acesso negado: Cargo Protegido.',
+                detalhe: 'Não é possível remover o cargo de um Administrador de Segurança via painel. Altere a variável BOOTSTRAP_ADMIN_EMAIL.' 
+            }, 403);
         }
 
         await DB.prepare('UPDATE usuarios SET role = ? WHERE id = ?').bind(roleNormalizada, id).run();
@@ -78,7 +94,7 @@ rotasAdmin.patch('/:id/role', autenticacaoRequerida(), verificarPermissao(['memb
  * Remove um membro permanentemente.
  */
 rotasAdmin.delete('/:id', autenticacaoRequerida(), verificarPermissao('membros:desativar'), async (c: Context) => {
-    const { DB, softhub_kv } = c.env;
+    const { DB, softhub_kv, BOOTSTRAP_ADMIN_EMAIL } = c.env;
     const usuarioLogado = c.get('usuario') as any;
     const id = c.req.param('id');
 
@@ -86,8 +102,19 @@ rotasAdmin.delete('/:id', autenticacaoRequerida(), verificarPermissao('membros:d
     if (usuarioLogado.id === id) return c.json({ erro: 'Não é possível excluir a própria conta.' }, 400);
 
     try {
-        const atual = await DB.prepare('SELECT nome FROM usuarios WHERE id = ?').bind(id).first() as any;
+        const atual = await DB.prepare('SELECT email, nome, role FROM usuarios WHERE id = ?').bind(id).first() as any;
         if (!atual) return c.json({ erro: 'Não encontrado.' }, 404);
+
+        const listaBootstrap = (BOOTSTRAP_ADMIN_EMAIL || '').toLowerCase().split(',').map((e: string) => e.trim());
+        const ehMembroBootstrap = listaBootstrap.includes(atual.email.toLowerCase());
+
+        // 🛡️ Protege Administradores de Segurança contra exclusão
+        if (ehMembroBootstrap && atual.role === 'ADMIN') {
+            return c.json({ 
+                erro: 'Ações Negadas.',
+                detalhe: 'Um Administrador de Segurança (Bootstrap) não pode ser excluído do sistema.' 
+            }, 403);
+        }
 
         await DB.prepare('DELETE FROM usuarios WHERE id = ?').bind(id).run();
         
@@ -138,8 +165,10 @@ rotasAdmin.post('/', autenticacaoRequerida(), verificarPermissao('membros:gerenc
             return c.json({ erro: 'Domínio de e-mail não autorizado.' }, 400);
         }
 
-        const isBootstrap = (BOOTSTRAP_ADMIN_EMAIL || '').toLowerCase().split(',').includes(emailLimpo);
-        const roleFinal = isBootstrap ? 'ADMIN' : role;
+        const listaBootstrap = (BOOTSTRAP_ADMIN_EMAIL || '').toLowerCase().split(',').map((e: string) => e.trim());
+        const isBootstrap = listaBootstrap.includes(emailLimpo);
+        
+        const roleFinal = isBootstrap ? 'ADMIN' : (role === 'ADMIN' ? 'MEMBRO' : role);
 
         const existe = await DB.prepare('SELECT id FROM usuarios WHERE email = ?').bind(emailLimpo).first();
         if (existe) return c.json({ erro: 'E-mail já cadastrado.' }, 409);

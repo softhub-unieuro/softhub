@@ -8,8 +8,6 @@ import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
  *
  * Compara a role do usuário com uma role mínima requerida, baseado na hierarquia
  * de roles definida no banco de dados (configuracoes_sistema).
- *
- * Uso: const podeEditar = usarPermissao('LIDER');
  */
 export function usarPermissao(roleMinimoRequerido: string | null): boolean {
     const { usuario, configuracoes, roleVisualizacao } = usarAutenticacao();
@@ -25,8 +23,11 @@ export function usarPermissao(roleMinimoRequerido: string | null): boolean {
         // Sem usuário ou sem role — nega
         if (!roleEfetiva) return false;
 
-        // ADMIN sempre tem permissão total por hierarquia (cargo real ou visualizado)
-        // Removido o hardcoded 'ADMIN' para forçar a verificação da hierarquia real
+        // 🛡️ REGRA DE OURO: O cargo 'ADMIN' é a raiz de todas as permissões.
+        // Se o cargo atual (real ou visualizado) for ADMIN, ele tem acesso total por hierarquia.
+        // Isso resolve o problema de telas vazias caso a tabela de hierarquia ainda não tenha sido configurada.
+        if (roleEfetiva === 'ADMIN') return true;
+
         const indiceUsuario = hierarquia_roles.indexOf(roleEfetiva);
         const indiceRequerido = hierarquia_roles.indexOf(roleMinimoRequerido);
 
@@ -40,7 +41,6 @@ export function usarPermissao(roleMinimoRequerido: string | null): boolean {
 
 /**
  * Hook utilitário para checar uma permissão específica ativada na Matriz de Controle de Acesso.
- * As permissões são carregadas do contexto `ContextoConfiguracoes`.
  * @example const podeCriarTarefa = usarPermissaoAcesso('tarefas:criar');
  */
 export function usarPermissaoAcesso(chavePermissao: string): boolean {
@@ -48,20 +48,17 @@ export function usarPermissaoAcesso(chavePermissao: string): boolean {
     const { permissoes_roles } = configuracoes;
     const roleEfetiva = roleVisualizacao || usuario?.role || 'MEMBRO';
 
-    // useMemo para evitar recálculos a cada renderização
     return useMemo(() => {
-        if (!permissoes_roles) {
-            return false; // Retorna false se as permissões ainda não foram carregadas
-        }
+        // 🛡️ ADMIN sempre tem todas as chaves de acesso liberadas na UI.
+        // Se estiver previsualizando outro cargo, a roleEfetiva NÃO será 'ADMIN', 
+        // e ele cairá nas regras normais da matriz.
+        if (roleEfetiva === 'ADMIN') return true;
 
-        // Verifica se a permissão está habilitada para a role específica do usuário
+        if (!permissoes_roles) return false;
+
         const temPermissaoRole = permissoes_roles[roleEfetiva]?.[chavePermissao] === true;
-
-        // Verifica se a permissão é universal (habilitada para 'TODOS')
         const temPermissaoUniversal = permissoes_roles['TODOS']?.[chavePermissao] === true;
 
-        // Se for ADMIN, geralmente tem "*" ou todas as permissões no banco. 
-        // Mas o backend garante o acesso total. O frontend agora consulta a matriz fielmente.
         return temPermissaoRole || temPermissaoUniversal;
 
     }, [roleEfetiva, chavePermissao, permissoes_roles]);
