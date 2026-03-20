@@ -60,10 +60,14 @@ export async function salvarConfiguracao(env: EnvConfig, chave: string, valor: a
     const { DB, softhub_kv } = env;
     const valorJson = typeof valor === 'string' ? valor : JSON.stringify(valor);
 
-    // 1. Salva no Banco (D1)
-    await DB.prepare('INSERT OR REPLACE INTO configuracoes_sistema (chave, valor) VALUES (?, ?)')
-        .bind(chave, valorJson)
-        .run();
+    // 1. Salva no Banco (D1) com suporte a novos campos e IDs mandatórios
+    await DB.prepare(`
+        INSERT INTO configuracoes_sistema (id, chave, valor) 
+        VALUES (?, ?, ?) 
+        ON CONFLICT(chave) DO UPDATE SET valor = excluded.valor
+    `)
+    .bind(crypto.randomUUID(), chave, valorJson)
+    .run();
 
     // 2. Invalida o Cache (KV)
     if (softhub_kv) {
