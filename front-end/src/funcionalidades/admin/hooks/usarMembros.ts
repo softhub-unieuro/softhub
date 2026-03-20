@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { api } from '@/compartilhado/servicos/api';
+import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
 
 /** Representação de um membro do sistema. */
 export interface Membro {
@@ -22,8 +23,10 @@ export interface Membro {
 export function usarMembros() {
     const queryClient = useQueryClient();
 
+    const podeAcessar = usarPermissaoAcesso('membros:gerenciar');
     const { data: membros = [], isLoading: carregando, error } = useQuery<Membro[]>({
         queryKey: ['membros'],
+        enabled: podeAcessar,
         queryFn: async () => {
             const res = await api.get('/api/usuarios');
             return res.data.membros ?? [];

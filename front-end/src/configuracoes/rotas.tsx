@@ -131,7 +131,7 @@ export const rotas = createBrowserRouter([
             { path: '/app/ponto', element: <RotaProtegida><LayoutPrincipal><BaterPonto /></LayoutPrincipal></RotaProtegida> },
             { path: '/app/avisos', element: <RotaProtegida><LayoutPrincipal><MuralAvisos /></LayoutPrincipal></RotaProtegida> },
             // Rotas de Admin
-            { path: '/app/admin/logs', element: <RotaProtegida><LayoutPrincipal><PainelLogs /></LayoutPrincipal></RotaProtegida> },
+            { path: '/app/admin/logs', element: <RotaProtegida roleMinimo="ADMIN"><LayoutPrincipal><PainelLogs /></LayoutPrincipal></RotaProtegida> },
             { path: '/app/admin/membros', element: <RotaProtegida roleMinimo="ADMIN"><LayoutPrincipal><GerenciarMembros /></LayoutPrincipal></RotaProtegida> },
             { path: '/app/admin/justificativas', element: <RotaProtegida roleMinimo="SUBLIDER"><LayoutPrincipal><PainelJustificativas /></LayoutPrincipal></RotaProtegida> },
             { path: '/app/admin/relatorios', element: <RotaProtegida roleMinimo="SUBLIDER"><LayoutPrincipal><PaginaRelatorios /></LayoutPrincipal></RotaProtegida> },

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/compartilhado/servicos/api';
+import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
+import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
 
 export interface LogSistema {
     id: string;
@@ -65,7 +67,17 @@ export function usarLogs() {
         return () => clearInterval(interval);
     }, []);
 
+    const { configuracoes, roleVisualizacao, usuario } = usarAutenticacao();
+    const podeVerLogs = usarPermissaoAcesso('logs:visualizar');
+
     const carregar = async (exibirLoading = true) => {
+        // Se estiver em modo de previsualização e o cargo atual não puder ver logs, aborta para evitar 403
+        if (!podeVerLogs) {
+            setCarregando(false);
+            setLogs([]);
+            return;
+        }
+
         try {
             if (exibirLoading) setCarregando(true);
             const params: any = { pagina, itensPorPagina };

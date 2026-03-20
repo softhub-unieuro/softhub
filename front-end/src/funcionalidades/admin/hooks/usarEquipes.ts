@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/compartilhado/servicos/api';
+import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
 
 export interface Grupo {
     id: string;
@@ -44,8 +45,10 @@ export interface MembroSimples {
 export function usarEquipes() {
     const queryClient = useQueryClient();
 
+    const podeAcessar = usarPermissaoAcesso('equipes:visualizar');
     const { data: dadosCache, isLoading: carregando, error } = useQuery({
         queryKey: ['estrutura-organizacional'],
+        enabled: podeAcessar,
         queryFn: async () => {
             const [resGrupos, resEquipes, resMembros] = await Promise.all([
                 api.get('/api/equipes/grupos'),

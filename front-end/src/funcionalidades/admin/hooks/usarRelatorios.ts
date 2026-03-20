@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/compartilhado/servicos/api';
+import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
 
 export interface RelatorioEquipes {
     grupos: {
@@ -57,9 +58,12 @@ export interface RelatorioFrequenciaMembro {
  */
 export function usarRelatorios(dataInicio?: string, dataFim?: string) {
     
+    const podeVisualizarRelatorios = usarPermissaoAcesso("relatorios:visualizar");
+
     // 1. Relatório de Estrutura (Estático, muda pouco)
     const queryEquipes = useQuery<RelatorioEquipes>({
         queryKey: ['relatorios', 'equipes'],
+        enabled: podeVisualizarRelatorios,
         queryFn: async () => {
             const res = await api.get('/api/relatorios/equipes');
             return res.data;
@@ -70,6 +74,7 @@ export function usarRelatorios(dataInicio?: string, dataFim?: string) {
     // 2. Relatório de Frequência Geral (Dinâmico p/ período)
     const queryFrequenciaGeral = useQuery<RelatorioFrequenciaGeral>({
         queryKey: ['relatorios', 'frequencia', 'geral', dataInicio, dataFim],
+        enabled: podeVisualizarRelatorios,
         queryFn: async () => {
             const res = await api.get('/api/relatorios/frequencia/geral', {
                 params: { data_inicio: dataInicio, data_fim: dataFim }
@@ -81,6 +86,7 @@ export function usarRelatorios(dataInicio?: string, dataFim?: string) {
     // 3. Relatório de Membros (Dinâmico p/ período)
     const queryFrequenciaMembros = useQuery<RelatorioFrequenciaMembro[]>({
         queryKey: ['relatorios', 'frequencia', 'membros', dataInicio, dataFim],
+        enabled: podeVisualizarRelatorios,
         queryFn: async () => {
             const res = await api.get('/api/relatorios/frequencia/membros', {
                 params: { data_inicio: dataInicio, data_fim: dataFim }

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/compartilhado/servicos/api';
+import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
 
 export interface ConfiguracoesSistema {
     nome_sistema: string;
@@ -20,12 +21,14 @@ export function usarConfiguracoes() {
     const queryClient = useQueryClient();
     const queryKey = ['configuracoes'];
 
+    const podeAcessar = usarPermissaoAcesso('configuracoes:visualizar');
     const { 
         data: configuracoes, 
         isLoading: carregando, 
         error 
     } = useQuery<ConfiguracoesSistema>({
         queryKey,
+        enabled: podeAcessar,
         queryFn: async () => {
             const res = await api.get('/api/configuracoes');
             const dados = res.data.configuracoes || {};

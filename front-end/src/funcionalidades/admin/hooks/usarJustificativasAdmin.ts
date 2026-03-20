@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/compartilhado/servicos/api';
 import type { JustificativaPonto } from '@/funcionalidades/ponto/hooks/usarJustificativa';
+import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
 
 export interface JustificativaAdmin extends JustificativaPonto {
     usuario_nome: string;
@@ -16,7 +17,15 @@ export function usarJustificativasAdmin() {
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState<string | null>(null);
 
+    const podeAprovar = usarPermissaoAcesso('ponto:aprovar_justificativa');
+    
     const carregar = async () => {
+        if (!podeAprovar) {
+            setCarregando(false);
+            setJustificativas([]);
+            return;
+        }
+
         try {
             setCarregando(true);
             const res = await api.get('/api/ponto/admin/justificativas');
