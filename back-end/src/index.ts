@@ -51,7 +51,7 @@ app.use('*', cors({
         return null; // Bloqueia outros
     },
     allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization'],
+    allowHeaders: ['Content-Type', 'Authorization', 'x-role-simulada'],
     credentials: true,
 }));
 

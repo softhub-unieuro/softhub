@@ -79,40 +79,60 @@ export const LinhaMembro = memo(({ membro, salvando, selecionado, onToggleSelect
             </td>
 
             <td className="px-5 py-3.5">
-                <div className="inline-flex relative group/sel">
-                    <div className={`absolute inset-0 rounded-full transition-all duration-300 ${classesCores.bg} ${classesCores.bgHover}`} />
+                <div className="flex items-center gap-2">
+                    <div className="inline-flex relative group/sel">
+                        <div className={`absolute inset-0 rounded-full transition-all duration-300 ${classesCores.bg} ${classesCores.bgHover}`} />
 
-                    <select
-                        className={`
-                            relative appearance-none bg-transparent border-none 
-                            rounded-full px-3.5 py-1.5 pr-7 text-[9px] font-bold uppercase tracking-wider 
-                            outline-none transition-all z-10 
-                            ${classesCores.text}
-                            ${roleBloqueada ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}
-                        `}
-                        value={membro.role}
-                        onChange={e => onAlterarRole(membro, e.target.value)}
-                        disabled={roleBloqueada}
-                    >
-                        {ehBootstrap && <option value="ADMIN">ADMINISTRADOR</option>}
-                        {!ehBootstrap && rolesDisponiveis.map(r => (
-                            <option key={r} value={r} className="bg-white text-slate-900 font-bold">
-                                {(LABELS_ROLES as any)[r] || r}
-                            </option>
-                        ))}
-                    </select>
+                        <select
+                            className={`
+                                relative appearance-none bg-transparent border-none 
+                                rounded-full px-3.5 py-1.5 pr-7 text-[9px] font-bold uppercase tracking-wider 
+                                outline-none transition-all z-10 
+                                ${classesCores.text}
+                                ${roleBloqueada ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}
+                            `}
+                            value={membro.role}
+                            onChange={e => onAlterarRole(membro, e.target.value)}
+                            disabled={roleBloqueada}
+                        >
+                            {ehBootstrap && <option value="ADMIN">ADMINISTRADOR</option>}
+                            {!ehBootstrap && rolesDisponiveis.map(r => (
+                                <option key={r} value={r} className="bg-white text-slate-900 font-bold">
+                                    {(LABELS_ROLES as any)[r] || r}
+                                </option>
+                            ))}
+                        </select>
 
-                    {!roleBloqueada && (
-                        <ChevronDown
-                            size={11}
-                            className={`absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none z-20 transition-all duration-300 ${classesCores.chevron}`}
-                        />
-                    )}
-                    {ehBootstrap && (
-                        <Lock
-                            size={10}
-                            className={`absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none z-20 opacity-40 ${classesCores.text}`}
-                        />
+                        {!roleBloqueada && (
+                            <ChevronDown
+                                size={11}
+                                className={`absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none z-20 transition-all duration-300 ${classesCores.chevron}`}
+                            />
+                        )}
+                        {ehBootstrap && (
+                            <Lock
+                                size={10}
+                                className={`absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none z-20 opacity-40 ${classesCores.text}`}
+                            />
+                        )}
+                    </div>
+
+                    {/* ⚡ RAIO DE SIMULAÇÃO (Perfeitamente Alinhado) */}
+                    {ehDonoReal && ehBootstrap && (
+                        <div className="shrink-0">
+                            <Tooltip texto="Simular este cargo" posicao="right">
+                                <button
+                                    onClick={() => setRoleVisualizacao(membro.role)}
+                                    className={`
+                                        w-6 h-6 flex items-center justify-center rounded-full transition-all duration-300 active:scale-90 
+                                        ${classesCores.bg} ${classesCores.text} 
+                                        hover:bg-opacity-20 hover:scale-110
+                                    `}
+                                >
+                                    <Activity size={11} strokeWidth={3} />
+                                </button>
+                            </Tooltip>
+                        </div>
                     )}
                 </div>
             </td>
@@ -167,16 +187,7 @@ export const LinhaMembro = memo(({ membro, salvando, selecionado, onToggleSelect
                         </button>
                     )}
 
-                    {/* 🎮 MODO SIMULAÇÃO (Apenas para o Dono do Sistema) */}
-                    {ehDonoReal && !ehOMesmoUsuario && (
-                        <button
-                            onClick={() => setRoleVisualizacao(membro.role)}
-                            className="p-1.5 rounded-lg text-muted-foreground/20 hover:text-amber-500 hover:bg-amber-500/5 transition-all opacity-0 group-hover:opacity-100"
-                            title={`Simular visão de ${membro.role}`}
-                        >
-                            <Activity size={15} />
-                        </button>
-                    )}
+
 
                     {ehBootstrap && !ehOMesmoUsuario && (
                         <Tooltip texto="Administrador Protegido">

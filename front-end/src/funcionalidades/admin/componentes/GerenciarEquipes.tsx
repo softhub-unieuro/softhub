@@ -155,13 +155,15 @@ export const GerenciarEquipes = memo(() => {
                         <span>Voltar</span>
                     </button>
 
-                    <button
-                        onClick={() => setModalOrg({ aberto: true, tipo: 'equipe' })}
-                        className={`h-11 px-6 bg-primary text-primary-foreground rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all ${idEquipeAtiva ? 'hidden lg:flex' : 'flex'}`}
-                    >
-                        <Plus size={18} strokeWidth={3} />
-                        <span>Nova Equipe</span>
-                    </button>
+                    {podeCriarEquipe && (
+                        <button
+                            onClick={() => setModalOrg({ aberto: true, tipo: 'equipe' })}
+                            className={`h-11 px-6 bg-primary text-primary-foreground rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all ${idEquipeAtiva ? 'hidden lg:flex' : 'flex'}`}
+                        >
+                            <Plus size={18} strokeWidth={3} />
+                            <span>Nova Equipe</span>
+                        </button>
+                    )}
                 </div>
             </CabecalhoFuncionalidade>
 

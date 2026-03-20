@@ -143,22 +143,26 @@ export const GerenciarMembros = memo(() => {
                         />
                     </div>
 
-                    <button
-                        onClick={() => { setModoModal('individual'); setModalAberto(true); }}
-                        className="h-11 px-6 bg-primary text-white rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                    >
-                        <Plus size={18} strokeWidth={3} />
-                        <span>Adicionar Pessoa</span>
-                    </button>
+                    {usarPermissaoAcesso('membros:gerenciar') && (
+                        <>
+                            <button
+                                onClick={() => { setModoModal('individual'); setModalAberto(true); }}
+                                className="h-11 px-6 bg-primary text-white rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                            >
+                                <Plus size={18} strokeWidth={3} />
+                                <span>Adicionar Pessoa</span>
+                            </button>
 
-                    <Tooltip texto="Adicionar Vários">
-                        <button
-                            onClick={() => { setModoModal('lote'); setModalAberto(true); }}
-                            className="h-11 w-11 bg-muted/30 text-muted-foreground rounded-2xl flex items-center justify-center hover:bg-muted/50 active:scale-95 transition-all border border-border/40"
-                        >
-                            <LayersPlus size={18} strokeWidth={3} />
-                        </button>
-                    </Tooltip>
+                            <Tooltip texto="Adicionar Vários">
+                                <button
+                                    onClick={() => { setModoModal('lote'); setModalAberto(true); }}
+                                    className="h-11 w-11 bg-muted/30 text-muted-foreground rounded-2xl flex items-center justify-center hover:bg-muted/50 active:scale-95 transition-all border border-border/40"
+                                >
+                                    <LayersPlus size={18} strokeWidth={3} />
+                                </button>
+                            </Tooltip>
+                        </>
+                    )}
                 </div>
             </CabecalhoFuncionalidade>
 

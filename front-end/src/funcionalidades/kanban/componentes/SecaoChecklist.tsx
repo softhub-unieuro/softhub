@@ -54,11 +54,12 @@ export function SecaoChecklist({ tarefaId }: SecaoChecklistProps) {
             </div>
 
             <div className="grid grid-cols-1 gap-1">
-                {itens.map((item) => (
+                {itens.map((item: any) => (
                     <div key={item.id} className="group flex items-center gap-3 p-3 rounded-2xl hover:bg-muted/40 transition-all border border-transparent hover:border-border/40">
                         <button
-                            onClick={() => alternarItem(item.id, !item.concluido)}
-                            className={`shrink-0 w-6 h-6 flex items-center justify-center rounded-2xl border-2 transition-all ${item.concluido ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'border-muted-foreground/30 text-transparent hover:border-primary/50'}`}
+                            onClick={() => podeGerenciar && alternarItem(item.id, !item.concluido)}
+                            disabled={!podeGerenciar}
+                            className={`shrink-0 w-6 h-6 flex items-center justify-center rounded-2xl border-2 transition-all ${!podeGerenciar ? 'opacity-40 cursor-not-allowed border-muted-foreground/20' : item.concluido ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'border-muted-foreground/30 text-transparent hover:border-primary/50'}`}
                         >
                             <CheckSquare className={`w-3.5 h-3.5 ${item.concluido ? 'scale-100 opacity-100' : 'scale-75 opacity-0'}`} strokeWidth={3} />
                         </button>

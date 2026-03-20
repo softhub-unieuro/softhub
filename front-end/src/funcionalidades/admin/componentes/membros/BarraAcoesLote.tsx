@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
 
 interface BarraAcoesLoteProps {
     selecionados: Set<string>;
@@ -26,12 +27,14 @@ export const BarraAcoesLote = memo(({ selecionados, handleLimparSelecao, handleR
                     >
                         Cancelar
                     </button>
-                    <button
-                        onClick={handleRemoverLote}
-                        className="px-4 py-2 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-rose-500/20"
-                    >
-                        Remover Acesso
-                    </button>
+                    {usarPermissaoAcesso('membros:desativar') && (
+                        <button
+                            onClick={handleRemoverLote}
+                            className="px-4 py-2 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-rose-500/20"
+                        >
+                            Remover Acesso
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
