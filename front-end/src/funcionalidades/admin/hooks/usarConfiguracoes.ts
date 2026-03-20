@@ -11,6 +11,8 @@ export interface ConfiguracoesSistema {
     modo_manutencao: boolean;
     hora_inicio_ponto: string;
     hora_fim_ponto: string;
+    hierarquia_roles: string[];
+    labels_roles: Record<string, string>;
 }
 
 /**
@@ -47,6 +49,12 @@ export function usarConfiguracoes() {
             if (typeof dados.modo_manutencao !== 'boolean') dados.modo_manutencao = false;
             if (typeof dados.hora_inicio_ponto !== 'string') dados.hora_inicio_ponto = '13:00';
             if (typeof dados.hora_fim_ponto !== 'string') dados.hora_fim_ponto = '17:00';
+            if (!Array.isArray(dados.hierarquia_roles)) {
+                dados.hierarquia_roles = ['MEMBRO', 'SUBLIDER', 'LIDER', 'GESTOR', 'COORDENADOR', 'ADMIN'];
+            }
+            if (!dados.labels_roles || typeof dados.labels_roles !== 'object') {
+                dados.labels_roles = {};
+            }
 
             return dados;
         },
@@ -57,9 +65,14 @@ export function usarConfiguracoes() {
         mutationFn: async ({ chave, valor }: { chave: string, valor: any }) => {
             return api.patch(`/api/configuracoes/${chave}`, { valor });
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey });
-        }
+        onSuccess: () => queryClient.invalidateQueries({ queryKey })
+    });
+
+    const mutacaoLote = useMutation({
+        mutationFn: async (dados: Partial<ConfiguracoesSistema>) => {
+            return api.post('/api/configuracoes', dados);
+        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey })
     });
 
     const mutacaoRole = useMutation({
@@ -84,6 +97,14 @@ export function usarConfiguracoes() {
                 return { sucesso: true };
             } catch (e: any) {
                 return { sucesso: false, erro: e.response?.data?.erro || 'Erro ao atualizar' };
+            }
+        },
+        salvarConfiguracoesLote: async (dados: Partial<ConfiguracoesSistema>) => {
+            try {
+                await mutacaoLote.mutateAsync(dados);
+                return { sucesso: true };
+            } catch (e: any) {
+                return { sucesso: false, erro: e.response?.data?.erro || 'Erro ao salvar em lote' };
             }
         },
         renomearCargo: async (antigo: string, novo: string) => {

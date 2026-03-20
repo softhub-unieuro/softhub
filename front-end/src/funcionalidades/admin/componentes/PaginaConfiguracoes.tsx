@@ -20,7 +20,7 @@ import { SecaoMatrizAcesso } from '@/funcionalidades/admin/componentes/configura
  * Arquitetada em módulos para otimização de renderização e manutenção.
  */
 export const PaginaConfiguracoes = memo(() => {
-    const { configuracoes, carregando, erro, atualizarConfiguracao, renomearCargo } = usarConfiguracoes();
+    const { configuracoes, carregando, erro, atualizarConfiguracao, salvarConfiguracoesLote, renomearCargo } = usarConfiguracoes();
     const { usuario } = usarAutenticacao();
     const podeEditar = usarPermissaoAcesso('configuracoes:editar');
     const temAcessoCritico = usarPermissaoAcesso('configuracoes:matriz_governanca');
@@ -108,6 +108,7 @@ export const PaginaConfiguracoes = memo(() => {
                     <SecaoCargos 
                         configuracoes={configuracoes ?? null} 
                         atualizarConfiguracao={atualizarConfiguracao} 
+                        salvarConfiguracoesLote={salvarConfiguracoesLote}
                         renomearCargo={renomearCargo}
                         podeEditar={podeEditar}
                         isAdmin={isAdmin}

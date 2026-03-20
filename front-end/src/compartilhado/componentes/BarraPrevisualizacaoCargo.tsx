@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 import { X, ChevronDown, ShieldAlert, Check } from 'lucide-react';
 import {
@@ -10,10 +11,10 @@ import {
 export function BarraPrevisualizacaoCargo() {
     const { roleVisualizacao, setRoleVisualizacao, configuracoes } = usarAutenticacao();
 
-    if (!roleVisualizacao) return null;
-
     // Lista de roles disponíveis para simulação (Baseada na hierarquia completa)
-    const rolesDisponiveis = configuracoes.hierarquia_roles || [];
+    const rolesDisponiveis = useMemo(() => [...(configuracoes.hierarquia_roles || [])].reverse(), [configuracoes.hierarquia_roles]);
+
+    if (!roleVisualizacao) return null;
 
     return (
         <div className="bg-[#4e5dec] text-white px-4 py-2 flex items-center justify-center gap-8 sticky top-0 z-[100] shadow-xl border-b border-indigo-400/30 animate-in slide-in-from-top duration-300">

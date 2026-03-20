@@ -8,13 +8,14 @@ export const CARGOS_FIXOS = ['ADMIN', 'TODOS'];
 interface Props {
     configuracoes: ConfiguracoesSistema | null;
     atualizarConfiguracao: (chave: keyof ConfiguracoesSistema, valor: any) => Promise<any>;
+    salvarConfiguracoesLote: (dados: Partial<ConfiguracoesSistema>) => Promise<any>;
     renomearCargo: (antigo: string, novo: string) => Promise<any>;
     podeEditar: boolean;
     isAdmin: boolean;
     roles: string[];
 }
 
-export function SecaoCargos({ configuracoes, atualizarConfiguracao, renomearCargo, podeEditar, isAdmin, roles }: Props) {
+export function SecaoCargos({ configuracoes, atualizarConfiguracao, salvarConfiguracoesLote, renomearCargo, podeEditar, isAdmin, roles }: Props) {
     const { setRoleVisualizacao } = usarAutenticacao();
     const [novoCargo, setNovoCargo] = useState('');
     const [editandoRole, setEditandoRole] = useState<string | null>(null);
@@ -36,30 +37,71 @@ export function SecaoCargos({ configuracoes, atualizarConfiguracao, renomearCarg
         setSalvandoRole(false);
     }, [nomeRoleTemp, salvandoRole, renomearCargo]);
 
+    /** Normaliza nome para processamento (ID) */
+    const normalizeToSlug = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim().replace(/[ -]/g, '_');
+
     /** Adiciona um novo cargo com permissões básicas */
     const handleAddCargo = useCallback(async (e: FormEvent) => {
         e.preventDefault();
-        if (!novoCargo || !configuracoes) return;
+        const label = novoCargo.trim();
+        const slug = normalizeToSlug(label);
+        
+        if (!slug || !configuracoes) return;
+        
+        // 1. Atualiza Permissões
         const novasPermissoes = {
             ...configuracoes.permissoes_roles,
-            [novoCargo.toUpperCase()]: {
+            [slug]: {
                 'tarefas:visualizar': true,
                 'ponto:registrar': true,
                 'avisos:visualizar': true,
                 'dashboard:visualizar': true,
             },
         };
-        const res = await atualizarConfiguracao('permissoes_roles', novasPermissoes);
+        
+        // 2. Atualiza Hierarquia (Insere acima do MEMBRO)
+        const novaHierarquia = [...(configuracoes.hierarquia_roles || [])];
+        const indexMembro = novaHierarquia.indexOf('MEMBRO');
+        if (indexMembro !== -1) novaHierarquia.splice(indexMembro + 1, 0, slug);
+        else novaHierarquia.push(slug);
+
+        // 3. Atualiza Labels
+        const novasLabels = { 
+            ...(configuracoes.labels_roles || {}),
+            [slug]: label 
+        };
+        
+        // Salva tudo em LOTE para evitar Erro 500 (Batch)
+        const res = await salvarConfiguracoesLote({
+            hierarquia_roles: Array.from(new Set(novaHierarquia)),
+            permissoes_roles: novasPermissoes,
+            labels_roles: novasLabels
+        });
+        
         if (res.sucesso) setNovoCargo('');
-    }, [novoCargo, configuracoes, atualizarConfiguracao]);
+    }, [novoCargo, configuracoes, salvarConfiguracoesLote]);
 
     /** Remove um cargo (exceto os fixos: ADMIN e TODOS) */
     const handleRemoverCargo = useCallback(async (role: string) => {
         if (!configuracoes || CARGOS_FIXOS.includes(role)) return;
+        
+        // 1. Remove da Matriz
         const novasPermissoes = { ...configuracoes.permissoes_roles };
         delete novasPermissoes[role];
-        await atualizarConfiguracao('permissoes_roles', novasPermissoes);
-    }, [configuracoes, atualizarConfiguracao]);
+        
+        // 2. Remove da Hierarquia
+        const novaHierarquia = (configuracoes.hierarquia_roles || []).filter(r => r !== role);
+
+        // 3. Remove Labels
+        const novasLabels = { ...(configuracoes.labels_roles || {}) };
+        delete novasLabels[role];
+        
+        await salvarConfiguracoesLote({
+            hierarquia_roles: novaHierarquia,
+            permissoes_roles: novasPermissoes,
+            labels_roles: novasLabels
+        });
+    }, [configuracoes, salvarConfiguracoesLote]);
 
     return (
         <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden flex flex-col h-fit animar-entrada atraso-5">
@@ -124,7 +166,7 @@ export function SecaoCargos({ configuracoes, atualizarConfiguracao, renomearCarg
                                         ) : (
                                             <div className="flex items-center gap-2">
                                                 <span className="text-[10px] font-black uppercase tracking-widest text-foreground/70 group-hover/card:text-foreground transition-colors truncate">
-                                                    {role}
+                                                    {configuracoes?.labels_roles?.[role] || role}
                                                 </span>
                                                 {podeEditar && !CARGOS_FIXOS.includes(role) && (
                                                     <button onClick={() => { setEditandoRole(role); setNomeRoleTemp(role); }} className="opacity-0 group-hover/card:opacity-100 p-1 text-muted-foreground hover:text-primary transition-all">
