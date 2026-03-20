@@ -14,6 +14,7 @@ export interface Membro {
     equipe_nome: string | null;
     grupo_id: string | null;
     criado_em: string;
+    is_bootstrap?: boolean; // Flag para administradores protegidos pelo sistema (Bootstrap)
 }
 
 /**

@@ -22,8 +22,10 @@ rotasUsuarios.get('/ping', async (c) => {
  * Requer permissão 'membros:gerenciar'.
  */
 rotasUsuarios.get('/', autenticacaoRequerida(), verificarPermissao('membros:gerenciar'), async (c: Context) => {
-    const { DB } = c.env;
+    const { DB, BOOTSTRAP_ADMIN_EMAIL } = c.env;
     try {
+        const listaBootstrap = (BOOTSTRAP_ADMIN_EMAIL || '').toLowerCase().split(',').map((e: string) => e.trim());
+
         // OTIMIZAÇÃO: Consulta única com GROUP_CONCAT e JOIN para evitar subconsultas custosas
         const query = `
             SELECT 
@@ -39,7 +41,14 @@ rotasUsuarios.get('/', autenticacaoRequerida(), verificarPermissao('membros:gere
             ORDER BY u.nome ASC
         `;
         const res = await DB.prepare(query).all();
-        return c.json({ membros: res.results || [] });
+        
+        // Adiciona flag is_bootstrap dinamicamente
+        const membrosComFlag = (res.results || []).map((m: any) => ({
+            ...m,
+            is_bootstrap: listaBootstrap.includes(m.email.toLowerCase()) && m.role === 'ADMIN'
+        }));
+
+        return c.json({ membros: membrosComFlag });
     } catch (erro: any) {
         console.error('[ERRO] GET /api/usuarios:', erro.message);
         return c.json({ erro: 'Falha ao buscar membros' }, 500);

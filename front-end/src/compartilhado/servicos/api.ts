@@ -11,6 +11,8 @@ class ApiError extends Error {
 
 async function doFetch(method: string, url: string, data?: any, config?: any) {
     const token = localStorage.getItem('softhub_token');
+    const rolePreview = sessionStorage.getItem('softhub_preview_role'); // Lê do sessionStorage
+
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         ...config?.headers,
@@ -18,6 +20,11 @@ async function doFetch(method: string, url: string, data?: any, config?: any) {
 
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    // Se estiver em modo de previsualização, envia o cabeçalho para o backend
+    if (rolePreview) {
+        headers['X-Role-Simulada'] = rolePreview;
     }
 
     const fetchOptions: RequestInit = {
@@ -39,7 +46,6 @@ async function doFetch(method: string, url: string, data?: any, config?: any) {
 
     const res = await fetch(fullUrl, fetchOptions);
 
-    // Redireciona para login se token expirar (401), exceto em rotas de autenticação ou públicas
     const isAuthRoute = url.includes('/api/auth') || url.includes('/api/configuracoes/publico');
     const isNoLogin = typeof window !== 'undefined' && window.location.pathname === '/login';
 
@@ -55,7 +61,6 @@ async function doFetch(method: string, url: string, data?: any, config?: any) {
 
     let resData;
     try {
-        // Tenta fazer o parse JSON
         resData = await res.json();
     } catch {
         resData = null;
@@ -65,7 +70,6 @@ async function doFetch(method: string, url: string, data?: any, config?: any) {
         throw new ApiError(`Erro HTTP ${res.status}`, resData, res.status);
     }
 
-    // Formato retrocompatível com a codebase legada (sem axios)
     return { data: resData, status: res.status };
 }
 

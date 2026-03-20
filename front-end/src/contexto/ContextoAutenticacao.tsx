@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { api } from '@/compartilhado/servicos/api';
 import { logger } from '@/utilitarios/gerenciador-logs';
@@ -17,7 +17,8 @@ export interface IConfiguracoesUX {
 }
 
 interface ContextoAutenticacaoContrato {
-    usuario: Usuario | null;
+    usuario: Usuario | null; 
+    usuarioEfetivo: Usuario | null; 
     token: string | null;
     estaAutenticado: boolean;
     carregando: boolean;
@@ -34,82 +35,63 @@ interface ContextoAutenticacaoContrato {
 
 export const ContextoAutenticacao = createContext<ContextoAutenticacaoContrato | null>(null);
 
-/**
- * Hook central de autenticação e governança.
- * Substitui o antigo 'usarAutenticacaoContexto' e o duplicado em 'autenticacao/hooks'.
- */
-export function usarAutenticacao() {
-    const ctx = useContext(ContextoAutenticacao);
-    if (!ctx) throw new Error('usarAutenticacao deve ser usado dentro de ProvedorAutenticacao');
-    return ctx;
-}
-
 const CHAVE_TOKEN = 'softhub_token';
 const CHAVE_USUARIO = 'softhub_usuario';
 const CHAVE_PROJETO = 'softhub_projeto_ativo';
 const CHAVE_CONFIGS = 'softhub_configs_ux';
 const CHAVE_LEMBRAR = 'softhub_lembrar_membro';
+const CHAVE_PREVIEW_ROLE = 'softhub_preview_role'; // Para que a API possa ler
 
 /**
- * ProvedorAutenticacao NÃO usa useNavigate — ele vive fora do RouterProvider.
- * A navegação após login é feita pelo componente ProcessadorLoginMsal
- * que fica DENTRO do router (em rotas.tsx).
+ * Hook central de autenticação e governança.
  */
-export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
-    // Restaura sessão do localStorage de forma SÍNCRONA no estado inicial
-    const [token, setToken] = useState<string | null>(() => {
-        return localStorage.getItem(CHAVE_TOKEN);
-    });
+export function usarAutenticacao() {
+    const ctx = useContext(ContextoAutenticacao);
+    if (!ctx) throw new Error('usarAutenticacao deve ser usado dentro de ProvedorAutenticacao');
+    
+    return {
+        ...ctx,
+        usuario: ctx.usuarioEfetivo
+    };
+}
 
-    const [usuario, setUsuario] = useState<Usuario | null>(() => {
+export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
+    const [token, setToken] = useState<string | null>(() => localStorage.getItem(CHAVE_TOKEN));
+    const [usuarioOriginal, setUsuarioOriginal] = useState<Usuario | null>(() => {
         const salvo = localStorage.getItem(CHAVE_USUARIO);
-        if (salvo) {
-            try { return JSON.parse(salvo); } catch { return null; }
-        }
+        if (salvo) { try { return JSON.parse(salvo); } catch { return null; } }
         return null;
     });
 
     const [configuracoes, setConfiguracoes] = useState<IConfiguracoesUX>(() => {
         const salvo = localStorage.getItem(CHAVE_CONFIGS);
-        if (salvo) {
-            try { return JSON.parse(salvo); } catch { return { hierarquia_roles: [], permissoes_roles: {} }; }
-        }
+        if (salvo) { try { return JSON.parse(salvo); } catch { return { hierarquia_roles: [], permissoes_roles: {} }; } }
         return { hierarquia_roles: [], permissoes_roles: {} };
     });
 
-    // Se já temos usuário e configurações no cache, podemos começar sem loading
-    const [carregando, setCarregando] = useState(() => {
-        const temConfig = localStorage.getItem(CHAVE_CONFIGS);
-        const temToken = localStorage.getItem(CHAVE_TOKEN);
-        // Só carrega se tiver token mas não tiver configs ainda
-        return !!temToken && !temConfig;
-    });
+    const [carregando, setCarregando] = useState(() => !!localStorage.getItem(CHAVE_TOKEN) && !localStorage.getItem(CHAVE_CONFIGS));
+    const [projetoAtivoId, setProjetoAtivoIdInterno] = useState<string>(() => localStorage.getItem(CHAVE_PROJETO) || '');
+    
+    // Estado para "Ver como cargo" (Preview de role) - Persistido por sessão (sessionStorage)
+    const [roleVisualizacao, setRoleVisualizacao] = useState<string | null>(() => sessionStorage.getItem(CHAVE_PREVIEW_ROLE));
 
-    const [projetoAtivoId, setProjetoAtivoIdInterno] = useState<string>(() => {
-        return localStorage.getItem(CHAVE_PROJETO) || '';
-    });
-
-    // Estado para "Ver como cargo" (Preview de role)
-    const [roleVisualizacao, setRoleVisualizacao] = useState<string | null>(null);
+    const usuarioEfetivo = useMemo(() => {
+        if (!usuarioOriginal) return null;
+        if (!roleVisualizacao) return usuarioOriginal;
+        return { ...usuarioOriginal, role: roleVisualizacao };
+    }, [usuarioOriginal, roleVisualizacao]);
 
     const setProjetoAtivoId = useCallback((id: string) => {
         setProjetoAtivoIdInterno(id);
-        if (id) {
-            localStorage.setItem(CHAVE_PROJETO, id);
-        } else {
-            localStorage.removeItem(CHAVE_PROJETO);
-        }
+        if (id) localStorage.setItem(CHAVE_PROJETO, id);
+        else localStorage.removeItem(CHAVE_PROJETO);
     }, []);
 
     const sair = useCallback(() => {
-        setUsuario(null);
+        setUsuarioOriginal(null);
         setToken(null);
-        localStorage.removeItem(CHAVE_TOKEN);
-        localStorage.removeItem(CHAVE_USUARIO);
-        localStorage.removeItem(CHAVE_CONFIGS);
-        localStorage.removeItem(CHAVE_PROJETO);
-
-        // Apenas redireciona localmente, sem deslogar da conta Microsoft global
+        localStorage.clear();
+        sessionStorage.clear();
         window.location.href = '/login';
     }, []);
 
@@ -125,25 +107,23 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
                     role: data.perfil.role,
                     foto_perfil: data.perfil.foto_perfil
                 };
-                setUsuario(perfilAtualizado);
+                setUsuarioOriginal(perfilAtualizado);
                 localStorage.setItem(CHAVE_USUARIO, JSON.stringify(perfilAtualizado));
             }
         } catch (error: any) {
-            if (error.response?.status === 401 || error.response?.status === 404) {
-                sair();
-            }
+            if (error.response?.status === 401 || error.response?.status === 404) sair();
         }
     }, [sair]);
 
     const setRoleVisualizacaoProtegido = useCallback((role: string | null) => {
-        // Regra Crítica: Apenas quem é ADMIN REAL pode usar o modo de previsualização
-        // Se role for null, estamos desativando o modo, o que é sempre permitido.
-        if (usuario?.role === 'ADMIN' || role === null) {
+        if (usuarioOriginal?.role === 'ADMIN' || role === null) {
             setRoleVisualizacao(role);
+            if (role) sessionStorage.setItem(CHAVE_PREVIEW_ROLE, role);
+            else sessionStorage.removeItem(CHAVE_PREVIEW_ROLE);
         } else {
             console.warn('[Segurança] Tentativa não autorizada de ativar previsualização de cargo.');
         }
-    }, [usuario]);
+    }, [usuarioOriginal]);
 
     const buscarConfiguracoesPublicas = useCallback(async () => {
         try {
@@ -172,55 +152,33 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
 
     const entrar = useCallback((novoUsuario: Usuario, novoToken: string) => {
         logger.sucesso('Sessão', `Usuário conectado: ${novoUsuario?.email}`);
-        if (!novoUsuario || !novoToken) {
-            logger.erro('Auth', 'Tentativa de login com dados incompletos');
-            return;
-        }
-        setUsuario(novoUsuario);
+        setUsuarioOriginal(novoUsuario);
         setToken(novoToken);
         localStorage.setItem(CHAVE_TOKEN, novoToken);
         localStorage.setItem(CHAVE_USUARIO, JSON.stringify(novoUsuario));
-        localStorage.setItem(CHAVE_LEMBRAR, 'true');
     }, []);
 
     const atualizarUsuarioLocalmente = useCallback((atualizado: Usuario) => {
-        setUsuario(atualizado);
+        setUsuarioOriginal(atualizado);
         localStorage.setItem(CHAVE_USUARIO, JSON.stringify(atualizado));
     }, []);
 
-    // Nunca retorne null aqui para evitar que o Outlet em rotas.tsx suma.
-    // O RotaProtegida já cuida do estado de carregamento visual se necessário.
-
-    /**
-     * HEARTBEAT DE PRESENÇA (Sinal de Vida)
-     * Mantém o usuário como 'online' no sistema enquanto a aba estiver aberta.
-     */
     useEffect(() => {
-        if (!token || !usuario) return;
-
+        if (!token || !usuarioOriginal) return;
         const enviarPulsacao = async () => {
-            try {
-                // Endpoint silencioso apenas para registrar sinal de vida
-                await api.post('/api/ponto/presenca');
-            } catch (e) {
-                // Falha silenciosa para não incomodar o usuário
-                console.warn('[Heartbeat] Falha na pulsação de presença');
-            }
+            try { await api.post('/api/ponto/presenca'); } catch (e) { console.warn('[Heartbeat] Falha na pulsação de presença'); }
         };
-
-        // Pulsação inicial
         enviarPulsacao();
-
-        // Pulsação a cada 45 segundos (KV expira em 60s)
         const intervalo = setInterval(enviarPulsacao, 45000);
-        
         return () => clearInterval(intervalo);
-    }, [token, usuario]);
+    }, [token, usuarioOriginal]);
 
     return (
         <ContextoAutenticacao.Provider value={{
-            usuario, token,
-            estaAutenticado: !!token && !!usuario,
+            usuario: usuarioOriginal, 
+            usuarioEfetivo,
+            token,
+            estaAutenticado: !!token && !!usuarioOriginal,
             carregando,
             configuracoes,
             projetoAtivoId,
