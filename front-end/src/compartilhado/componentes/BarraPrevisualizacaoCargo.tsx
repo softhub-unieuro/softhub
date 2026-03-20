@@ -14,8 +14,8 @@ export function BarraPrevisualizacaoCargo() {
 
     if (!roleVisualizacao) return null;
 
-    // Lista de roles disponíveis para simulação (exceto ADMIN e TODOS que são fixos ou base)
-    const rolesDisponiveis = Object.keys(configuracoes.permissoes_roles || {});
+    // Lista de roles disponíveis para simulação (Baseada na hierarquia completa)
+    const rolesDisponiveis = configuracoes.hierarquia_roles || [];
 
     return (
         <div className="bg-[#4e5dec] text-white px-4 py-2 flex items-center justify-between sticky top-0 z-[100] shadow-xl border-b border-indigo-400/30 animate-in slide-in-from-top duration-300">

@@ -42,6 +42,12 @@ const CHAVE_PROJETO = 'softhub_projeto_ativo';
 const CHAVE_CONFIGS = 'softhub_configs_ux';
 const CHAVE_PREVIEW_ROLE = 'softhub_preview_role';
 
+// 🛡️ LISTA DE SEGURANÇA (BOOTSTRAP) - Espelha a configuração do servidor
+const EMAILS_BOOTSTRAP = [
+    'mateus099803@unieuro.com.br',
+    'mateus222533@unieuro.com.br'
+];
+
 /**
  * Hook central de autenticação e governança.
  */
@@ -49,11 +55,14 @@ export function usarAutenticacao() {
     const ctx = useContext(ContextoAutenticacao);
     if (!ctx) throw new Error('usarAutenticacao deve ser usado dentro de ProvedorAutenticacao');
     
+    // Calcula ehDonoReal em tempo real para segurança total na UI
+    const ehDonoReal = ctx.usuarioEfetivo?.role === 'ADMIN' && 
+                      EMAILS_BOOTSTRAP.includes(ctx.usuarioEfetivo?.email?.toLowerCase() || '');
+
     return {
         ...ctx,
-        // O resto do sistema usa 'usuario' para checar permissões de UI.
-        // Se estiver simulando, a role visualizada substitui a real.
-        usuario: ctx.usuarioEfetivo 
+        usuario: ctx.usuarioEfetivo,
+        ehDonoReal // Exposto para componentes usarem diretamente
     };
 }
 

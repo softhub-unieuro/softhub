@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Square, CheckSquare, ChevronDown, Trash2, Eye, LayoutGrid, ShieldCheck, Lock } from 'lucide-react';
+import { Square, CheckSquare, ChevronDown, Trash2, Eye, LayoutGrid, ShieldCheck, Lock, Activity } from 'lucide-react';
 import { Avatar } from '@/compartilhado/componentes/Avatar';
 import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
@@ -29,8 +29,8 @@ interface LinhaMembroProps {
 }
 
 export const LinhaMembro = memo(({ membro, salvando, selecionado, onToggleSelect, onAlterarRole, onRemover, onVerPerfil, onAlocar, rolesDisponiveis }: LinhaMembroProps) => {
-    const { usuario } = usarAutenticacao();
-    const ehOMesmoUsuario = usuario?.id === membro.id;
+    const { usuario, setRoleVisualizacao, ehDonoReal } = usarAutenticacao();
+    const ehOMesmoUsuario = (usuario as any)?.id === membro.id;
     const podeAlterarRole = usarPermissaoAcesso('membros:alterar_role');
     const podeDesativar = usarPermissaoAcesso('membros:desativar');
 
@@ -166,6 +166,18 @@ export const LinhaMembro = memo(({ membro, salvando, selecionado, onToggleSelect
                             <Trash2 size={15} />
                         </button>
                     )}
+
+                    {/* 🎮 MODO SIMULAÇÃO (Apenas para o Dono do Sistema) */}
+                    {ehDonoReal && !ehOMesmoUsuario && (
+                        <button
+                            onClick={() => setRoleVisualizacao(membro.role)}
+                            className="p-1.5 rounded-lg text-muted-foreground/20 hover:text-amber-500 hover:bg-amber-500/5 transition-all opacity-0 group-hover:opacity-100"
+                            title={`Simular visão de ${membro.role}`}
+                        >
+                            <Activity size={15} />
+                        </button>
+                    )}
+
                     {ehBootstrap && !ehOMesmoUsuario && (
                         <Tooltip texto="Administrador Protegido">
                             <div className="p-1.5 text-muted-foreground/20 cursor-help">

@@ -4,14 +4,14 @@ import {
     Menu, QrCode, Sun, Moon, Bell, Search, 
     User, LogOut, ChevronRight, LayoutDashboard,
     FolderKanban, Clock, Megaphone, ListTodo,
-    Settings, Users, LayoutGrid, FileText, Database, Layers
+    Settings, Users, LayoutGrid, FileText, Database, Layers, ShieldCheck
 } from 'lucide-react';
 import { Tooltip } from './Tooltip';
 import { usarTema } from '@/contexto/ContextoTema';
 import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 import { usarNotificacoes } from '@/compartilhado/hooks/usarNotificacoes';
 import { Avatar } from './Avatar';
-import logoUnieuro from '@/assets/logo-unieuro.png';
+import logoUnieuro from '../../assets/logo-unieuro.png';
 
 interface CabecalhoGlobalProps {
     aoAbrirSidebar: () => void;
@@ -45,7 +45,7 @@ const CONFIG_ROTAS: Record<string, { label: string; icone: any }> = {
  */
 export function CabecalhoGlobal({ aoAbrirSidebar, aoAbrirScanner }: CabecalhoGlobalProps) {
     const { tema, setTema } = usarTema();
-    const { usuario, sair } = usarAutenticacao();
+    const { usuario, sair, ehDonoReal, setRoleVisualizacao, configuracoes } = usarAutenticacao();
     const { notificacoes } = usarNotificacoes();
     const location = useLocation();
     const [buscaFocada, setBuscaFocada] = useState(false);
@@ -142,6 +142,43 @@ export function CabecalhoGlobal({ aoAbrirSidebar, aoAbrirScanner }: CabecalhoGlo
                             {tema === 'dark' ? <Sun size={18} strokeWidth={2.5} /> : <Moon size={18} strokeWidth={2.5} />}
                         </button>
                     </Tooltip>
+
+                    {/* 🎮 CENTRAL DE SIMULAÇÃO (Bootstrap Only) */}
+                    {ehDonoReal && (
+                        <>
+                            <div className="w-px h-4 bg-border/20 mx-1" />
+                            <Tooltip texto="Simular Cargos" posicao="bottom">
+                                <div className="relative group/sim-menu">
+                                    <button className="p-2 text-amber-500 hover:text-amber-400 transition-all hover:bg-amber-500/5 rounded-xl border border-transparent hover:border-amber-500/10 active:scale-95">
+                                        <ShieldCheck size={18} strokeWidth={2.5} />
+                                    </button>
+
+                                    {/* Dropdown de Simulação */}
+                                    <div className="absolute right-0 top-full pt-4 opacity-0 translate-y-2 pointer-events-none group-hover/sim-menu:opacity-100 group-hover/sim-menu:translate-y-0 group-hover/sim-menu:pointer-events-auto transition-all duration-300 z-50">
+                                        <div className="w-64 bg-card/95 backdrop-blur-xl border border-amber-500/20 rounded-2xl shadow-2xl p-2">
+                                            <div className="px-3 py-3 border-b border-border/20 mb-1">
+                                                <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Simulação de Cargo</p>
+                                                <p className="text-[9px] text-muted-foreground leading-tight mt-1">Teste as permissões de outros cargos em tempo real.</p>
+                                            </div>
+                                            
+                                            <div className="max-h-[200px] overflow-y-auto custom-scrollbar p-1 space-y-1">
+                                                {(configuracoes.hierarquia_roles || []).filter(r => r !== 'ADMIN').map(role => (
+                                                    <button
+                                                        key={role}
+                                                        onClick={() => setRoleVisualizacao(role)}
+                                                        className="w-full text-left px-3 py-2 text-[11px] font-bold text-muted-foreground hover:text-amber-500 hover:bg-amber-500/5 rounded-xl transition-all flex items-center justify-between group/item"
+                                                    >
+                                                        {role}
+                                                        <ChevronRight size={12} className="opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Tooltip>
+                        </>
+                    )}
                 </div>
 
                 {/* Notificações */}

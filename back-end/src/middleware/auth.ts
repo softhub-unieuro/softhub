@@ -149,7 +149,9 @@ export function autenticacaoRequerida(roleMinima?: string) {
             email: resUsuario.email,
             nome: resUsuario.nome,
             isSimulacao,
-            ehDonoSistema: ehMembroBootstrap
+            // 🛡️ Se estiver simulando, ele PERDE os poderes de Dono no contexto da requisição.
+            // Para "TUDO" ser real, o sistema não deve saber que ele é o dono durante a simulação.
+            ehDonoSistema: isSimulacao ? false : ehMembroBootstrap
         };
         
         c.set('usuario', usuarioCtx);
