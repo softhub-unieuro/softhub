@@ -10,8 +10,6 @@ import { invalidarSessaoCache } from '../servicos/servico-acesso';
 
 const rotasAdmin = new Hono<{ Bindings: Env; Variables: { usuario: any } }>();
 
-const ROLES_VALIDAS = ['ADMIN', 'COORDENADOR', 'GESTOR', 'LIDER', 'SUBLIDER', 'SUB-LIDER', 'MEMBRO', 'LIDER-TECNICO'];
-
 /**
  * Altera a role (cargo) de um membro.
  */
@@ -27,7 +25,11 @@ rotasAdmin.patch('/:id/role', autenticacaoRequerida(), verificarPermissao(['memb
         let role = body.role?.toUpperCase() || '';
         const roleNormalizada = role.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-        if (!ROLES_VALIDAS.includes(roleNormalizada)) {
+        // Validar Role contra a lista de roles configuradas no banco
+        const resHierarquia = await DB.prepare('SELECT valor FROM configuracoes_sistema WHERE chave = ?').bind('hierarquia_roles').first() as any;
+        const configuradas = resHierarquia ? JSON.parse(resHierarquia.valor) as string[] : ['ADMIN', 'COORDENADOR', 'GESTOR', 'LIDER', 'SUBLIDER', 'MEMBRO'];
+        
+        if (!configuradas.includes(roleNormalizada) && !['ADMIN', 'TODOS'].includes(roleNormalizada)) {
             return c.json({ erro: `Cargo '${role}' é inválido.` }, 400);
         }
 
@@ -79,6 +81,7 @@ rotasAdmin.patch('/:id/role', autenticacaoRequerida(), verificarPermissao(['memb
 
         return c.json({ sucesso: true });
     } catch (erro: any) {
+        console.error('[ADMIN] Erro ao alterar role:', erro);
         return c.json({ erro: 'Erro ao processar alteração.' }, 400);
     }
 });
@@ -143,7 +146,13 @@ rotasAdmin.post('/', autenticacaoRequerida(), verificarPermissao('membros:gerenc
 
     try {
         const role = roleRaw.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        if (!ROLES_VALIDAS.includes(role)) return c.json({ erro: `Cargo inválido.` }, 400);
+        // Validar contra cargos no DB
+        const resH = await DB.prepare('SELECT valor FROM configuracoes_sistema WHERE chave = ?').bind('hierarquia_roles').first() as any;
+        const validas = resH ? JSON.parse(resH.valor) as string[] : ['ADMIN', 'MEMBRO'];
+
+        if (!validas.includes(role) && !['ADMIN', 'TODOS'].includes(role)) {
+            return c.json({ erro: `Cargo '${roleRaw}' não existe na hierarquia do sistema.` }, 400);
+        }
 
         const dominios = await obterConfiguracao(c.env, 'dominios_autorizados') || ['unieuro.com.br', 'unieuro.edu.br'];
         if (!dominios.some((d: string) => emailLimpo.endsWith(`@${d}`))) return c.json({ erro: 'Domínio não autorizado.' }, 400);

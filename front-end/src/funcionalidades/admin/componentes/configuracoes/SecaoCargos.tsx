@@ -38,7 +38,7 @@ export function SecaoCargos({ configuracoes, atualizarConfiguracao, salvarConfig
     }, [nomeRoleTemp, salvandoRole, renomearCargo]);
 
     /** Normaliza nome para processamento (ID) */
-    const normalizeToSlug = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim().replace(/[ -]/g, '_');
+    const normalizeToSlug = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim().replace(/\s/g, '_');
 
     /** Adiciona um novo cargo com permissões básicas */
     const handleAddCargo = useCallback(async (e: FormEvent) => {
