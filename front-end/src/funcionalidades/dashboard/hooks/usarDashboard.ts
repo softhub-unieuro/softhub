@@ -17,11 +17,16 @@ export interface TarefaDashboard {
     status: string;
 }
 
+export interface ProjetoDashboard {
+    id: string;
+    nome: string;
+}
+
 export interface DadosDashboard {
     metricas: MetricaDashboard;
     avisos: Aviso[];
     minhasTarefas: TarefaDashboard[];
-    projetosAtivos: string[];
+    projetosAtivos: ProjetoDashboard[];
 }
 
 /**

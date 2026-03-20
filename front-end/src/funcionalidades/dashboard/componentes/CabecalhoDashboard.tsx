@@ -11,10 +11,12 @@ import {
 import { ModalEdicaoPerfil } from '@/funcionalidades/perfil/componentes/ModalEdicaoPerfil';
 import { usarPerfil } from '@/funcionalidades/perfil/hooks/usarPerfil';
 import { LABELS_ROLES } from '@/utilitarios/constantes';
+import type { ProjetoDashboard } from '../hooks/usarDashboard';
+import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 
 interface CabecalhoDashboardProps {
     nomeUsuario: string;
-    projetosAtivos: string[];
+    projetosAtivos: ProjetoDashboard[];
     metricas: {
         totalTarefas: number;
         tarefasConcluidas: number;
@@ -30,9 +32,13 @@ interface CabecalhoDashboardProps {
  */
 export const CabecalhoDashboard = memo(({ nomeUsuario, projetosAtivos, metricas }: CabecalhoDashboardProps) => {
     const { perfil } = usarPerfil();
+    const { projetoAtivoId, setProjetoAtivoId } = usarAutenticacao();
     const [modalPerfilAberto, setModalPerfilAberto] = useState(false);
     const primeiroNome = nomeUsuario?.split(' ')[0] || 'Desenvolvedor';
-    const ehGlobal = projetosAtivos.length > 1 || projetosAtivos.length === 0;
+    const ehGlobal = !projetoAtivoId || projetoAtivoId === 'global';
+    
+    // Encontrar o nome do projeto ativo
+    const projetoAtivoNome = projetosAtivos.find(p => p.id === projetoAtivoId)?.nome;
 
     return (
         <div className="space-y-6 mb-8">
@@ -59,7 +65,7 @@ export const CabecalhoDashboard = memo(({ nomeUsuario, projetosAtivos, metricas 
                     <p className="text-muted-foreground font-medium text-sm sm:text-base max-w-2xl">
                         {ehGlobal 
                             ? "Acompanhando a operação consolidada de todos os seus projetos ativos."
-                            : `Status atual da operação no projeto ${projetosAtivos[0] || 'selecionado'}.`
+                            : `Status atual da operação no projeto ${projetoAtivoNome || 'selecionado'}.`
                         }
                     </p>
                 </div>
@@ -85,26 +91,34 @@ export const CabecalhoDashboard = memo(({ nomeUsuario, projetosAtivos, metricas 
             {/* Modal de Perfil Unificado */}
             <ModalEdicaoPerfil aberto={modalPerfilAberto} aoFechar={() => setModalPerfilAberto(false)} />
 
-            {/* Lista de Projetos Monitorados (Floating Pill) */}
-            {projetosAtivos.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2 animate-in slide-in-from-left-4 duration-700">
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-card/50 backdrop-blur-md border border-border/40 rounded-2xl">
-                        <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em] opacity-80">Radar Ativo:</span>
-                        <div className="flex items-center -space-x-2">
-                            {projetosAtivos.slice(0, 3).map(p => (
-                                <div key={p} className="h-6 px-3 bg-primary/10 border border-primary/20 rounded-full flex items-center shadow-inner group/pill hover:z-10 transition-all">
-                                    <span className="text-[9px] font-bold text-primary truncate max-w-[100px]">{p}</span>
-                                </div>
-                            ))}
-                            {projetosAtivos.length > 3 && (
-                                <div className="h-6 w-6 bg-muted border border-border rounded-full flex items-center justify-center text-[8px] font-black text-muted-foreground">
-                                    +{projetosAtivos.length - 3}
-                                </div>
-                            )}
-                        </div>
+            {/* Lista de Projetos Monitorados (Radar Clickable) */}
+            <div className="flex flex-wrap items-center gap-3 animate-in slide-in-from-left-4 duration-700">
+                <div className="flex flex-wrap items-center gap-2 px-3 py-2 bg-card/50 backdrop-blur-md border border-border/40 rounded-[24px]">
+                    <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] opacity-80 px-2">Radar:</span>
+                    
+                    {/* Botão Global */}
+                    <button
+                        onClick={() => setProjetoAtivoId('')}
+                        className={`h-7 px-4 rounded-full flex items-center transition-all text-[10px] font-black uppercase tracking-widest ${ehGlobal ? 'bg-primary text-white shadow-lg shadow-primary/20 ring-2 ring-primary/20' : 'bg-primary/5 text-primary/60 hover:bg-primary/10'}`}
+                    >
+                        Visão Global
+                    </button>
+
+                    <div className="w-px h-4 bg-border/40 mx-1" />
+
+                    <div className="flex flex-wrap items-center gap-2">
+                        {projetosAtivos.map(p => (
+                            <button 
+                                key={p.id} 
+                                onClick={() => setProjetoAtivoId(p.id)}
+                                className={`h-7 px-4 rounded-full flex items-center transition-all text-[10px] font-bold border ${projetoAtivoId === p.id ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20' : 'bg-card/40 border-border/40 text-muted-foreground hover:border-blue-500/40 hover:text-foreground'}`}
+                            >
+                                {p.nome}
+                            </button>
+                        ))}
                     </div>
                 </div>
-            )}
+            </div>
 
             {/* Grid de Performance Operacional (Vision System System) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -26,7 +26,7 @@ rotasPerfil.get('/me', autenticacaoRequerida(), async (c: Context) => {
                 WHERE uo.usuario_id = ?
             `).bind(usuarioLogado.id),
             DB.prepare(`SELECT COUNT(*) as total, SUM(CASE WHEN t.status = 'concluida' THEN 1 ELSE 0 END) as concluidas FROM tarefas t JOIN tarefas_responsaveis tr ON tr.tarefa_id = t.id WHERE tr.usuario_id = ?`).bind(usuarioLogado.id),
-            DB.prepare(`SELECT COUNT(*) as batidas FROM ponto_registros WHERE usuario_id = ? AND strftime('%m', registrado_em) = strftime('%m', 'now')`).bind(usuarioLogado.id),
+            DB.prepare(`SELECT COUNT(DISTINCT DATE(registrado_em, '-3 hours')) as batidas FROM ponto_registros WHERE usuario_id = ? AND strftime('%m', registrado_em) = strftime('%m', 'now')`).bind(usuarioLogado.id),
             DB.prepare(`SELECT tipo FROM ponto_registros WHERE usuario_id = ? AND DATE(registrado_em, '-3 hours') = DATE('now', '-3 hours') ORDER BY registrado_em DESC LIMIT 1`).bind(usuarioLogado.id)
         ]);
 
@@ -147,7 +147,7 @@ rotasPerfil.get('/:id', autenticacaoRequerida(), async (c: Context) => {
                 WHERE uo.usuario_id = ?
             `).bind(id),
             DB.prepare(`SELECT COUNT(*) as total, SUM(CASE WHEN t.status = 'concluida' THEN 1 ELSE 0 END) as concluidas FROM tarefas t JOIN tarefas_responsaveis tr ON tr.tarefa_id = t.id WHERE tr.usuario_id = ?`).bind(id),
-            DB.prepare(`SELECT COUNT(*) as batidas FROM ponto_registros WHERE usuario_id = ? AND strftime('%m', registrado_em) = strftime('%m', 'now')`).bind(id),
+            DB.prepare(`SELECT COUNT(DISTINCT DATE(registrado_em, '-3 hours')) as batidas FROM ponto_registros WHERE usuario_id = ? AND strftime('%m', registrado_em) = strftime('%m', 'now')`).bind(id),
             DB.prepare(`SELECT tipo FROM ponto_registros WHERE usuario_id = ? AND DATE(registrado_em, '-3 hours') = DATE('now', '-3 hours') ORDER BY registrado_em DESC LIMIT 1`).bind(id)
         ]);
 

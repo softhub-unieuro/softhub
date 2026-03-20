@@ -11,28 +11,38 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
     const usuarioLogado = c.get('usuario') as any;
 
     try {
-        let projetosIds: string[] = [];
-        let nomesProjetos: string[] = [];
+        // 1. Buscar TODOS os projetos que o usuário participa (via equipe)
+        const { results: todosOsProjetos } = await DB.prepare(`
+            SELECT DISTINCT p.id, p.nome 
+            FROM projetos p
+            JOIN projetos_equipes pe ON pe.projeto_id = p.id
+            JOIN usuarios_organizacao uo ON uo.equipe_id = pe.equipe_id
+            WHERE uo.usuario_id = ?
+            
+            UNION
+
+            SELECT DISTINCT p.id, p.nome
+            FROM projetos p
+            JOIN tarefas t ON t.projeto_id = p.id
+            JOIN tarefas_responsaveis tr ON tr.tarefa_id = t.id
+            WHERE tr.usuario_id = ?
+
+            ORDER BY nome ASC
+        `).bind(usuarioLogado.id, usuarioLogado.id).all();
+
+        const listaProjetos = todosOsProjetos as { id: string, nome: string }[];
+
+        // 2. Definir quais projetos filtrar para as métricas atuais
+        let projetosIdsFiltro: string[] = [];
 
         if (projetoId && projetoId !== 'global') {
-            projetosIds = [projetoId];
-            const p = await DB.prepare('SELECT nome FROM projetos WHERE id = ?').bind(projetoId).first() as any;
-            if (p) nomesProjetos = [p.nome];
+            projetosIdsFiltro = [projetoId];
         } else {
-            // Dashboard Global: Projetos onde o usuário possui tarefas atribuídas
-            const { results } = await DB.prepare(`
-                SELECT DISTINCT p.id, p.nome 
-                FROM projetos p
-                JOIN tarefas t ON t.projeto_id = p.id
-                JOIN tarefas_responsaveis tr ON tr.tarefa_id = t.id
-                WHERE tr.usuario_id = ?
-            `).bind(usuarioLogado.id).all();
-            
-            projetosIds = results.map((r: any) => r.id);
-            nomesProjetos = results.map((r: any) => r.nome);
+            // Dashboard Global: Usa todos os projetos da lista
+            projetosIdsFiltro = listaProjetos.map(p => p.id);
         }
 
-        if (projetosIds.length === 0) {
+        if (projetosIdsFiltro.length === 0) {
             return c.json({
                 metricas: { totalTarefas: 0, tarefasConcluidas: 0, tarefasAtrasadas: 0, horasRegistradasHoje: 0, progressoGeral: 0 },
                 avisos: [],
@@ -45,7 +55,7 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
         const cached = await softhub_kv.get(cacheKey);
         if (cached) return c.json(JSON.parse(cached));
 
-        const placeholders = projetosIds.map(() => '?').join(',');
+        const placeholders = projetosIdsFiltro.map(() => '?').join(',');
         
         // Métricas Consolidadas
         const countQuery = await DB.prepare(`
@@ -55,7 +65,7 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
                 SUM(CASE WHEN t.status != 'concluido' AND t.prioridade = 'urgente' THEN 1 ELSE 0 END) as atrasadas
             FROM tarefas t
             WHERE t.projeto_id IN (${placeholders})
-        `).bind(...projetosIds).first() as any;
+        `).bind(...projetosIdsFiltro).first() as any;
 
         const horasHoje = await DB.prepare(`
             SELECT COUNT(*) as batidas FROM ponto_registros 
@@ -91,7 +101,7 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
             JOIN projetos p ON t.projeto_id = p.id
             WHERE tr.usuario_id = ? AND t.status != 'concluido' AND t.projeto_id IN (${placeholders})
             ORDER BY t.criado_em DESC LIMIT 5
-        `).bind(usuarioLogado.id, ...projetosIds).all();
+        `).bind(usuarioLogado.id, ...projetosIdsFiltro).all();
 
         const resposta = { 
             metricas, 
@@ -100,7 +110,7 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
                 criado_por: { nome: a.autor_nome, foto: a.autor_foto }
             })), 
             minhasTarefas,
-            projetosAtivos: nomesProjetos
+            projetosAtivos: listaProjetos // Agora retorna [{id, nome}]
         };
 
         await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 300 }); // 5 min

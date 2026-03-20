@@ -67,7 +67,7 @@ export const PaginaDashboard = memo(() => {
                     <div className="mb-12 space-y-4">
                         <div className="flex items-center gap-3 px-1">
                             <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                            <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Meu Desempenho</h3>
+                            <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Meu Desempenho (Global)</h3>
                         </div>
                         <ResumoPessoalDashboard />
                     </div>
