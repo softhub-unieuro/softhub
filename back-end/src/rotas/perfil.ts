@@ -48,6 +48,7 @@ rotasPerfil.get('/me', autenticacaoRequerida(), async (c: Context) => {
             perfil: {
                 ...usuario,
                 role: usuarioLogado.role, // 🛡️ USA A ROLE DO MIDDLEWARE (QUE POSSUI OVERRIDE DE BOOTSTRAP)
+                is_bootstrap: usuarioLogado.ehDonoSistema, // Informa se é um admin de segurança
                 equipe_nome: organizacao?.equipe_nome || 'S/ Equipe',
                 grupo_nome: organizacao?.grupo_nome || 'S/ Grupo',
                 esta_em_expediente: ultimoPonto?.tipo === 'entrada'

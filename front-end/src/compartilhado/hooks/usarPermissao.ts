@@ -3,63 +3,67 @@ import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 
 /**
  * Hook utilitário APENAS para UX (mostrar/esconder botões e seções).
- *
- * ⚠️  SEGURANÇA REAL É SEMPRE FEITA NO BACKEND — este hook é somente para UI.
- *
- * Compara a role do usuário com uma role mínima requerida, baseado na hierarquia
- * de roles definida no banco de dados (configuracoes_sistema).
+ * 🔥 SEGURANÇA REAL É NO BACKEND. Este hook é apenas para melhorar a experiência do usuário.
  */
 export function usarPermissao(roleMinimoRequerido: string | null): boolean {
     const { usuario, configuracoes, roleVisualizacao } = usarAutenticacao();
     const { hierarquia_roles } = configuracoes;
 
     return useMemo(() => {
-        // Sem role mínimo requerido — qualquer autenticado tem acesso
         if (!roleMinimoRequerido) return true;
 
-        // Se estiver em modo de previsualização, usa a role mockada
+        // Cargo efetivo (se estiver simulando, usa o simulado)
         const roleEfetiva = roleVisualizacao || usuario?.role;
 
-        // Sem usuário ou sem role — nega
         if (!roleEfetiva) return false;
 
-        // 🛡️ REGRA DE OURO: O cargo 'ADMIN' é a raiz de todas as permissões.
-        // Se o cargo atual (real ou visualizado) for ADMIN, ele tem acesso total por hierarquia.
-        // Isso resolve o problema de telas vazias caso a tabela de hierarquia ainda não tenha sido configurada.
+        // 🛡️ REGRA DE OURO FRONTEND: O cargo 'ADMIN' ignora hierarquia e tem acesso total.
+        // Se o usuário real (original) for ADMIN (mesmo via Bootstrap) ele passa se não estiver simulando algo menor.
         if (roleEfetiva === 'ADMIN') return true;
 
         const indiceUsuario = hierarquia_roles.indexOf(roleEfetiva);
         const indiceRequerido = hierarquia_roles.indexOf(roleMinimoRequerido);
 
-        // Role inválido (não existe na hierarquia) — nega por segurança
-        if (indiceUsuario === -1 || indiceRequerido === -1) return false;
+        if (indiceUsuario === -1 || indiceRequerido === -1) {
+            // Se a role mínima requerida não existe na hierarquia, bloqueamos por segurança.
+            return false;
+        }
 
         return indiceUsuario >= indiceRequerido;
     }, [usuario, roleMinimoRequerido, hierarquia_roles, roleVisualizacao]);
 }
 
-
 /**
- * Hook utilitário para checar uma permissão específica ativada na Matriz de Controle de Acesso.
- * @example const podeCriarTarefa = usarPermissaoAcesso('tarefas:criar');
+ * Checa permissão específica na Matriz de Controle de Acesso (Ex: 'tarefas:criar').
  */
 export function usarPermissaoAcesso(chavePermissao: string): boolean {
     const { usuario, configuracoes, roleVisualizacao } = usarAutenticacao();
     const { permissoes_roles } = configuracoes;
+
+    // Se estiver simulando, a roleEfetiva é a simulada.
+    // Se não, é a real.
     const roleEfetiva = roleVisualizacao || usuario?.role || 'MEMBRO';
 
     return useMemo(() => {
-        // 🛡️ ADMIN sempre tem todas as chaves de acesso liberadas na UI.
-        // Se estiver previsualizando outro cargo, a roleEfetiva NÃO será 'ADMIN', 
-        // e ele cairá nas regras normais da matriz.
+        // 🥇 ADMIN (Real ou Bootstrap sem simulação) sempre tem acesso total a qualquer chave na UI.
         if (roleEfetiva === 'ADMIN') return true;
 
         if (!permissoes_roles) return false;
 
-        const temPermissaoRole = permissoes_roles[roleEfetiva]?.[chavePermissao] === true;
-        const temPermissaoUniversal = permissoes_roles['TODOS']?.[chavePermissao] === true;
+        const permissoesDaRole = permissoes_roles[roleEfetiva] || {};
+        const permissoesTodos = permissoes_roles['TODOS'] || {};
 
-        return temPermissaoRole || temPermissaoUniversal;
+        // 🛡️ Suporte a curingas (*) também no Frontend
+        if (permissoesDaRole['*'] === true || permissoesTodos['*'] === true) return true;
+
+        const [modulo] = chavePermissao.split(':');
+        if (permissoesDaRole[`${modulo}:*`] === true || permissoesTodos[`${modulo}:*`] === true) return true;
+
+        // Check exato: 'modulo:acao' ou { modulo: { acao: true } }
+        return permissoesDaRole[chavePermissao] === true || 
+               permissoesTodos[chavePermissao] === true ||
+               (permissoesDaRole[modulo] && typeof permissoesDaRole[modulo] === 'object' && (permissoesDaRole[modulo] as any)[chavePermissao.split(':')[1]] === true) ||
+               (permissoesTodos[modulo] && typeof permissoesTodos[modulo] === 'object' && (permissoesTodos[modulo] as any)[chavePermissao.split(':')[1]] === true);
 
     }, [roleEfetiva, chavePermissao, permissoes_roles]);
 }

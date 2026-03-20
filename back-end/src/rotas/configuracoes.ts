@@ -140,7 +140,7 @@ rotasConfiguracoes.patch('/:chave', autenticacaoRequerida(), verificarPermissao(
                     return c.json({ erro: 'Apenas o Administrador pode delegar ou revogar permissões de Governança Crítica.' }, 403);
                 }
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error('[CONFIG] Erro ao validar trava de governança:', e);
             return c.json({ erro: 'Falha na validação de segurança.' }, 500);
         }

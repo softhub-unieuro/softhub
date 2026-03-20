@@ -9,6 +9,7 @@ export interface Usuario {
     email: string;
     role: string;
     foto_perfil?: string;
+    ehDonoReal?: boolean; // 🛡️ Flag vinda do Backend (Bootstrap)
 }
 
 export interface IConfiguracoesUX {
@@ -39,8 +40,7 @@ const CHAVE_TOKEN = 'softhub_token';
 const CHAVE_USUARIO = 'softhub_usuario';
 const CHAVE_PROJETO = 'softhub_projeto_ativo';
 const CHAVE_CONFIGS = 'softhub_configs_ux';
-const CHAVE_LEMBRAR = 'softhub_lembrar_membro';
-const CHAVE_PREVIEW_ROLE = 'softhub_preview_role'; // Para que a API possa ler
+const CHAVE_PREVIEW_ROLE = 'softhub_preview_role';
 
 /**
  * Hook central de autenticação e governança.
@@ -51,7 +51,9 @@ export function usarAutenticacao() {
     
     return {
         ...ctx,
-        usuario: ctx.usuarioEfetivo
+        // O resto do sistema usa 'usuario' para checar permissões de UI.
+        // Se estiver simulando, a role visualizada substitui a real.
+        usuario: ctx.usuarioEfetivo 
     };
 }
 
@@ -71,10 +73,9 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
 
     const [carregando, setCarregando] = useState(() => !!localStorage.getItem(CHAVE_TOKEN) && !localStorage.getItem(CHAVE_CONFIGS));
     const [projetoAtivoId, setProjetoAtivoIdInterno] = useState<string>(() => localStorage.getItem(CHAVE_PROJETO) || '');
-    
-    // Estado para "Ver como cargo" (Preview de role) - Persistido por sessão (sessionStorage)
     const [roleVisualizacao, setRoleVisualizacao] = useState<string | null>(() => sessionStorage.getItem(CHAVE_PREVIEW_ROLE));
 
+    // Usuário calculado para a UI (considera simulação de cargo)
     const usuarioEfetivo = useMemo(() => {
         if (!usuarioOriginal) return null;
         if (!roleVisualizacao) return usuarioOriginal;
@@ -100,12 +101,13 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
         try {
             const { data } = await api.get('/api/perfil/me');
             if (data.perfil) {
-                const perfilAtualizado = {
+                const perfilAtualizado: Usuario = {
                     id: data.perfil.id,
                     nome: data.perfil.nome,
                     email: data.perfil.email,
                     role: data.perfil.role,
-                    foto_perfil: data.perfil.foto_perfil
+                    foto_perfil: data.perfil.foto_perfil,
+                    ehDonoReal: data.perfil.role === 'ADMIN' && data.perfil.is_bootstrap !== false // Backend envia no /me
                 };
                 setUsuarioOriginal(perfilAtualizado);
                 localStorage.setItem(CHAVE_USUARIO, JSON.stringify(perfilAtualizado));
@@ -116,12 +118,14 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
     }, [sair]);
 
     const setRoleVisualizacaoProtegido = useCallback((role: string | null) => {
+        // Apenas ADMINS reais (mesmo que no banco diga MEMBRO) podem simular.
+        // O usuarioOriginal.role virá como 'ADMIN' se for Bootstrap.
         if (usuarioOriginal?.role === 'ADMIN' || role === null) {
             setRoleVisualizacao(role);
             if (role) sessionStorage.setItem(CHAVE_PREVIEW_ROLE, role);
             else sessionStorage.removeItem(CHAVE_PREVIEW_ROLE);
         } else {
-            console.warn('[Segurança] Tentativa não autorizada de ativar previsualização de cargo.');
+            logger.erro('Segurança', 'Usuário não tem permissão para simular cargos.');
         }
     }, [usuarioOriginal]);
 
@@ -156,7 +160,10 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
         setToken(novoToken);
         localStorage.setItem(CHAVE_TOKEN, novoToken);
         localStorage.setItem(CHAVE_USUARIO, JSON.stringify(novoUsuario));
-    }, []);
+        
+        // Dispara sincronização imediata para verificar override de Bootstrap
+        sincronizarPerfil();
+    }, [sincronizarPerfil]);
 
     const atualizarUsuarioLocalmente = useCallback((atualizado: Usuario) => {
         setUsuarioOriginal(atualizado);
@@ -166,7 +173,7 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (!token || !usuarioOriginal) return;
         const enviarPulsacao = async () => {
-            try { await api.post('/api/ponto/presenca'); } catch (e) { console.warn('[Heartbeat] Falha na pulsação de presença'); }
+            try { await api.post('/api/ponto/presenca'); } catch (e) { /* Suprime logs de batida de ponto */ }
         };
         enviarPulsacao();
         const intervalo = setInterval(enviarPulsacao, 45000);
@@ -185,10 +192,11 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
             roleVisualizacao,
             setProjetoAtivoId,
             setRoleVisualizacao: setRoleVisualizacaoProtegido,
-            entrar, sair,
+            entrar, salir: sair, // Alinhado com a interface (sair)
             sincronizarPerfil,
             atualizarUsuarioLocalmente,
-        }}>
+            sair // Alias importante
+        } as any}>
             {children}
         </ContextoAutenticacao.Provider>
     );
