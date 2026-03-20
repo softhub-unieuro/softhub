@@ -192,7 +192,7 @@ export function CabecalhoGlobal({ aoAbrirSidebar, aoAbrirScanner }: CabecalhoGlo
                                                                 onClick={() => setRoleVisualizacao(role)}
                                                                 className={`w-full text-left px-3 py-2 text-[11px] font-bold rounded-xl transition-all flex items-center justify-between group/item ${usuario.role === role ? 'text-primary bg-primary/5' : 'text-muted-foreground hover:text-amber-500 hover:bg-amber-500/5'}`}
                                                             >
-                                                                {role}
+                                                                {configuracoes?.labels_roles?.[role] || role}
                                                                 <ChevronRight size={12} className="opacity-0 group-hover/item:opacity-100 transition-opacity" />
                                                             </button>
                                                         ))}

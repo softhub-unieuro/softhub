@@ -47,14 +47,16 @@ rotasConfiguracoes.get('/publico', async (c: Context) => {
             if (cache) return c.json(JSON.parse(cache));
         }
 
-        const { results } = await DB.prepare('SELECT chave, valor FROM configuracoes_sistema WHERE chave IN (?, ?, ?, ?, ?, ?)')
-            .bind('permissoes_roles', 'hierarquia_roles', 'dominios_autorizados', 'modo_manutencao', 'hora_inicio_ponto', 'hora_fim_ponto')
+        const { results } = await DB.prepare('SELECT chave, valor FROM configuracoes_sistema WHERE chave IN (?, ?, ?, ?, ?, ?, ?, ?)')
+            .bind('permissoes_roles', 'hierarquia_roles', 'dominios_autorizados', 'modo_manutencao', 'hora_inicio_ponto', 'hora_fim_ponto', 'labels_roles', 'ips_autorizados_ponto')
             .all();
 
         const config: Record<string, any> = {
             permissoes_roles: {},
             hierarquia_roles: [],
+            labels_roles: {},
             dominios_autorizados: ['unieuro.com.br'],
+            ips_autorizados_ponto: [],
             modo_manutencao: false,
             hora_inicio_ponto: '13:00',
             hora_fim_ponto: '17:00'

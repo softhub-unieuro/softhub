@@ -21,7 +21,7 @@ export function BarraPrevisualizacaoCargo() {
             {/* Centro: Status e Botão Desativar */}
             <div className="flex items-center gap-4">
                 <span className="text-[12px] font-medium text-indigo-50">
-                    Você está vendo este servidor como <strong className="text-white uppercase">{roleVisualizacao}</strong>.
+                    Você está vendo este servidor como <strong className="text-white uppercase">{configuracoes?.labels_roles?.[roleVisualizacao] || roleVisualizacao}</strong>.
                 </span>
                 
                 <button
@@ -56,7 +56,7 @@ export function BarraPrevisualizacaoCargo() {
                                     : 'hover:bg-[#393c43] text-gray-300'
                             }`}
                         >
-                            <span className="text-[11px] font-bold">{role}</span>
+                            <span className="text-[11px] font-bold">{configuracoes?.labels_roles?.[role] || role}</span>
                             {roleVisualizacao === role && <Check size={12} strokeWidth={3} />}
                         </DropdownMenuItem>
                     ))}

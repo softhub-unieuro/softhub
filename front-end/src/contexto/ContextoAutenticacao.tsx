@@ -15,6 +15,7 @@ export interface Usuario {
 export interface IConfiguracoesUX {
     hierarquia_roles: string[];
     permissoes_roles: Record<string, Record<string, boolean>>;
+    labels_roles: Record<string, string>;
 }
 
 interface ContextoAutenticacaoContrato {
@@ -141,10 +142,25 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
     const buscarConfiguracoesPublicas = useCallback(async () => {
         try {
             const { data } = await api.get('/api/configuracoes/publico');
-            const novasConfigs = {
+            const novasConfigs: IConfiguracoesUX = {
                 hierarquia_roles: data.hierarquia_roles || [],
                 permissoes_roles: data.permissoes_roles || {},
+                labels_roles: data.labels_roles || {},
             };
+
+            // 🧪 Sync hierarquia com matrix (Garante que novos cargos como "LÍDER-TÉCNICO" apareçam)
+            const chavesMatrix = Object.keys(novasConfigs.permissoes_roles);
+            // Remove lixos de exclusão e garante os novos
+            let hierarquiaFinal = (novasConfigs.hierarquia_roles || []).filter(r => r === 'ADMIN' || chavesMatrix.includes(r));
+            const faltantes = chavesMatrix.filter(k => k !== 'TODOS' && !hierarquiaFinal.includes(k));
+            
+            // Injeta faltantes antes do ADMIN para manter a premissa de ADMIN no topo (reverse)
+            const indexAdmin = hierarquiaFinal.indexOf('ADMIN');
+            if (indexAdmin !== -1) hierarquiaFinal.splice(indexAdmin, 0, ...faltantes);
+            else hierarquiaFinal.push(...faltantes);
+
+            novasConfigs.hierarquia_roles = Array.from(new Set(hierarquiaFinal));
+
             setConfiguracoes(novasConfigs);
             localStorage.setItem(CHAVE_CONFIGS, JSON.stringify(novasConfigs));
         } catch (error) {
