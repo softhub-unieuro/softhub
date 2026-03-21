@@ -28,7 +28,9 @@ rotasTarefas.get('/', autenticacaoRequerida(), verificarPermissao(['tarefas:visu
 
     try {
         let query = `
-            SELECT t.id, t.titulo, t.descricao, t.status, t.prioridade, t.pontos, t.modulo, t.equipe_id, e.nome as equipe_nome
+            SELECT 
+                t.id, t.titulo, t.descricao, t.status, t.prioridade, t.pontos, t.modulo, 
+                t.equipe_id, e.nome as equipe_nome
             FROM tarefas t
             LEFT JOIN equipes e ON e.id = t.equipe_id
             WHERE t.projeto_id = ? AND t.arquivado = 0
@@ -46,10 +48,12 @@ rotasTarefas.get('/', autenticacaoRequerida(), verificarPermissao(['tarefas:visu
         }
 
         if (prioridade) {
-            const prioridades = prioridade.split(',');
-            const placeholders = prioridades.map(() => '?').join(',');
-            query += ` AND t.prioridade IN (${placeholders})`;
-            params.push(...prioridades);
+            const prioridades = prioridade.split(',').filter(p => !!p);
+            if (prioridades.length > 0) {
+                const placeholders = prioridades.map(() => '?').join(',');
+                query += ` AND t.prioridade IN (${placeholders})`;
+                params.push(...prioridades);
+            }
         }
 
         if (responsavelId) {
@@ -57,24 +61,48 @@ rotasTarefas.get('/', autenticacaoRequerida(), verificarPermissao(['tarefas:visu
             params.push(responsavelId);
         }
 
-        const { results: tarefas } = await DB.prepare(query).bind(...params).all();
+        const stmt = DB.prepare(query).bind(...params);
+        const { results: tarefas } = await stmt.all() || { results: [] };
 
-        // Buscar responsáveis de cada tarefa de forma otimizada
-        for (const tarefa of (tarefas as any[])) {
-            const resp = await DB.prepare(`
-                SELECT u.id, u.nome, u.foto_perfil as foto
-                FROM usuarios u
-                JOIN tarefas_responsaveis tr ON tr.usuario_id = u.id
-                WHERE tr.tarefa_id = ?
-            `).bind(tarefa.id).all();
-
-            (tarefa as any).responsaveis = resp.results;
+        if (!tarefas || tarefas.length === 0) {
+            return c.json([]);
         }
 
-        return c.json(tarefas);
-    } catch (erro) {
-        console.error('[ERRO] GET /api/tarefas', erro);
-        return c.json({ erro: 'Falha ao buscar tarefas' }, 500);
+        // Buscar todos os responsáveis em uma única query para evitar N+1
+        const idsTarefas = (tarefas as any[]).map(t => t.id);
+        const placeholders = idsTarefas.map(() => '?').join(',');
+        
+        const { results: todosResponsaveis } = await DB.prepare(`
+            SELECT tr.tarefa_id, u.id, u.nome, u.foto_perfil as foto
+            FROM usuarios u
+            JOIN tarefas_responsaveis tr ON tr.usuario_id = u.id
+            WHERE tr.tarefa_id IN (${placeholders})
+        `).bind(...idsTarefas).all() || { results: [] };
+
+        // Mapear responsáveis de volta para suas tarefas
+        const mapaResponsaveis: Record<string, any[]> = {};
+        (todosResponsaveis as any[]).forEach(r => {
+            if (!mapaResponsaveis[r.tarefa_id]) mapaResponsaveis[r.tarefa_id] = [];
+            mapaResponsaveis[r.tarefa_id].push({
+                id: r.id,
+                nome: r.nome,
+                foto: r.foto
+            });
+        });
+
+        const resposta = (tarefas as any[]).map(t => ({
+            ...t,
+            responsaveis: mapaResponsaveis[t.id] || []
+        }));
+
+        return c.json(resposta);
+    } catch (erro: any) {
+        console.error('[ERRO CRÍTICO] GET /api/tarefas:', erro.message || erro);
+        return c.json({ 
+            erro: 'Falha ao buscar tarefas', 
+            detalhe: erro.message,
+            query_debug: !!projetoId 
+        }, 500);
     }
 });
 

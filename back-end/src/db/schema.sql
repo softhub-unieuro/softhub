@@ -101,6 +101,8 @@ CREATE TABLE IF NOT EXISTS tarefas (
     prioridade TEXT NOT NULL DEFAULT 'media',
     pontos INTEGER DEFAULT 1,
     modulo TEXT,
+    equipe_id TEXT REFERENCES equipes(id) ON DELETE SET NULL,
+    grupo_id TEXT REFERENCES grupos(id) ON DELETE SET NULL,
     feedback_lider TEXT,
     nota_aprendizado INTEGER DEFAULT 0,
     data_conclusao TEXT,
@@ -112,6 +114,8 @@ CREATE TABLE IF NOT EXISTS tarefas (
 CREATE INDEX IF NOT EXISTS idx_tarefas_projeto ON tarefas(projeto_id);
 CREATE INDEX IF NOT EXISTS idx_tarefas_status ON tarefas(projeto_id, status);
 CREATE INDEX IF NOT EXISTS idx_tarefas_modulo ON tarefas(modulo);
+CREATE INDEX IF NOT EXISTS idx_tarefas_equipe ON tarefas(equipe_id);
+CREATE INDEX IF NOT EXISTS idx_tarefas_grupo ON tarefas(grupo_id);
 
 CREATE TABLE IF NOT EXISTS tarefas_responsaveis (
     tarefa_id TEXT NOT NULL REFERENCES tarefas(id) ON DELETE CASCADE,
