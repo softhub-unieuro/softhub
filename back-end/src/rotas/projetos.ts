@@ -1,6 +1,7 @@
 import { Hono, Context } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
+import { Octokit } from '@octokit/rest';
 import { Env } from '../index';
 import { autenticacaoRequerida, verificarPermissao, verificarPermissaoManual } from '../middleware/auth';
 import { registrarLog } from '../servicos/servico-logs';
@@ -287,6 +288,131 @@ rotasProjetos.delete('/:id', autenticacaoRequerida(), verificarPermissao('projet
         return c.json({ sucesso: true });
     } catch (e: any) {
         return c.json({ erro: 'Falha ao deletar projeto' }, 500);
+    }
+});
+
+/**
+ * GET /api/projetos/:id/arquivos
+ * Lista arquivos do repositório GitHub vinculado (pasta /docs/softhub).
+ */
+rotasProjetos.get('/:id/arquivos', autenticacaoRequerida(), async (c) => {
+    const { DB, GITHUB_TOKEN, GITHUB_OWNER } = c.env;
+    const id = c.req.param('id');
+    const pasta = c.req.query('pasta') || 'docs/softhub';
+
+    try {
+        const projeto = await DB.prepare('SELECT github_repo FROM projetos WHERE id = ? AND arquivado = 0').bind(id).first() as any;
+        if (!projeto?.github_repo) return c.json({ arquivos: [] });
+
+        const octokit = new Octokit({ auth: GITHUB_TOKEN });
+        const response = await octokit.repos.getContent({
+            owner: GITHUB_OWNER,
+            repo: projeto.github_repo,
+            path: pasta,
+        });
+
+        if (Array.isArray(response.data)) {
+            const arquivos = response.data
+                .filter((file: any) => file.type === 'file')
+                .map((file: any) => ({
+                    name: file.name,
+                    path: file.path,
+                    sha: file.sha,
+                    size: file.size,
+                    download_url: file.download_url
+                }));
+            return c.json({ arquivos });
+        }
+        return c.json({ arquivos: [] });
+    } catch (e: any) {
+        if (e.status === 404) return c.json({ arquivos: [] });
+        return c.json({ erro: 'Falha ao buscar arquivos do GitHub.', detalhe: e.message }, 500);
+    }
+});
+
+/**
+ * POST /api/projetos/:id/arquivos
+ * Upload de arquivo para o repositório GitHub.
+ */
+rotasProjetos.post('/:id/arquivos', autenticacaoRequerida(), verificarPermissao('projetos:editar'), async (c) => {
+    const { DB, GITHUB_TOKEN, GITHUB_OWNER } = c.env;
+    const id = c.req.param('id');
+    const { nome, conteudo, pathFolder } = await c.req.json();
+
+    if (!nome || !conteudo) return c.json({ erro: 'Nome e conteúdo (Base64) são necessários.' }, 400);
+
+    try {
+        const projeto = await DB.prepare('SELECT github_repo FROM projetos WHERE id = ? AND arquivado = 0').bind(id).first() as any;
+        if (!projeto?.github_repo) return c.json({ erro: 'Projeto não configurado com repositório GitHub.' }, 400);
+
+        const octokit = new Octokit({ auth: GITHUB_TOKEN });
+        const pasta = pathFolder || 'docs/softhub';
+
+        await octokit.repos.createOrUpdateFileContents({
+            owner: GITHUB_OWNER,
+            repo: projeto.github_repo,
+            path: `${pasta}/${nome}`,
+            message: `Upload: ${nome} via SoftHub`,
+            content: conteudo,
+        });
+
+        return c.json({ sucesso: true });
+    } catch (e: any) {
+        return c.json({ erro: 'Falha no upload para o GitHub.', detalhe: e.message }, 500);
+    }
+});
+
+/**
+ * DELETE /api/projetos/:id/arquivos
+ * Remove arquivo do repositório GitHub.
+ */
+rotasProjetos.delete('/:id/arquivos', autenticacaoRequerida(), verificarPermissao('projetos:editar'), async (c) => {
+    const { DB, GITHUB_TOKEN, GITHUB_OWNER } = c.env;
+    const id = c.req.param('id');
+    const { path, sha } = await c.req.json();
+
+    if (!path || !sha) return c.json({ erro: 'Caminho e SHA são necessários.' }, 400);
+
+    try {
+        const projeto = await DB.prepare('SELECT github_repo FROM projetos WHERE id = ? AND arquivado = 0').bind(id).first() as any;
+        if (!projeto?.github_repo) return c.json({ erro: 'Projeto não configurado com repositório GitHub.' }, 400);
+
+        const octokit = new Octokit({ auth: GITHUB_TOKEN });
+        await octokit.repos.deleteFile({
+            owner: GITHUB_OWNER,
+            repo: projeto.github_repo,
+            path,
+            sha,
+            message: `Remoção: ${path.split('/').pop()} via SoftHub`,
+        });
+
+        return c.json({ sucesso: true });
+    } catch (e: any) {
+        return c.json({ erro: 'Falha ao deletar arquivo no GitHub.', detalhe: e.message }, 500);
+    }
+});
+
+/**
+ * DELETE /api/projetos/:id/repositorio
+ * Remove permanentemente o repositório vinculado no GitHub.
+ */
+rotasProjetos.delete('/:id/repositorio', autenticacaoRequerida(), verificarPermissao('projetos:excluir'), async (c) => {
+    const { DB, GITHUB_TOKEN, GITHUB_OWNER } = c.env;
+    const id = c.req.param('id');
+
+    try {
+        const projeto = await DB.prepare('SELECT github_repo FROM projetos WHERE id = ? AND arquivado = 0').bind(id).first() as any;
+        if (!projeto?.github_repo) return c.json({ erro: 'Projeto não possui repositório vinculado.' }, 404);
+
+        const octokit = new Octokit({ auth: GITHUB_TOKEN });
+        await octokit.repos.delete({
+            owner: GITHUB_OWNER,
+            repo: projeto.github_repo,
+        });
+
+        return c.json({ sucesso: true });
+    } catch (e: any) {
+        return c.json({ erro: 'Falha ao deletar repositório no GitHub.', detalhe: e.message }, 500);
     }
 });
 

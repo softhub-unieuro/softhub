@@ -23,7 +23,7 @@ export function DocumentosProjetoModal({ projeto, aberto, aoFechar }: Documentos
     const [arquivoExcluindo, setArquivoExcluindo] = useState<ArquivoGithub | null>(null);
 
     const podeEditarProjeto = usarPermissaoAcesso('projetos:editar');
-    const githubEnabled = !!import.meta.env.VITE_GITHUB_STORAGE_TOKEN && !!import.meta.env.VITE_GITHUB_STORAGE_OWNER;
+    const githubEnabled = !!projeto?.github_repo;
 
     useEffect(() => {
         if (aberto && projeto?.github_repo) {
@@ -39,7 +39,7 @@ export function DocumentosProjetoModal({ projeto, aberto, aoFechar }: Documentos
         setCarregando(true);
         setErro(null);
         try {
-            const docs = await githubStorage.listarDocumentos(projeto.github_repo);
+            const docs = await githubStorage.listarDocumentos(projeto.id);
             setArquivos(docs);
         } catch (e: any) {
             setErro(e.message || 'Falha ao carregar documentos do GitHub.');
@@ -61,7 +61,7 @@ export function DocumentosProjetoModal({ projeto, aberto, aoFechar }: Documentos
         setFazendoUpload(true);
         setErro(null);
         try {
-            await githubStorage.fazerUploadDocumento(projeto.github_repo, file);
+            await githubStorage.fazerUploadDocumento(projeto.id, file);
             logger.sucesso('Documentos', `Arquivo ${file.name} enviado para o GitHub com sucesso.`);
             await carregarDocumentos();
         } catch (err: any) {
@@ -76,7 +76,7 @@ export function DocumentosProjetoModal({ projeto, aberto, aoFechar }: Documentos
         if (!arquivoExcluindo || !projeto?.github_repo) return;
         setCarregando(true);
         try {
-            await githubStorage.deletarDocumento(projeto.github_repo, arquivoExcluindo.path, arquivoExcluindo.sha);
+            await githubStorage.deletarDocumento(projeto.id, arquivoExcluindo.path, arquivoExcluindo.sha);
             logger.sucesso('Documentos', `Documento ${arquivoExcluindo.name} removido do repositório.`);
             await carregarDocumentos();
         } catch (e: any) {
@@ -102,9 +102,7 @@ export function DocumentosProjetoModal({ projeto, aberto, aoFechar }: Documentos
             <Modal aberto={aberto} aoFechar={aoFechar} titulo={`Documentos: ${projeto.nome}`} largura="lg">
                 <div className="flex flex-col gap-6 pt-4">
                     
-                    {!githubEnabled && (
-                        <Alerta tipo="info" mensagem="GitHub Storage Desativado: Configure as variáveis VITE_GITHUB_STORAGE_TOKEN e VITE_GITHUB_STORAGE_OWNER no seu .env para ativar." />
-                    )}
+                    {/* Removido alerta de token pois o gerenciamento é via Backend */}
 
                     {!projeto.github_repo && githubEnabled && (
                         <div className="bg-destructive/10 border border-destructive/20 rounded-2xl p-6 text-center">
@@ -121,7 +119,7 @@ export function DocumentosProjetoModal({ projeto, aberto, aoFechar }: Documentos
                                 <div>
                                     <div className="flex items-center gap-2 text-sm font-bold text-foreground">
                                         <Github size={16} className="text-muted-foreground" />
-                                        /{import.meta.env.VITE_GITHUB_STORAGE_OWNER}/{projeto.github_repo}
+                                        {projeto.github_repo}
                                     </div>
                                     <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
                                         Armazenado em /docs/softhub/

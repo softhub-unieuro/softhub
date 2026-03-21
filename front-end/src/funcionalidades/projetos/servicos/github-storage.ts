@@ -1,11 +1,4 @@
-import { Octokit } from '@octokit/rest';
-
-// Constantes via Variáveis de Ambiente
-const TOKEN = import.meta.env.VITE_GITHUB_STORAGE_TOKEN;
-const OWNER = import.meta.env.VITE_GITHUB_STORAGE_OWNER;
-
-// O Octokit só é instanciado se houver token, evitando erros no build ou se o usuário esquecer
-const octokit = TOKEN ? new Octokit({ auth: TOKEN }) : null;
+import { api } from '@/compartilhado/servicos/api';
 
 export interface ArquivoGithub {
     name: string;
@@ -15,59 +8,49 @@ export interface ArquivoGithub {
     download_url: string;
 }
 
+/**
+ * Serviço de armazenamento de documentos e infraestrutura de projetos.
+ * Agora utiliza centralizadamente o Backend para todas as operações, 
+ * garantindo que o TOKEN do GitHub nunca seja exposto no Frontend.
+ */
 export const githubStorage = {
     /**
-     * Lista os arquivos de uma determinada pasta no repositório.
-     * Padrão será a pasta "docs".
+     * Lista os arquivos de uma determinada pasta no repositório vinculado ao projeto.
      */
-    async listarDocumentos(repo: string, pasta: string = 'docs/softhub'): Promise<ArquivoGithub[]> {
-        if (!octokit || !repo || !OWNER) return [];
+    async listarDocumentos(projetoId: string, pasta: string = 'docs/softhub'): Promise<ArquivoGithub[]> {
+        if (!projetoId) return [];
         try {
-            const response = await octokit.repos.getContent({
-                owner: OWNER,
-                repo,
-                path: pasta,
-            });
-            
-            // Retorna apenas se for um diretório (array de arquivos)
-            if (Array.isArray(response.data)) {
-                return response.data.filter((file: any) => file.type === 'file') as ArquivoGithub[];
-            }
-            return [];
-        } catch (error: any) {
-            if (error.status === 404) return []; // Pasta ainda não existe no GitHub
+            const response = await api.get(`/api/projetos/${projetoId}/arquivos`, { params: { pasta } });
+            return response.data?.arquivos || [];
+        } catch (error) {
             console.error('[GitHub Storage] Erro ao listar:', error);
-            throw new Error('Falha ao listar documentos. Verifique se o repositório existe e se o token tem permissão.');
+            return []; 
         }
     },
 
     /**
-     * Faz upload de um arquivo para o repositório transformando-o em Base64.
+     * Faz upload de um arquivo transformando-o em Base64 e enviando via Backend.
      */
-    async fazerUploadDocumento(repo: string, arquivo: File, pathFolder: string = 'docs/softhub'): Promise<void> {
-        if (!octokit || !repo || !OWNER) throw new Error('Github Storage não configurado no .env ou repositório não vinculado.');
+    async fazerUploadDocumento(projetoId: string, arquivo: File, pathFolder: string = 'docs/softhub'): Promise<void> {
+        if (!projetoId) throw new Error('ID do projeto não fornecido.');
 
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(arquivo);
             reader.onload = async () => {
                 const base64Data = reader.result as string;
-                // FileReader retorna algo como "data:application/pdf;base64,JVBE..." 
-                // A API do GitHub exige apenas o payload após a vírgula.
                 const content = base64Data.split(',')[1];
 
                 try {
-                    await octokit.repos.createOrUpdateFileContents({
-                        owner: OWNER,
-                        repo,
-                        path: `${pathFolder}/${arquivo.name}`,
-                        message: `Upload de documento: ${arquivo.name} via SoftHub`,
-                        content: content,
+                    await api.post(`/api/projetos/${projetoId}/arquivos`, {
+                        nome: arquivo.name,
+                        conteudo: content,
+                        pathFolder
                     });
                     resolve();
-                } catch (error) {
+                } catch (error: any) {
                     console.error('[GitHub Storage] Erro no upload:', error);
-                    reject(new Error('Falha ao fazer upload para o GitHub. Verifique as permissões.'));
+                    reject(new Error(error.response?.data?.erro || 'Falha ao fazer upload para o GitHub.'));
                 }
             };
             reader.onerror = () => reject(new Error('Falha ao processar arquivo localmente.'));
@@ -75,68 +58,52 @@ export const githubStorage = {
     },
 
     /**
-     * Deleta um arquivo específico do repositório baseado no SHA dele.
+     * Deleta um arquivo específico do repositório.
      */
-    async deletarDocumento(repo: string, path: string, sha: string): Promise<void> {
-        if (!octokit || !repo || !OWNER) throw new Error('Github Storage não configurado');
+    async deletarDocumento(projetoId: string, path: string, sha: string): Promise<void> {
+        if (!projetoId || !path || !sha) throw new Error('Dados insuficientes para exclusão.');
         try {
-            await octokit.repos.deleteFile({
-                owner: OWNER,
-                repo,
-                path,
-                message: `Remoção do documento ${path.split('/').pop()} via SoftHub`,
-                sha
+            await api.delete(`/api/projetos/${projetoId}/arquivos`, {
+                data: { path, sha }
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error('[GitHub Storage] Erro ao deletar:', error);
-            throw new Error('Falha ao deletar arquivo do GitHub.');
+            throw new Error(error.response?.data?.erro || 'Falha ao deletar arquivo do GitHub.');
         }
     },
 
     /**
-     * Verifica se o repositório existe e, se não existir, tenta criar automaticamente no GitHub.
+     * Aciona a IA/Backend para garantir que o repositório exista.
+     * Note: A criação de repositórios agora é tratada majoritariamente pela rota de IA.
      */
     async garantirRepositorio(nomeRepo: string, descricao: string): Promise<boolean> {
-        if (!octokit || !nomeRepo || !OWNER) return false;
+        if (!nomeRepo) return false;
         try {
-            await octokit.repos.get({
-                owner: OWNER,
-                repo: nomeRepo,
+            // Chamamos a rota de IA para criar o repositório se necessário
+            await api.post('/api/ia/github/criar-repo', {
+                nome: nomeRepo,
+                descricao,
+                publico: false
             });
-            return true; // Já existe
+            return true;
         } catch (error: any) {
-            // Conta não encontrou o repositório, tenta criar
-            if (error.status === 404) {
-                try {
-                    await octokit.repos.createForAuthenticatedUser({
-                        name: nomeRepo,
-                        description: descricao,
-                        private: false, // Público ou privado dependendo do seu token
-                        auto_init: true // Adicionar um README inicial ajuda no workflow do conteúdo
-                    });
-                    return true;
-                } catch (createError: any) {
-                    console.error('[GitHub Storage] Erro ao criar repo:', createError);
-                    throw new Error('Falha ao criar o repositório no GitHub automaticamente.');
-                }
-            }
-            throw new Error('Falha ao verificar repositório no GitHub.');
+            console.error('[GitHub Storage] Erro ao garantir repo:', error);
+            // Se o erro for 409 (Conflict), significa que já existe, o que é um sucesso para o "garantir"
+            if (error.response?.status === 409) return true;
+            throw new Error('Falha ao sincronizar repositório no GitHub.');
         }
     },
 
     /**
-     * Deleta o repositório inteiro permanentemente.
+     * Deleta o repositório vinculado através do Backend.
      */
-    async deletarRepositorio(nomeRepo: string): Promise<void> {
-        if (!octokit || !nomeRepo || !OWNER) return;
+    async deletarRepositorio(projetoId: string): Promise<void> {
+        if (!projetoId) return;
         try {
-            await octokit.repos.delete({
-                owner: OWNER,
-                repo: nomeRepo,
-            });
+            await api.delete(`/api/projetos/${projetoId}/repositorio`);
         } catch (error: any) {
             console.error('[GitHub Storage] Erro ao deletar repo:', error);
-            throw new Error(`Falha ao deletar o repositório: ${error.message}`);
+            throw new Error(error.response?.data?.erro || 'Falha ao deletar repositório no GitHub.');
         }
     }
 };

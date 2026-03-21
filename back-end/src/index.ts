@@ -37,6 +37,7 @@ export type Env = {
     softhub_kv: KVNamespace;
     AI: any;
     GITHUB_TOKEN: string;
+    GITHUB_OWNER: string;
 };
 
 const app = new Hono<{ Bindings: Env }>({ strict: false });

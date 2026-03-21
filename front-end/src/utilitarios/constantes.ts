@@ -63,3 +63,6 @@ export const VARIANTE_COR_ROLES = {
 // Configurações do GitHub (Utilizado no Portfólio Público)
 export const GITHUB_USUARIO = 'madebycotrim'; 
 
+// ID do Projeto Principal (Bootstrap)
+export const PROJETO_PADRAO_ID = 'd62657e4-230b-4680-a292-06b291d2f62b';
+

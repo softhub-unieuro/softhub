@@ -104,7 +104,7 @@ export default function GerenciarProjetos() {
         try {
             if (projetoExcluindo.github_repo && excluirRepoGithub) {
                 try {
-                    await githubStorage.deletarRepositorio(projetoExcluindo.github_repo);
+                    await githubStorage.deletarRepositorio(projetoExcluindo.id);
                 } catch (e) {
                     console.warn('[GitHub Storage] Erro ao deletar repositório', e);
                 }
