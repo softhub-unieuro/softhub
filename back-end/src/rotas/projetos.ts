@@ -86,7 +86,7 @@ rotasProjetos.get('/publicos', async (c) => {
  * Lista todos os projetos disponíveis para o usuário autenticado.
  * Filtra por permissão de Admin, projetos públicos ou projetos onde a equipe do usuário está vinculada.
  */
-rotasProjetos.get('/', autenticacaoRequerida(), verificarPermissao(['projetos:visualizar', 'projetos:visualizar_detalhes']), async (c) => {
+rotasProjetos.get('/', autenticacaoRequerida(), async (c) => {
     const { DB, softhub_kv } = c.env;
     const usuario = c.get('usuario');
 
@@ -97,7 +97,7 @@ rotasProjetos.get('/', autenticacaoRequerida(), verificarPermissao(['projetos:vi
             SELECT p.*, 
                    (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id) as total_tarefas
             FROM projetos p 
-            WHERE p.arquivado = 0 AND (? = 1 OR p.publico = 1 OR EXISTS (
+            WHERE p.arquivado = 0 AND (? = 1 OR p.publico = 1 OR NOT EXISTS (SELECT 1 FROM projetos_equipes WHERE projeto_id = p.id) OR EXISTS (
                 SELECT 1 FROM projetos_equipes pe
                 JOIN usuarios_organizacao uo ON uo.equipe_id = pe.equipe_id
                 WHERE pe.projeto_id = p.id AND uo.usuario_id = ?

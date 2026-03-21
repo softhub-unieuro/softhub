@@ -319,6 +319,7 @@ INSERT OR IGNORE INTO configuracoes_sistema (id, chave, valor) VALUES
         "tarefas:visualizar_kanban": true,
         "tarefas:visualizar_backlog": true,
         "tarefas:visualizar_detalhes": true,
+        "projetos:visualizar_detalhes": true,
         "tarefas:comentar": true,
         "tarefas:checklist_marcar": true,
         "ponto:registrar": true,
