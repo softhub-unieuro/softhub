@@ -93,9 +93,12 @@ export const HistoricoAbasPonto = memo(({
 
             <div className="flex-1 overflow-x-auto sm:overflow-y-auto scrollbar-none pb-2 sm:pb-0 sm:pr-1">
                 {abaAtiva === 'registro' ? (
-                    <div className="flex sm:grid sm:grid-cols-5 gap-3 w-max sm:w-full min-w-full">
+                    <div 
+                        className="flex sm:grid gap-3 w-max sm:w-full min-w-full"
+                        style={{ gridTemplateColumns: `repeat(${registrosAgrupados.length}, minmax(0, 1fr))` }}
+                    >
                         {registrosAgrupados.map(({ dia, registros }) => (
-                            <div key={dia.toISOString()} className="w-[140px] sm:w-full shrink-0">
+                            <div key={dia.toISOString()} className="w-[140px] sm:w-full shrink-0 h-full">
                                 <DayCard
                                     dia={dia}
                                     registros={registros}

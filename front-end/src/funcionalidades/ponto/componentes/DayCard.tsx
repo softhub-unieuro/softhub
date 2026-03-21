@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react';
 import { format, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Clock } from 'lucide-react';
+import { Clock, Bot } from 'lucide-react';
 import { formatarHoras } from '@/utilitarios/formatadores';
 import type { RegistroPonto } from '../hooks/usarPonto';
 
@@ -35,7 +35,7 @@ export const DayCard = memo(({ dia, registros, hoje }: DayCardProps) => {
 
     return (
         <div className={`
-            flex flex-col items-center w-full p-4 sm:p-5 rounded-2xl border transition-all duration-500 relative group
+            flex flex-col items-center w-full h-full p-4 sm:p-5 rounded-2xl border transition-all duration-500 relative group
             ${hoje
                 ? 'bg-white border-primary/20 shadow-[0_25px_60px_-15px_rgba(var(--primary-rgb),0.15)] ring-1 ring-primary/5'
                 : 'bg-white/40 border-slate-200/60 hover:bg-white hover:border-slate-300 hover:shadow-xl'
@@ -89,9 +89,20 @@ export const DayCard = memo(({ dia, registros, hoje }: DayCardProps) => {
                                 `} />
 
                                 <div className="flex flex-col justify-center">
-                                    <span className="text-sm font-black text-slate-800 tabular-nums leading-none">
-                                        {format(new Date(reg.registrado_em), 'HH:mm')}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-black text-slate-800 tabular-nums leading-none">
+                                            {format(new Date(reg.registrado_em), 'HH:mm')}
+                                        </span>
+                                        {reg.ip_origem === 'SISTEMA-AUTOMATICO' && (
+                                            <div 
+                                                title="Ponto encerrado automaticamente pelo sistema"
+                                                className="flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] bg-slate-100 border border-slate-200"
+                                            >
+                                                <Bot size={8} className="text-slate-500 shrink-0" />
+                                                <span className="text-[7px] font-black uppercase tracking-widest text-slate-500">Auto</span>
+                                            </div>
+                                        )}
+                                    </div>
                                     <span className={`text-[8px] font-black uppercase tracking-[0.15em] mt-1 ${reg.tipo === 'entrada' ? 'text-emerald-500' : 'text-rose-500'}`}>
                                         {reg.tipo}
                                     </span>

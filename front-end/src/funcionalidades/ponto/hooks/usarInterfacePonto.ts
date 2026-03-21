@@ -156,6 +156,7 @@ export function usarInterfacePonto() {
         agoraRelogio,
         foraDoHorario,
         foraDoDia,
+        diasTrabalho,
         semanasDisponiveis,
         semanaSelecionada,
         setSemanaSelecionada,

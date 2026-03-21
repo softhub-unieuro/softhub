@@ -10,7 +10,7 @@ export async function processarFechamentoAutomatico(DB: any, KV: any) {
     try {
         // 1. Identificar todos os usuários que bateram ENTRADA mas não SAÍDA hoje
         const queryPendentes = `
-            SELECT p1.usuario_id, u.nome
+            SELECT DISTINCT p1.usuario_id, u.nome
             FROM ponto_registros p1
             JOIN usuarios u ON u.id = p1.usuario_id
             WHERE p1.tipo = 'entrada'

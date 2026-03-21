@@ -77,7 +77,7 @@ rotasRelatorios.get('/frequencia/geral', autenticacaoRequerida(), verificarPermi
                 date(registrado_em) as data,
                 COUNT(DISTINCT usuario_id) as total_presentes
             FROM ponto_registros
-            WHERE tipo = 'ENTRADA'
+            WHERE lower(tipo) = 'entrada'
             ${filtroData}
             GROUP BY date(registrado_em)
             ORDER BY data ASC
@@ -112,7 +112,7 @@ rotasRelatorios.get('/frequencia/geral', autenticacaoRequerida(), verificarPermi
                 u.nome as usuario_nome,
                 j.tipo,
                 j.status,
-                j.descricao,
+                j.motivo as descricao,
                 j.criado_em
             FROM justificativas_ponto j
             JOIN usuarios u ON u.id = j.usuario_id
@@ -128,7 +128,13 @@ rotasRelatorios.get('/frequencia/geral', autenticacaoRequerida(), verificarPermi
             justificativasLista: justificativasLista.results
         };
 
-        await softhub_kv?.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 900 });
+        if (softhub_kv) {
+            try {
+                await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 900 });
+            } catch (e) {
+                console.warn('[KV] Ignorando falha no put de cache do relatório:', e);
+            }
+        }
 
         return c.json(resposta);
     } catch (erro) {
@@ -165,8 +171,8 @@ rotasRelatorios.get('/frequencia/membros', autenticacaoRequerida(), verificarPer
                 u.email,
                 (SELECT GROUP_CONCAT(e.nome) FROM usuarios_organizacao uo JOIN equipes e ON e.id = uo.equipe_id WHERE uo.usuario_id = u.id) as equipe_nome,
                 (SELECT GROUP_CONCAT(g.nome) FROM usuarios_organizacao uo JOIN grupos g ON g.id = uo.grupo_id WHERE uo.usuario_id = u.id) as grupo_nome,
-                (SELECT COUNT(DISTINCT date(registrado_em)) FROM ponto_registros WHERE usuario_id = u.id AND tipo = 'ENTRADA' ${subFiltroPonto}) as dias_presentes,
-                (SELECT GROUP_CONCAT(DISTINCT date(registrado_em)) FROM ponto_registros WHERE usuario_id = u.id AND tipo = 'ENTRADA' ${subFiltroPonto}) as datas_presenca,
+                (SELECT COUNT(DISTINCT date(registrado_em)) FROM ponto_registros WHERE usuario_id = u.id AND lower(tipo) = 'entrada' ${subFiltroPonto}) as dias_presentes,
+                (SELECT GROUP_CONCAT(DISTINCT date(registrado_em)) FROM ponto_registros WHERE usuario_id = u.id AND lower(tipo) = 'entrada' ${subFiltroPonto}) as datas_presenca,
                 (SELECT COUNT(*) FROM justificativas_ponto WHERE usuario_id = u.id AND status = 'aprovada' ${subFiltroJustificativa}) as justificativas_aprovadas,
                 (SELECT MAX(registrado_em) FROM ponto_registros WHERE usuario_id = u.id) as ultima_batida
             FROM usuarios u
@@ -177,7 +183,13 @@ rotasRelatorios.get('/frequencia/membros', autenticacaoRequerida(), verificarPer
             membros: membrosFrequencia.results
         };
 
-        await softhub_kv?.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 900 });
+        if (softhub_kv) {
+            try {
+                await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 900 });
+            } catch (e) {
+                console.warn('[KV] Ignorando falha no put de cache do relatório:', e);
+            }
+        }
 
         return c.json(resposta);
     } catch (erro) {

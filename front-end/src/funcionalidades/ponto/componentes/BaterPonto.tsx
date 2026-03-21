@@ -20,7 +20,7 @@ export const BaterPonto = memo(() => {
         salvando, erroPonto, proximoTipo, agoraRelogio, foraDoHorario,
         semanasDisponiveis, semanaSelecionada, setSemanaSelecionada,
         abaAtiva, setAbaAtiva, busca, setBusca, tentativaBloqueada, setTentativaBloqueada,
-        foraDoDia,
+        foraDoDia, diasTrabalho,
         modalJustificativaAberto, setModalJustificativaAberto,
         justificativaEditando, setJustificativaEditando,
         idExcluindo, setIdExcluindo,
@@ -53,12 +53,15 @@ export const BaterPonto = memo(() => {
     }, [registrosHoje, agoraRelogio]);
 
     const registrosAgrupados = useMemo(() => {
-        const diasSemana = Array.from({ length: 5 }, (_, i) => addDays(new Date(semanaSelecionada), i));
+        // Pega 7 dias a partir do inicio da semana (segunda-feira) e filtra apenas os marcados
+        const diasSemana = Array.from({ length: 7 }, (_, i) => addDays(new Date(semanaSelecionada), i))
+            .filter(dia => diasTrabalho.includes(dia.getDay()));
+            
         return diasSemana.map(dia => ({
             dia,
             registros: historico.filter(reg => isSameDay(new Date(reg.registrado_em), dia))
         }));
-    }, [historico, semanaSelecionada]);
+    }, [historico, semanaSelecionada, diasTrabalho]);
 
     const handleAlternarAba = useCallback(() => {
         setAbaAtiva(prev => prev === 'registro' ? 'justificativas' : 'registro');

@@ -16,6 +16,7 @@ export interface IConfiguracoesUX {
     hierarquia_roles: string[];
     permissoes_roles: Record<string, Record<string, boolean>>;
     labels_roles: Record<string, string>;
+    dias_trabalho: number[];
 }
 
 interface ContextoAutenticacaoContrato {
@@ -77,8 +78,8 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
 
     const [configuracoes, setConfiguracoes] = useState<IConfiguracoesUX>(() => {
         const salvo = localStorage.getItem(CHAVE_CONFIGS);
-        if (salvo) { try { return JSON.parse(salvo); } catch { return { hierarquia_roles: [], permissoes_roles: {} }; } }
-        return { hierarquia_roles: [], permissoes_roles: {} };
+        if (salvo) { try { return JSON.parse(salvo); } catch { return { hierarquia_roles: [], permissoes_roles: {}, labels_roles: {}, dias_trabalho: [1, 2, 3, 4, 5] }; } }
+        return { hierarquia_roles: [], permissoes_roles: {}, labels_roles: {}, dias_trabalho: [1, 2, 3, 4, 5] };
     });
 
     const [carregando, setCarregando] = useState(() => !!localStorage.getItem(CHAVE_TOKEN) && !localStorage.getItem(CHAVE_CONFIGS));
@@ -146,6 +147,7 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
                 hierarquia_roles: data.hierarquia_roles || [],
                 permissoes_roles: data.permissoes_roles || {},
                 labels_roles: data.labels_roles || {},
+                dias_trabalho: data.dias_trabalho || [1, 2, 3, 4, 5],
             };
 
             // 🧪 Sync hierarquia com matrix (Garante que novos cargos como "LÍDER-TÉCNICO" apareçam)
