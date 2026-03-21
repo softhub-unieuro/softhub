@@ -46,19 +46,32 @@ export function usarEquipes() {
     const queryClient = useQueryClient();
 
     const podeAcessar = usarPermissaoAcesso('equipes:visualizar');
+    const podeAcessarMembros = usarPermissaoAcesso('membros:gerenciar');
+
     const { data: dadosCache, isLoading: carregando, error } = useQuery({
         queryKey: ['estrutura-organizacional'],
         enabled: podeAcessar,
         queryFn: async () => {
-            const [resGrupos, resEquipes, resMembros] = await Promise.all([
+            const [resGrupos, resEquipes] = await Promise.all([
                 api.get('/api/equipes/grupos'),
-                api.get('/api/equipes/equipes'),
-                api.get('/api/usuarios'),
+                api.get('/api/equipes/equipes')
             ]);
+            
+            let membrosData = [];
+            // Só busca usuários se tiver permissão, senão o Promise.all falha com 403 e quebra a tela toda
+            if (podeAcessarMembros) {
+                try {
+                    const resMembros = await api.get('/api/usuarios');
+                    membrosData = resMembros.data.membros ?? [];
+                } catch (e) {
+                    console.warn('[usarEquipes] Sem permissão para listar membros detalhados.');
+                }
+            }
+
             return {
                 grupos: resGrupos.data.grupos ?? [],
                 equipes: resEquipes.data.equipes ?? [],
-                membros: resMembros.data.membros ?? [],
+                membros: membrosData,
             };
         },
         staleTime: 60000, // 1 minuto
@@ -106,6 +119,11 @@ export function usarEquipes() {
         onSuccess: invalidarCache
     });
 
+    const mutacaoAlocarLote = useMutation({
+        mutationFn: ({ membrosIds, equipe_id, grupo_id }: any) => api.post(`/api/equipes/membros/alocar-lote`, { membros: membrosIds, equipe_id, grupo_id }),
+        onSuccess: invalidarCache
+    });
+
     const mutacaoMover = useMutation({
         mutationFn: ({ membroId, equipe_id, grupo_id, origem_grupo_id }: any) => api.patch(`/api/equipes/membros/${membroId}/mover`, { equipe_id, grupo_id, origem_grupo_id }),
         onSuccess: invalidarCache
@@ -127,6 +145,7 @@ export function usarEquipes() {
         editarEquipe: (id: string, dados: any) => mutacaoEditarEquipe.mutateAsync({ id, dados }),
         desativarEquipe: mutacaoDesativarEquipe.mutateAsync,
         alocarMembro: (membroId: string, equipe_id: string | null, grupo_id: string | null) => mutacaoAlocar.mutateAsync({ membroId, equipe_id, grupo_id }),
+        alocarMembroLote: (membrosIds: string[], equipe_id: string | null, grupo_id: string | null) => mutacaoAlocarLote.mutateAsync({ membrosIds, equipe_id, grupo_id }),
         moverMembro: (membroId: string, equipe_id: string, grupo_id: string, origem_grupo_id: string) => mutacaoMover.mutateAsync({ membroId, equipe_id, grupo_id, origem_grupo_id }),
     };
 }

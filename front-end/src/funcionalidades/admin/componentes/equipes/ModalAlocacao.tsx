@@ -15,7 +15,7 @@ interface ModalAlocacaoProps {
     grupos: Grupo[];
     equipes: Equipe[];
     membros: MembroSimples[];
-    aoAlocar: (membroId: string, equipeId: string | null, grupoId: string | null) => Promise<void>;
+    aoAlocar: (membrosIds: string[], equipeId: string | null, grupoId: string | null) => Promise<void>;
     grupoIdPadrao?: string;
     equipeIdPadrao?: string;
 }
@@ -61,7 +61,7 @@ export const ModalAlocacao = memo(({ aberto, aoFechar, grupos, membros, aoAlocar
         setSalvando(true);
         setErro(null);
         try {
-            await Promise.all(selecionados.map(id => aoAlocar(id, equipeIdPadrao, grupoIdPadrao)));
+            await aoAlocar(selecionados, equipeIdPadrao, grupoIdPadrao);
             setSelecionados([]);
             aoFechar();
         } catch (error) {

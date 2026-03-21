@@ -31,8 +31,7 @@ export function LayoutPrincipal({ children }: LayoutPrincipalProps) {
     const { projetos } = usarProjetos();
     const { sessaoExpirando, continuarLogado, sairAgora } = usarGuardiaoSessao();
 
-    // Inativa o scroll fixo se estiver na página de configurações para permitir scroll com breadcrumbs
-    const ehPaginaConfig = location.pathname.includes('/configuracoes');
+    // O layout agora gerencia o scroll global fluido sem depender de checar rotas específicas.
 
     // Inicia o hook de monitoramento para saída automática ao fechar a página
     usarSaidaAutomatica();
@@ -94,10 +93,10 @@ export function LayoutPrincipal({ children }: LayoutPrincipalProps) {
                         <Menu size={20} strokeWidth={2.5} />
                     </button>
 
-                    <main className="flex-1 p-6 pt-20 lg:pt-6 overflow-hidden flex flex-col relative z-10 transition-all animar-entrada bg-background min-w-0">
-                        <div className={`flex-1 min-h-0 flex flex-col ${ehPaginaConfig ? 'overflow-y-auto overflow-x-hidden custom-scrollbar' : 'overflow-hidden'}`}>
+                    <main className="flex-1 p-6 pt-20 lg:pt-6 overflow-y-auto overflow-x-hidden custom-scrollbar flex flex-col relative z-10 transition-all animar-entrada bg-background min-w-0">
+                        <div className="flex-1 min-h-0 flex flex-col">
                             <Breadcrumbs />
-                            <div className={`flex-1 min-h-0 ${ehPaginaConfig ? '' : 'overflow-hidden'}`}>
+                            <div className="flex-1 min-h-0 flex flex-col">
                                 <ErrorBoundary modulo="Módulo Selecionado">
                                     {children}
                                 </ErrorBoundary>

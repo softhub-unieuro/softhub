@@ -22,7 +22,7 @@ export const GerenciarEquipes = memo(() => {
         grupos, equipes, membros, carregando, erro,
         criarGrupo, editarGrupo, desativarGrupo,
         criarEquipe, editarEquipe, desativarEquipe,
-        alocarMembro, moverMembro
+        alocarMembro, alocarMembroLote, moverMembro
     } = usarEquipes();
 
     const podeCriarEquipe = usarPermissaoAcesso('equipes:criar_equipe');
@@ -132,7 +132,7 @@ export const GerenciarEquipes = memo(() => {
     const handleExcluirGrupo = useCallback((g: Grupo) => setConfirmacaoExclusao({ id: g.id, nome: g.nome, tipo: 'grupo' }), []);
     const handleAlocarAbrir = useCallback((gId: string, eId: string) => setModalAlocacao({ grupoId: gId, equipeId: eId }), []);
     const handleRemoverMembro = useCallback((mId: string) => { alocarMembro(mId, null, null); }, [alocarMembro]);
-    const handleAlocarLote = useCallback(async (mId: string, eId: string | null, gId: string | null) => { await alocarMembro(mId, eId, gId); }, [alocarMembro]);
+    const handleAlocarLote = useCallback(async (mIds: string[], eId: string | null, gId: string | null) => { await alocarMembroLote(mIds, eId, gId); }, [alocarMembroLote]);
     const handleMoverMembroAbrir = useCallback((mId: string, gOrigemId: string) => setModalMover({ membroId: mId, grupoOrigemId: gOrigemId, equipeId: idEquipeAtiva! }), [idEquipeAtiva]);
     const handleSelecionarLiderAbrir = useCallback((tipo: 'lider' | 'sub_lider') => setModalLider({ aberto: true, tipo }), []);
     const handleSalvarNomeGrupo = useCallback(async (id: string, nome: string) => { await editarGrupo(id, { nome }); }, [editarGrupo]);

@@ -83,6 +83,77 @@ rotasAlocacao.patch('/membros/:id/alocar', autenticacaoRequerida(), verificarPer
 });
 
 /**
+ * Aloca múltiplos membros em lote (Otimizado via D1 Batch).
+ */
+rotasAlocacao.post('/membros/alocar-lote', autenticacaoRequerida(), verificarPermissao('equipes:editar_equipe'), async (c: Context) => {
+    const { DB, softhub_kv } = c.env;
+    const usuarioLogado = c.get('usuario') as any;
+
+    let equipe_id: string, grupo_id: string, membrosIds: string[];
+    try {
+        ({ equipe_id, grupo_id, membros: membrosIds } = await c.req.json());
+    } catch {
+        return c.json({ erro: 'Corpo da requisição inválido.' }, 400);
+    }
+
+    if (!equipe_id || !grupo_id || !membrosIds || !Array.isArray(membrosIds)) {
+        return c.json({ erro: 'Dados inválidos. Necessário equipe_id, grupo_id e array de membros.' }, 400);
+    }
+
+    if (membrosIds.length === 0) return c.json({ sucesso: true, total: 0 });
+
+    try {
+        const statementsDeletar = membrosIds.map(membroId => 
+            DB.prepare('DELETE FROM usuarios_organizacao WHERE usuario_id = ?').bind(membroId)
+        );
+
+        const statementsInserir = membrosIds.map(membroId => 
+            DB.prepare(`
+                INSERT INTO usuarios_organizacao (id, usuario_id, equipe_id, grupo_id)
+                VALUES (?, ?, ?, ?)
+            `).bind(crypto.randomUUID(), membroId, equipe_id, grupo_id)
+        );
+
+        await DB.batch([...statementsDeletar, ...statementsInserir]);
+
+        const info = await DB.prepare('SELECT e.nome as e_nome, g.nome as g_nome FROM equipes e, grupos g WHERE e.id = ? AND g.id = ?')
+            .bind(equipe_id, grupo_id).first() as any;
+
+        for (const membroId of membrosIds) {
+            c.executionCtx.waitUntil(
+                criarNotificacoes(DB, {
+                    usuarioId: membroId,
+                    tipo: 'sistema',
+                    titulo: 'Nova alocação',
+                    mensagem: `Você foi alocado à equipe ${info?.e_nome ?? 'da organização'} no grupo ${info?.g_nome ?? ''}.`,
+                    link: '/app/membros',
+                    entidadeId: equipe_id
+                }, softhub_kv)
+            );
+        }
+
+        c.executionCtx.waitUntil(
+            registrarLog(DB, {
+                usuarioId: usuarioLogado.id,
+                acao: 'MEMBROS_ALOCADOS_LOTE',
+                modulo: 'equipes',
+                descricao: `${membrosIds.length} membros alocados → ${info?.e_nome ?? equipe_id} / ${info?.g_nome ?? grupo_id}`,
+                ip: c.req.header('CF-Connecting-IP') ?? '',
+                entidadeTipo: 'equipes',
+                entidadeId: equipe_id,
+                dadosAnteriores: null,
+                dadosNovos: { equipe_id, grupo_id, total_membros: membrosIds.length },
+            })
+        );
+
+        return c.json({ sucesso: true, total: membrosIds.length });
+    } catch (erro: any) {
+        console.error('[ERRO] POST /api/equipes/membros/alocar-lote', erro);
+        return c.json({ erro: 'Falha ao alocar membros em lote.' }, 500);
+    }
+});
+
+/**
  * Move um membro de um grupo para outro dentro da mesma (ou nova) equipe.
  */
 rotasAlocacao.patch('/membros/:id/mover', autenticacaoRequerida(), verificarPermissao('equipes:editar_equipe'), async (c: Context) => {

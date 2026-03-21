@@ -172,7 +172,7 @@ export const DetalheEquipe = memo(({
                     <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-1.5 leading-none">Líder</p>
                         <p className={`text-base font-bold tracking-tight ${equipe.lider_id ? 'text-slate-900' : 'text-slate-400 italic'}`}>
-                            {equipe.lider_nome || 'Clique para indicar'}
+                            {equipe.lider_nome || (podeEditarEquipe ? 'Clique para indicar' : 'Não definido')}
                         </p>
                     </div>
                 </div>
@@ -190,7 +190,7 @@ export const DetalheEquipe = memo(({
                     <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-1.5 leading-none">Sub-Líder</p>
                         <p className={`text-base font-bold tracking-tight ${equipe.sub_lider_id ? 'text-slate-900' : 'text-slate-400 italic'}`}>
-                            {equipe.sub_lider_nome || 'Clique para indicar'}
+                            {equipe.sub_lider_nome || (podeEditarEquipe ? 'Clique para indicar' : 'Não definido')}
                         </p>
                     </div>
                 </div>
@@ -211,21 +211,21 @@ export const DetalheEquipe = memo(({
             </div>
 
             {/* Scrollable Groups Area */}
-            <div className="flex-1 overflow-y-auto min-h-0 pr-2 -mr-2 custom-scrollbar">
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 h-full">
+            <div className="flex-1 overflow-y-auto min-h-0 pr-2 -mr-2 custom-scrollbar flex flex-col">
                 {grupos.length === 0 ? (
-                    <div className="col-span-full h-full bg-muted/5 border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center py-16">
+                    <div className="flex-1 bg-muted/5 border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center py-16 min-h-[300px]">
                         <EstadoVazio 
                             titulo="Equipe sem Grupos"
                             descricao="Esta equipe ainda não possui grupos de trabalho definidos."
-                            acao={{
+                            acao={podeCriarGrupo ? {
                                 rotulo: "Criar Primeiro Grupo",
                                 aoClicar: aoAdicionarGrupo
-                            }}
+                            } : undefined}
                         />
                     </div>
                 ) : (
-                    grupos.map((g, index) => {
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 grow">
+                    {grupos.map((g, index) => {
                         const partes = g.nome.trim().split(/\s+/);
                         const devePularPrimeira = partes.length > 1 && /^(grupo|grupos)$/i.test(partes[0]);
                         const inicial = devePularPrimeira ? partes[1].charAt(0).toUpperCase() : partes[0].charAt(0).toUpperCase();
@@ -312,7 +312,7 @@ export const DetalheEquipe = memo(({
                                             <>
                                                 <div className="flex items-center justify-between mb-4">
                                                     <h6 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">
-                                                        OPERADORES ({membrosDoGrupo.length})
+                                                        MEMBROS ({membrosDoGrupo.length})
                                                     </h6>
                                                     {podeAlocarMembro && (
                                                         <button 
@@ -334,7 +334,7 @@ export const DetalheEquipe = memo(({
                                                     ))}
                                                     {membrosDoGrupo.length === 0 && (
                                                         <EstadoVazio 
-                                                            titulo="Sem Operadores"
+                                                            titulo="Sem Membros"
                                                             descricao="Este grupo ainda não possui membros alocados."
                                                             compacto={true}
                                                         />
@@ -346,9 +346,9 @@ export const DetalheEquipe = memo(({
                                 </div>
                             </div>
                         );
-                    })
+                    })}
+                    </div>
                 )}
-                </div>
             </div>
         </div>
     );
