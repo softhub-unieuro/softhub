@@ -16,8 +16,8 @@ export const SeletorProjetoGlobal = memo(() => {
     useEffect(() => {
         if (projetos.length > 0) {
             const projetoExiste = projetos.some(p => p.id === projetoAtivoId);
-            if (!projetoAtivoId || !projetoExiste) {
-                // Tenta o principal, se não existir pega o primeiro da lista
+            if (projetoAtivoId && !projetoExiste) {
+                // Se o projeto selecionado sumiu, tenta o primeiro da lista
                 const padrao = projetos.find(p => p.id === PROJETO_PADRAO_ID) || projetos[0];
                 setProjetoAtivoId(padrao.id);
             }
@@ -56,6 +56,9 @@ export const SeletorProjetoGlobal = memo(() => {
                 onChange={(e) => setProjetoAtivoId(e.target.value)}
                 className="w-full h-11 pl-11 pr-10 bg-sidebar-accent/5 hover:bg-sidebar-accent/10 border border-sidebar-border/30 rounded-2xl text-[11px] font-bold text-sidebar-foreground/80 focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer relative z-10"
             >
+                <option value="" className="bg-sidebar text-sidebar-foreground/50 py-2">
+                    Selecionar Projeto...
+                </option>
                 {projetos.map(projeto => (
                     <option key={projeto.id} value={projeto.id} className="bg-sidebar text-sidebar-foreground py-2">
                         {projeto.nome}

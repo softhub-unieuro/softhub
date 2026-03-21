@@ -130,43 +130,58 @@
   }
 
   html, body {
-    @apply overflow-x-hidden;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     @apply antialiased selection:bg-primary/20 transition-colors duration-300;
   }
 
-  /* Custom scrollbar para evitar layout shift horizontal e design premium */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: hsl(var(--border)) transparent;
+}
+
+@layer base {
+  /* Personalização de Scrollbar - Apenas para Desktop */
+  @media (min-width: 1024px) {
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: hsl(var(--foreground) / 0.1);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: hsl(var(--primary) / 0.3);
+    }
   }
 
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  /* Ocultar barra de rolagem no Mobile para um visual limpo */
+  @media (max-width: 1023px) {
+    ::-webkit-scrollbar {
+      display: none;
+      width: 0;
+    }
+    * {
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none; /* IE/Edge */
+    }
   }
 
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted-foreground) / 0.2);
-    border-radius: 100px;
-    transition: background 0.3s ease;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--primary) / 0.5);
-  }
-
-  ::-webkit-scrollbar-button {
-    display: none;
-  }
-
-  .custom-scrollbar {
-    overflow-x: hidden !important;
+  /* Compatível com Firefox Desktop */
+  @media (min-width: 1024px) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: hsl(var(--foreground) / 0.1) transparent;
+    }
   }
 }
 

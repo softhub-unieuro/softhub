@@ -47,14 +47,14 @@ export function LayoutPrincipal({ children }: LayoutPrincipalProps) {
     }, [projetoAtivoId, projetos]);
 
     return (
-        <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden transition-colors duration-300 font-sans">
+        <div className="flex flex-col min-h-screen w-full bg-background text-foreground transition-colors duration-300 font-sans">
             <BarraPrevisualizacaoCargo />
             
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 w-full relative">
                 <SincronizadorGlobal />
 
-                {/* Sidebar Desktop */}
-                <div className="hidden lg:flex shrink-0 w-[280px]">
+                {/* Sidebar Desktop - FIXED h-screen que se mantém estática enquanto o body scrolla */}
+                <div className="hidden lg:flex fixed inset-y-0 left-0 w-[280px] z-30 h-screen">
                     <BarraLateral aoAbrirScanner={() => setScannerAberto(true)} />
                 </div>
 
@@ -69,7 +69,7 @@ export function LayoutPrincipal({ children }: LayoutPrincipalProps) {
 
                         {/* Drawer Content com Slide In */}
                         <div
-                            className="absolute inset-y-0 left-0 w-[280px] bg-sidebar border-r border-sidebar-border shadow-2xl animate-sidebar-in"
+                            className="absolute inset-y-0 left-0 w-[280px] bg-sidebar border-r border-sidebar-border shadow-2xl animate-sidebar-in h-screen"
                             onClick={e => e.stopPropagation()}
                         >
                             <div className="flex flex-col h-full relative">
@@ -82,21 +82,20 @@ export function LayoutPrincipal({ children }: LayoutPrincipalProps) {
                     </div>
                 )}
 
-                <div className="flex flex-col flex-1 overflow-hidden relative min-w-0">
-                    {/* Botão de menu mobile flutuante - Ajustado para descer se a barra estiver ativa */}
+                {/* Container de Conteúdo - Recebe padding paraSidebar e cresce com o conteúdo do BODY */}
+                <div className="flex flex-col flex-1 w-full min-w-0 lg:pl-[280px]">
+                    {/* Botão de menu mobile flutuante - Posicionado para ergonomia (FAB) */}
                     <button
                         onClick={() => setSidebarAberta(true)}
-                        className={`lg:hidden fixed left-4 z-40 p-2.5 bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl shadow-lg text-muted-foreground hover:text-primary transition-all active:scale-95 ${
-                            usarAutenticacao().roleVisualizacao ? 'top-16' : 'top-4'
-                        }`}
+                        className="lg:hidden fixed right-6 bottom-6 z-40 p-3.5 bg-card/40 backdrop-blur-xl border border-white/[0.08] text-muted-foreground/50 rounded-full shadow-lg hover:text-primary hover:border-primary/20 transition-all active:scale-90"
                     >
-                        <Menu size={20} strokeWidth={2.5} />
+                        <Menu size={20} strokeWidth={2} />
                     </button>
 
-                    <main className="flex-1 p-6 pt-20 lg:pt-6 overflow-y-auto overflow-x-hidden custom-scrollbar flex flex-col relative z-10 transition-all animar-entrada bg-background min-w-0">
-                        <div className="flex-1 min-h-0 flex flex-col">
+                    <main className="flex-1 w-full flex flex-col relative z-20 transition-all animar-entrada min-w-0">
+                        <div className="flex-1 flex flex-col pt-20 lg:pt-0">
                             <Breadcrumbs />
-                            <div className="flex-1 min-h-0 flex flex-col">
+                            <div className="flex-1 flex flex-col w-full px-6 py-6">
                                 <ErrorBoundary modulo="Módulo Selecionado">
                                     {children}
                                 </ErrorBoundary>

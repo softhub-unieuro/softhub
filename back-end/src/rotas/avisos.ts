@@ -109,6 +109,10 @@ rotasAvisos.post('/', autenticacaoRequerida(), verificarPermissao('avisos:criar'
         const cache = await caches.open('avisos-cache');
         await cache.delete(new URL('/api/avisos', c.req.url).toString());
 
+        // Invalida cache do dashboard para que o briefing mostre o aviso imediatamente
+        const listaKeys = await softhub_kv.list({ prefix: 'dashboard_metrics_' });
+        await Promise.all(listaKeys.keys.map((k: { name: string }) => softhub_kv.delete(k.name)));
+
         return c.json({ sucesso: true, id: novoId });
     } catch (erro) {
         return c.json({ erro: 'Falha ao criar aviso' }, 500);

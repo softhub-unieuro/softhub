@@ -47,7 +47,7 @@ export function Breadcrumbs() {
     if (paths.length <= 1 || paths.includes('dashboard')) return null;
 
     return (
-        <nav className="flex items-center gap-1.5 mb-5 overflow-x-auto scrollbar-none whitespace-nowrap animar-entrada">
+        <nav className="flex items-center gap-1.5 px-6 pt-6 overflow-x-auto scrollbar-none whitespace-nowrap animar-entrada">
             <Link 
                 to="/app/dashboard" 
                 className="p-1 text-muted-foreground/30 hover:text-primary transition-colors rounded"

@@ -16,9 +16,7 @@ export const CardAviso = memo(({ aviso, podeDeletar, aoRemover, index }: CardAvi
 
     return (
         <div className={`card-glass p-5 md:p-6 relative overflow-hidden flex flex-col sm:flex-row gap-6 card-glass-hover h-full transition-all group animar-entrada atraso-${(index % 5) + 1}`}>
-            {aviso.prioridade === 'urgente' && (
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-destructive" />
-            )}
+            {/* Mural de avisos usa design de cápsula totalmente arredondada */}
 
             {/* Lado Esquerdo - Conteúdo Principal */}
             <div className="flex-1 flex flex-col">

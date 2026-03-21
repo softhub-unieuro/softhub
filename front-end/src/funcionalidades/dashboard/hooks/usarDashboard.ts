@@ -46,7 +46,8 @@ export function usarDashboard(projetoId?: string) {
             });
             return res.data;
         },
-        staleTime: 60000, 
+        staleTime: 15_000,        // 15s — dados ficam "frescos" por pouco tempo
+        refetchOnWindowFocus: true, // re-busca ao voltar à aba
     });
 
     const erro = error ? (error as any).response?.data?.erro || 'Erro ao carregar dashboard' : null;

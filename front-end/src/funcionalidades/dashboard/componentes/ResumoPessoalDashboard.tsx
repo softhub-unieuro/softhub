@@ -1,114 +1,98 @@
-import { memo, useState } from 'react';
+import { memo } from 'react';
 import { 
     CheckCircle2, 
     Clock, 
     Trophy, 
     Target,
-    ArrowUpRight,
-    Briefcase,
-    User
+    Zap,
+    Star
 } from 'lucide-react';
 import { usarPerfil } from '@/funcionalidades/perfil/hooks/usarPerfil';
-import { Skeleton } from '@/compartilhado/componentes/Skeleton';
-import { ModalEdicaoPerfil } from '@/funcionalidades/perfil/componentes/ModalEdicaoPerfil';
 
 /**
- * Componente de resumo pessoal para o Dashboard.
- * Exibe métricas individuais do usuário, independente do projeto selecionado.
- * Agora integrado com Modal de Ajustes de Perfil.
+ * ⚡ PERFORMANCE MONITOR: THE TACTICAL HUD
+ * Design minimalista e sofisticado para monitoramento individual.
  */
 export const ResumoPessoalDashboard = memo(() => {
     const { perfil, stats, carregando } = usarPerfil();
-    const [modalAberto, setModalAberto] = useState(false);
 
     if (carregando) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-pulse">
-                {[1, 2, 3, 4].map(i => (
-                    <div key={i} className="h-32 bg-muted/20 rounded-3xl border border-border/40" />
-                ))}
-            </div>
+            <div className="h-40 w-full bg-card/10 animate-pulse rounded-[40px] border border-white/5" />
         );
     }
 
     if (!perfil) return null;
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-
-            {/* Card: Tarefas Concluídas */}
-            <div className="group relative bg-card/40 backdrop-blur-xl border border-border/40 p-5 rounded-[32px] transition-all duration-300 hover:shadow-lg active:scale-95">
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
-                            <CheckCircle2 className="w-5 h-5 text-primary" />
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">Entregas</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            
+            {/* Metrica: Concluídas */}
+            <div className="group flex flex-col justify-between p-8 bg-card/10 border border-white/5 rounded-[40px] transition-all hover:bg-white/[0.04] hover:border-emerald-500/20 active:scale-95">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/10">
+                        <Star className="w-4 h-4 text-emerald-500" />
                     </div>
-                    <div>
-                        <div className="text-3xl font-black text-foreground group-hover:translate-x-1 transition-transform">{stats?.tarefas.concluidas || 0}</div>
-                        <p className="text-[9px] text-muted-foreground font-black uppercase tracking-widest mt-1">Concluídas</p>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Entregas</span>
+                </div>
+                <div>
+                    <span className="text-4xl font-black text-foreground group-hover:translate-x-1 transition-transform">{stats?.tarefas.concluidas || 0}</span>
+                    <p className="text-[9px] font-bold text-muted-foreground/30 uppercase mt-1 tracking-[0.2em] leading-none">Total Validade</p>
+                </div>
+            </div>
+
+            {/* Metrica: Aproveitamento */}
+            <div className="group flex flex-col justify-between p-8 bg-card/10 border border-white/5 rounded-[40px] transition-all hover:bg-white/[0.04] hover:border-amber-500/20 active:scale-95">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/10">
+                        <Trophy className="w-4 h-4 text-amber-500" />
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Qualidade</span>
+                </div>
+                <div>
+                    <span className="text-4xl font-black text-foreground group-hover:translate-x-1 transition-transform">{stats?.tarefas.aproveitamento || 0}%</span>
+                    <div className="w-full h-1 bg-white/5 rounded-full mt-3 overflow-hidden border border-white/5">
+                        <div 
+                            className="h-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]"
+                            style={{ width: `${stats?.tarefas.aproveitamento || 0}%` }}
+                        />
                     </div>
                 </div>
             </div>
 
-            {/* Card: Aproveitamento */}
-            <div className="group relative bg-card/40 backdrop-blur-xl border border-border/40 p-6 rounded-[40px] transition-all duration-300 hover:shadow-lg active:scale-95">
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div className="w-10 h-10 rounded-2xl bg-amber-500/10 flex items-center justify-center">
-                            <Trophy className="w-5 h-5 text-amber-600" />
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600/60">Qualidade</span>
+            {/* Metrica: Engajamento */}
+            <div className="group flex flex-col justify-between p-8 bg-card/10 border border-white/5 rounded-[40px] transition-all hover:bg-white/[0.04] hover:border-blue-500/20 active:scale-95">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/10">
+                        <Clock className="w-4 h-4 text-blue-500" />
                     </div>
-                    <div>
-                        <div className="text-3xl font-black text-amber-600 group-hover:translate-x-1 transition-transform">{stats?.tarefas.aproveitamento || 0}%</div>
-                        <div className="w-full h-1.5 bg-amber-500/10 rounded-full mt-2 overflow-hidden border border-amber-500/5">
-                            <div 
-                                className="h-full bg-gradient-to-r from-amber-500 to-orange-400 rounded-full transition-all duration-1000"
-                                style={{ width: `${stats?.tarefas.aproveitamento || 0}%` }}
-                            />
-                        </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Frequência</span>
+                </div>
+                <div>
+                    <span className="text-4xl font-black text-foreground group-hover:translate-x-1 transition-transform">{stats?.ponto.batidasMes || 0}d</span>
+                    <div className="w-full h-1 bg-white/5 rounded-full mt-3 overflow-hidden border border-white/5">
+                        <div 
+                            className="h-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]"
+                            style={{ width: `${Math.min(((stats?.ponto.batidasMes || 0) / 22) * 100, 100)}%` }}
+                        />
                     </div>
                 </div>
             </div>
 
-            {/* Card: Frequência (Ponto) */}
-            <div className="group relative bg-card/40 backdrop-blur-xl border border-border/40 p-6 rounded-[40px] transition-all duration-300 hover:shadow-lg active:scale-95">
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div className="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center">
-                            <Clock className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600/60">Presença (Global)</span>
+            {/* Metrica: Esforço */}
+            <div className="group flex flex-col justify-between p-8 bg-card/10 border border-white/5 rounded-[40px] transition-all hover:bg-white/[0.04] hover:border-primary/20 active:scale-95">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/10">
+                        <Target className="w-4 h-4 text-primary" />
                     </div>
-                    <div>
-                        <div className="text-3xl font-black text-blue-600 group-hover:translate-x-1 transition-transform">{stats?.ponto.batidasMes || 0}d</div>
-                        <div className="w-full h-1.5 bg-blue-500/10 rounded-full mt-2 overflow-hidden border border-blue-500/5">
-                            <div 
-                                className="h-full bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full transition-all duration-1000"
-                                style={{ width: `${Math.min(((stats?.ponto.batidasMes || 0) / 22) * 100, 100)}%` }}
-                            />
-                        </div>
-                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Estimado</span>
+                </div>
+                <div>
+                    <span className="text-4xl font-black text-foreground group-hover:translate-x-1 transition-transform">{stats?.ponto.estimativaHoras || 0}h</span>
+                    <p className="text-[9px] font-bold text-muted-foreground/30 uppercase mt-1 tracking-[0.2em] leading-none">Horas Alocadas</p>
                 </div>
             </div>
 
-            {/* Card: Estimativa de Horas */}
-            <div className="group relative bg-card/40 backdrop-blur-xl border border-border/40 p-6 rounded-[40px] transition-all duration-300 hover:shadow-lg active:scale-95">
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
-                            <Target className="w-5 h-5 text-indigo-600" />
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600/60">Tempo (Global)</span>
-                    </div>
-                    <div>
-                        <div className="text-3xl font-black text-indigo-600 group-hover:translate-x-1 transition-transform">{stats?.ponto.estimativaHoras || 0}h</div>
-                        <p className="text-[9px] text-muted-foreground font-black uppercase tracking-widest mt-1">Duração Total</p>
-                    </div>
-                </div>
-            </div>
         </div>
     );
 

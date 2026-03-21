@@ -1,4 +1,5 @@
-import { useState, useMemo, memo } from 'react';
+import { useState, useMemo, memo, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, Megaphone } from 'lucide-react';
 import { usarAvisos } from '@/funcionalidades/avisos/hooks/usarAvisos';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
@@ -18,6 +19,25 @@ export const MuralAvisos = memo(() => {
     const isAdmin = usarPermissao('ADMIN');
     const [modalAberto, setModalAberto] = useState(false);
     const { usuario } = usarAutenticacao();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [avisoDestacadoId, setAvisoDestacadoId] = useState<string | null>(null);
+    const refDestaque = useRef<HTMLDivElement>(null);
+
+    // Destaque de aviso vindo do Dashboard
+    useEffect(() => {
+        const destaque = searchParams.get('destaque');
+        if (destaque && avisos.length > 0) {
+            setAvisoDestacadoId(destaque);
+            // Limpa o query param para não persistir
+            setSearchParams({}, { replace: true });
+            // Scroll após renderização
+            setTimeout(() => {
+                refDestaque.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
+            // Remove destaque após 3s
+            setTimeout(() => setAvisoDestacadoId(null), 4000);
+        }
+    }, [searchParams, avisos, setSearchParams]);
 
     // Ordenamos os avisos para Urgente aparecer primeiro
     const avisosOrdenados = useMemo(() => {
@@ -65,15 +85,32 @@ export const MuralAvisos = memo(() => {
                         descricao="Nenhum aviso novo por aqui. Continue o bom trabalho!"
                     />
                 ) : (
-                    avisosOrdenados.map((aviso, index) => (
-                        <CardAviso 
-                            key={aviso.id}
-                            aviso={aviso}
-                            podeDeletar={isAdmin || podeRemoverGeral || usuario?.id === aviso.criado_por.id}
-                            aoRemover={removerAviso}
-                            index={index}
-                        />
-                    ))
+                    avisosOrdenados.map((aviso, index) => {
+                        const corDestaque: Record<string, string> = {
+                            urgente: 'ring-red-500/50',
+                            importante: 'ring-amber-500/50',
+                            info: 'ring-blue-500/50',
+                        };
+                        const anel = corDestaque[aviso.prioridade] || 'ring-primary/50';
+                        return (
+                            <div 
+                                key={aviso.id}
+                                ref={aviso.id === avisoDestacadoId ? refDestaque : undefined}
+                                className={`transition-all duration-700 rounded-3xl ${
+                                    aviso.id === avisoDestacadoId 
+                                        ? `ring-2 ${anel} ring-offset-2 ring-offset-background animate-pulse` 
+                                        : ''
+                                }`}
+                            >
+                                <CardAviso 
+                                    aviso={aviso}
+                                    podeDeletar={isAdmin || podeRemoverGeral || usuario?.id === aviso.criado_por.id}
+                                    aoRemover={removerAviso}
+                                    index={index}
+                                />
+                            </div>
+                        );
+                    })
                 )}
             </div>
 

@@ -24,14 +24,14 @@ const PerfilContext = createContext<PerfilContextType | undefined>(undefined);
 export function PerfilProvider({ children, customUsuarioId }: { children: ReactNode, customUsuarioId?: string }) {
     const queryClient = useQueryClient();
     const { exibirToast } = usarToast();
-    const { estaAutenticado } = usarAutenticacao();
-    const queryKey = useMemo(() => customUsuarioId ? ['perfil', customUsuarioId] : ['perfil_me'], [customUsuarioId]);
-
+    const { estaAutenticado, projetoAtivoId } = usarAutenticacao();
+    const queryKey = useMemo(() => customUsuarioId ? ['perfil', customUsuarioId, projetoAtivoId] : ['perfil_me', projetoAtivoId], [customUsuarioId, projetoAtivoId]);
+ 
     const { data, isLoading: carregando, error, refetch } = useQuery<PerfilData>({
         queryKey,
         queryFn: async () => {
             const url = customUsuarioId ? `/api/perfil/${customUsuarioId}` : '/api/perfil/me';
-            const res = await api.get(url);
+            const res = await api.get(url, { params: { projetoId: projetoAtivoId || 'global' } });
             return res.data;
         },
         enabled: estaAutenticado || !!customUsuarioId
