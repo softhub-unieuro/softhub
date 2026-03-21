@@ -236,43 +236,39 @@ INSERT OR IGNORE INTO configuracoes_sistema (id, chave, valor) VALUES
     "ADMIN": {"*": true},
     "COORDENADOR": {
         "dashboard:visualizar": true,
-        "tarefas:visualizar_kanban": true,
-        "tarefas:visualizar_backlog": true,
-        "tarefas:visualizar_detalhes": true,
-        "tarefas:visualizar_historico": true,
-        "tarefas:criar": true,
-        "tarefas:editar": true,
-        "tarefas:mover": true,
-        "ponto:visualizar": true,
-        "ponto:aprovar_justificativa": true,
-        "ponto:exportar": true,
+        "tarefas:*": true,
+        "ponto:*": true,
         "membros:gerenciar": true,
+        "membros:promover_ate_lider": true,
+        "membros:visualizar_perfil_detalhado": true,
+        "projetos:visualizar": true,
+        "projetos:criar": true,
+        "projetos:editar": true,
+        "projetos:publicar_portfolio": true,
         "equipes:visualizar": true,
         "relatorios:visualizar": true,
         "relatorios:imprimir": true,
         "avisos:visualizar": true,
         "logs:visualizar": true,
-        "configuracoes:visualizar": true
+        "configuracoes:visualizar": true,
+        "ia:consultar": true
     },
     "GESTOR": {
         "dashboard:visualizar": true,
-        "tarefas:visualizar_kanban": true,
-        "tarefas:visualizar_backlog": true,
-        "tarefas:visualizar_detalhes": true,
-        "tarefas:visualizar_historico": true,
-        "tarefas:criar": true,
-        "tarefas:editar": true,
-        "tarefas:mover": true,
+        "tarefas:*": true,
         "ponto:visualizar": true,
         "ponto:aprovar_justificativa": true,
         "ponto:exportar": true,
         "membros:gerenciar": true,
+        "membros:visualizar_perfil_detalhado": true,
+        "projetos:visualizar": true,
+        "projetos:editar": true,
         "equipes:visualizar": true,
         "relatorios:visualizar": true,
         "relatorios:imprimir": true,
         "avisos:visualizar": true,
         "logs:visualizar": true,
-        "configuracoes:visualizar": true
+        "ia:consultar": true
     },
     "LIDER": {
         "dashboard:visualizar": true,
@@ -291,6 +287,9 @@ INSERT OR IGNORE INTO configuracoes_sistema (id, chave, valor) VALUES
         "equipes:alocar_membro": true,
         "avisos:visualizar": true,
         "avisos:criar": true,
+        "projetos:visualizar": true,
+        "projetos:gerenciar_links": true,
+        "ia:consultar": true,
         "sistema:notificacoes": true
     },
     "SUBLIDER": {
@@ -304,7 +303,8 @@ INSERT OR IGNORE INTO configuracoes_sistema (id, chave, valor) VALUES
         "ponto:aprovar_justificativa": true,
         "equipes:visualizar": true,
         "avisos:visualizar": true,
-        "avisos:criar": true
+        "avisos:criar": true,
+        "ia:consultar": true
     },
     "MEMBRO": {
         "dashboard:visualizar": true,
@@ -315,10 +315,12 @@ INSERT OR IGNORE INTO configuracoes_sistema (id, chave, valor) VALUES
         "ponto:registrar": true,
         "ponto:visualizar": true,
         "ponto:justificar": true,
-        "avisos:visualizar": true
+        "avisos:visualizar": true,
+        "ia:consultar": true
     },
     "TODOS": {
-        "avisos:visualizar": true
+        "avisos:visualizar": true,
+        "ia:consultar": true
     }
 }'),
 ('b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e', 'dominios_autorizados', '["unieuro.com.br", "unieuro.edu.br"]'),

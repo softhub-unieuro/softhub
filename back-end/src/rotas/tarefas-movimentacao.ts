@@ -47,6 +47,18 @@ rotasMovimentacao.patch('/:id/mover',
 
         if (!podeMover) return c.json({ erro: 'Apenas responsáveis ou líderes podem mover tarefas.' }, 403);
 
+        // 🛡️ NOVO: Trava de Checklist (Fluxo 31)
+        // Bloqueia a conclusão (ou envio para revisão) se houver itens pendentes no checklist
+        if (colunaDestino === 'concluida' || colunaDestino === 'em_revisao') {
+            const pendentes = await DB.prepare('SELECT COUNT(*) as total FROM checklist_tarefa WHERE tarefa_id = ? AND concluido = 0').bind(id).first() as any;
+            if (pendentes && pendentes.total > 0) {
+                return c.json({ 
+                    erro: 'Checklist Pendente', 
+                    detalhe: `Existem ${pendentes.total} itens obrigatórios que ainda não foram marcados como concluídos nesta tarefa.` 
+                }, 400);
+            }
+        }
+
         if (tarefa.status !== colunaDestino) {
             const agora = new Date().toISOString();
             const dataConclusao = colunaDestino === 'concluida' ? agora : null;

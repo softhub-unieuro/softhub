@@ -2,7 +2,7 @@ import { Hono, Context } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { Env } from '../index';
-import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
+import { autenticacaoRequerida, verificarPermissao, verificarPermissaoManual } from '../middleware/auth';
 import { registrarLog } from '../servicos/servico-logs';
 import { criarNotificacoes } from '../servicos/servico-notificacoes';
 import { obterConfiguracao } from '../servicos/servico-configuracoes';
@@ -56,6 +56,21 @@ rotasAdmin.patch('/:id/role', autenticacaoRequerida(), verificarPermissao(['memb
                 erro: 'Operação Bloqueada.',
                 detalhe: 'Administradores de Segurança são imutáveis via interface. Altere a variável BOOTSTRAP_ADMIN_EMAIL no servidor.' 
             }, 403);
+        }
+
+        // 3. 🛡️ NOVO: Restrição Hierárquica por Permissão
+        const podeGerenciarTudo = await verificarPermissaoManual(c, 'membros:gerenciar');
+        const podePromoverAteLider = await verificarPermissaoManual(c, 'membros:promover_ate_lider');
+
+        if (!podeGerenciarTudo && podePromoverAteLider) {
+            const idxLider = configuradas.indexOf('LIDER');
+            const idxAlvo = configuradas.indexOf(roleNormalizada);
+            if (idxAlvo > idxLider && roleNormalizada !== 'MEMBRO') {
+                 return c.json({ 
+                    erro: 'Permissão Insuficiente.',
+                    detalhe: 'Seu cargo só permite promover membros até o nível de LÍDER.' 
+                }, 403);
+            }
         }
 
         await DB.prepare('UPDATE usuarios SET role = ? WHERE id = ?').bind(roleNormalizada, id).run();

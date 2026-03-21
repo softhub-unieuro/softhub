@@ -175,6 +175,41 @@ export function autenticacaoRequerida(roleMinima?: string) {
     };
 }
 
+/**
+ * Função utilitária para checagem manual de permissão dentro de uma rota.
+ */
+export async function verificarPermissaoManual(c: Context<any>, permissao: string): Promise<boolean> {
+    const usuario = c.get('usuario') as UsuarioAutenticado;
+    if (!usuario) return false;
+
+    // 🚨 BYPASS ABSOLUTO
+    if (usuario.roleReal === 'ADMIN' && !usuario.isSimulacao) return true;
+
+    const { DB, softhub_kv } = c.env as Env;
+    
+    let matriz: Record<string, any> | null = null;
+    try {
+        const cache = await softhub_kv.get('permissoes_roles');
+        if (cache) matriz = JSON.parse(cache);
+        else {
+            const res = await DB.prepare('SELECT valor FROM configuracoes_sistema WHERE chave = ?').bind('permissoes_roles').first<{ valor: string }>();
+            if (res?.valor) matriz = JSON.parse(res.valor);
+        }
+    } catch (e) {}
+
+    const m = matriz || PERMISSOES_PADRAO;
+    const [modulo, acao] = permissao.split(':');
+    const configRole = m[usuario.role] || {};
+    const configTodos = m['TODOS'] || {};
+
+    return (
+        configRole['*'] === true || configTodos['*'] === true ||
+        configRole[`${modulo}:*`] === true || configTodos[`${modulo}:*`] === true ||
+        configRole[permissao] === true || configTodos[permissao] === true ||
+        configRole[modulo]?.[acao] === true || configTodos[modulo]?.[acao] === true
+    );
+}
+
 // ─── Middleware de Permissão Granular ───────────────────────────────────────
 
 export function verificarPermissao(permissaoRequerida: string | string[]) {

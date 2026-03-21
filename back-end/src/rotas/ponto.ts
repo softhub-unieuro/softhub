@@ -214,6 +214,59 @@ rotasPonto.post('/',
         }
     });
 
+rotasPonto.get('/exportar', 
+    autenticacaoRequerida(), 
+    verificarPermissao('ponto:exportar'), 
+    async (c: Context) => {
+        const { DB } = c.env;
+        const query = c.req.query();
+        const { usuarioId, mes, ano } = query;
+
+        try {
+            let sql = `
+                SELECT u.nome, p.tipo, p.registrado_em, p.ip_origem 
+                FROM ponto_registros p
+                JOIN usuarios u ON p.usuario_id = u.id
+                WHERE 1=1
+            `;
+            const params: any[] = [];
+
+            if (usuarioId) {
+                sql += " AND p.usuario_id = ?";
+                params.push(usuarioId);
+            }
+            if (mes && ano) {
+                sql += " AND strftime('%m', p.registrado_em) = ? AND strftime('%Y', p.registrado_em) = ?";
+                params.push(mes.padStart(2, '0'));
+                params.push(ano);
+            }
+
+            sql += " ORDER BY p.registrado_em ASC";
+
+            const { results } = await DB.prepare(sql).bind(...params).all();
+
+            // Gerar CSV manual (Regra: sem bibliotecas extras se possível)
+            const cabecalho = "Nome;Tipo;Data;Hora;IP\n";
+            const linhas = results.map((r: any) => {
+                const data = new Date(r.registrado_em);
+                const dataFormatada = data.toLocaleDateString('pt-BR');
+                const horaFormatada = data.toLocaleTimeString('pt-BR');
+                return `${r.nome};${r.tipo};${dataFormatada};${horaFormatada};${r.ip_origem}`;
+            }).join("\n");
+
+            const csv = cabecalho + linhas;
+
+            return c.text(csv, 200, {
+                'Content-Type': 'text/csv',
+                'Content-Disposition': `attachment; filename="relatorio_ponto_${mes || 'geral'}_${ano || ''}.csv"`
+            });
+
+        } catch (erro: any) {
+            console.error('[ERRO] GET /api/ponto/exportar:', erro);
+            return c.json({ erro: 'Falha ao gerar relatório CSV' }, 500);
+        }
+    });
+
 /**
  * RODOVIA DE TESTE: Permite o registro de ponto ignorando validações de IP e horário.
  * Requer permissão de 'ADMIN'.

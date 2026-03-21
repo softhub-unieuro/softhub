@@ -1,0 +1,93 @@
+UPDATE configuracoes_sistema 
+SET valor = '{
+    "ADMIN": {"*": true},
+    "COORDENADOR": {
+        "dashboard:visualizar": true,
+        "tarefas:*": true,
+        "ponto:*": true,
+        "membros:gerenciar": true,
+        "membros:promover_ate_lider": true,
+        "membros:visualizar_perfil_detalhado": true,
+        "projetos:visualizar": true,
+        "projetos:criar": true,
+        "projetos:editar": true,
+        "projetos:publicar_portfolio": true,
+        "equipes:visualizar": true,
+        "relatorios:visualizar": true,
+        "relatorios:imprimir": true,
+        "avisos:visualizar": true,
+        "logs:visualizar": true,
+        "configuracoes:visualizar": true,
+        "ia:consultar": true
+    },
+    "GESTOR": {
+        "dashboard:visualizar": true,
+        "tarefas:*": true,
+        "ponto:visualizar": true,
+        "ponto:aprovar_justificativa": true,
+        "ponto:exportar": true,
+        "membros:gerenciar": true,
+        "membros:visualizar_perfil_detalhado": true,
+        "projetos:visualizar": true,
+        "projetos:editar": true,
+        "equipes:visualizar": true,
+        "relatorios:visualizar": true,
+        "relatorios:imprimir": true,
+        "avisos:visualizar": true,
+        "logs:visualizar": true,
+        "ia:consultar": true
+    },
+    "LIDER": {
+        "dashboard:visualizar": true,
+        "tarefas:visualizar_kanban": true,
+        "tarefas:visualizar_backlog": true,
+        "tarefas:visualizar_detalhes": true,
+        "tarefas:visualizar_historico": true,
+        "tarefas:criar": true,
+        "tarefas:editar": true,
+        "tarefas:mover": true,
+        "tarefas:checklist": true,
+        "ponto:visualizar": true,
+        "ponto:aprovar_justificativa": true,
+        "equipes:visualizar": true,
+        "equipes:editar_equipe": true,
+        "equipes:alocar_membro": true,
+        "avisos:visualizar": true,
+        "avisos:criar": true,
+        "projetos:visualizar": true,
+        "projetos:gerenciar_links": true,
+        "ia:consultar": true,
+        "sistema:notificacoes": true
+    },
+    "SUBLIDER": {
+        "dashboard:visualizar": true,
+        "tarefas:visualizar_kanban": true,
+        "tarefas:visualizar_backlog": true,
+        "tarefas:visualizar_detalhes": true,
+        "tarefas:mover": true,
+        "tarefas:checklist": true,
+        "ponto:visualizar": true,
+        "ponto:aprovar_justificativa": true,
+        "equipes:visualizar": true,
+        "avisos:visualizar": true,
+        "avisos:criar": true,
+        "ia:consultar": true
+    },
+    "MEMBRO": {
+        "dashboard:visualizar": true,
+        "tarefas:visualizar_kanban": true,
+        "tarefas:visualizar_backlog": true,
+        "tarefas:visualizar_detalhes": true,
+        "tarefas:comentar": true,
+        "ponto:registrar": true,
+        "ponto:visualizar": true,
+        "ponto:justificar": true,
+        "avisos:visualizar": true,
+        "ia:consultar": true
+    },
+    "TODOS": {
+        "avisos:visualizar": true,
+        "ia:consultar": true
+    }
+}'
+WHERE chave = 'permissoes_roles';

@@ -2,7 +2,7 @@ import { Hono, Context } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { Env } from '../index';
-import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
+import { autenticacaoRequerida, verificarPermissao, verificarPermissaoManual } from '../middleware/auth';
 import { registrarLog } from '../servicos/servico-logs';
 
 const rotasProjetos = new Hono<{ Bindings: Env; Variables: { usuario: any } }>({ strict: false });
@@ -157,8 +157,27 @@ rotasProjetos.patch('/:id',
     const usuario = c.get('usuario');
 
     try {
-        const atual = await DB.prepare('SELECT * FROM projetos WHERE id = ?').bind(id).first();
+        const atual = await DB.prepare('SELECT * FROM projetos WHERE id = ?').bind(id).first() as any;
         if (!atual) return c.json({ erro: 'Projeto não encontrado' }, 404);
+
+        // 🛡️ NOVO: Verificação de Permissões Granulares
+        const mudancaPublico = body.publico !== undefined && (body.publico ? 1 : 0) !== atual.publico;
+        const mudancaLinks = (body.github_repo !== undefined && body.github_repo !== atual.github_repo) ||
+                            (body.documentacao_url !== undefined && body.documentacao_url !== atual.documentacao_url) ||
+                            (body.figma_url !== undefined && body.figma_url !== atual.figma_url) ||
+                            (body.setup_url !== undefined && body.setup_url !== atual.setup_url);
+
+        // Se mudou o status de portfólio, exige permissão específica
+        if (mudancaPublico) {
+            const podePublicar = await verificarPermissaoManual(c, 'projetos:publicar_portfolio');
+            if (!podePublicar) return c.json({ erro: 'Sem permissão para alterar visibilidade do portfólio.' }, 403);
+        }
+
+        // Se mudou links críticos, exige permissão específica (ou ser o criador/gestor)
+        if (mudancaLinks) {
+            const podeGerenciarLinks = await verificarPermissaoManual(c, 'projetos:gerenciar_links');
+            if (!podeGerenciarLinks) return c.json({ erro: 'Sem permissão para gerenciar links técnicos.' }, 403);
+        }
 
         const campos = [];
         const valores = [];

@@ -1,4 +1,4 @@
-import { FolderKanban, Clock, Users, Megaphone, LayoutDashboard, Database, Settings, FileText, LayoutGrid, ListTodo, Layers } from 'lucide-react';
+import { FolderKanban, Clock, Users, Megaphone, LayoutDashboard, Database, Settings, FileText, LayoutGrid, ListTodo, Layers, Sparkles } from 'lucide-react';
 import { useLocation } from 'react-router';
 import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
@@ -39,6 +39,7 @@ export function BarraLateral({ aoNavegar, aoAbrirScanner }: BarraLateralProps) {
     const podeVerProjetosAdmin = usarPermissaoAcesso('projetos:visualizar');
     const podeVerProjetoDetalhes = usarPermissaoAcesso('projetos:visualizar_detalhes');
     const podeVerConfiguracoes = usarPermissaoAcesso('configuracoes:visualizar');
+    const podeVerIA = usarPermissaoAcesso('ia:consultar');
 
     const grupos = useMemo(() => {
         const todosGrupos = [
@@ -47,6 +48,7 @@ export function BarraLateral({ aoNavegar, aoAbrirScanner }: BarraLateralProps) {
                 links: [
                     { label: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard, visivel: podeVerDashboard },
                     { label: 'Lista de Tarefas', path: '/app/backlog', icon: ListTodo, visivel: podeVerBacklog },
+                    { label: 'Assistente IA', path: '/app/ia', icon: Sparkles, visivel: podeVerIA },
                     { label: 'Avisos', path: '/app/avisos', icon: Megaphone, visivel: podeVerAvisos },
                 ],
             },

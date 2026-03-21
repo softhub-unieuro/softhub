@@ -1,12 +1,12 @@
 import { Hono, Context } from 'hono';
 import { Env } from '../index';
-import { autenticacaoRequerida } from '../middleware/auth';
+import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
 import { sugerirPrioridade, resumirTarefa, analisarJustificativa, formatarAviso, aprimorarDescricao } from '../servicos/servico-ai';
 
 const rotasIA = new Hono<{ Bindings: Env; Variables: { usuario: any } }>();
 
-// Todas as rotas de IA exigem autenticação
-rotasIA.use('*', autenticacaoRequerida());
+// Todas as rotas de IA exigem autenticação e permissão de consulta
+rotasIA.use('*', autenticacaoRequerida(), verificarPermissao('ia:consultar'));
 
 /**
  * Middleware para verificar cota diária de IA no KV
