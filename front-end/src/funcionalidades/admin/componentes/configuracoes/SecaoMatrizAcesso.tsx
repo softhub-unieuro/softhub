@@ -210,33 +210,20 @@ export function SecaoMatrizAcesso({ configuracoes, atualizarConfiguracao, podeEd
                 </div>
             </div>
 
-            <div className="overflow-x-auto custom-scrollbar bg-card border-x border-border/20">
+            <div className="overflow-x-auto custom-scrollbar bg-card">
                 <table className="w-full border-collapse">
                     <thead className="relative z-30">
                         <tr className="border-b border-border bg-muted/5">
-                            <th className="sticky left-0 bg-card/90 backdrop-blur-md z-40 px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 min-w-[300px] border-r border-border/50 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.05)]">
+                            <th className="sticky left-0 bg-card/90 backdrop-blur-md z-40 px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 min-w-[300px] border-b border-border shadow-sm">
                                 Capacidade / Módulo
                             </th>
                             {rolesMatriz.map(role => (
                                 <th key={role} className={`px-6 py-4 text-center min-w-[140px] border-r border-border/30 last:border-0 ${role === 'TODOS' ? 'bg-emerald-500/[0.03]' : ''}`}>
-                                    <div className="flex flex-col items-center gap-2 group/rolehead">
-                                        {role === 'TODOS' && <Globe size={14} className="text-emerald-500 mb-1" />}
-                                        <div className="flex items-center gap-2">
-                                            <span className={`text-[10px] font-black tracking-widest uppercase transition-colors ${role === 'ADMIN' ? 'text-primary' : role === 'TODOS' ? 'text-emerald-600' : 'text-foreground/80'}`}>
-                                                {role}
-                                            </span>
-                                            
-                                            {/* Botão de Previsualização (Discord Style) */}
-                                            {role !== 'ADMIN' && role !== 'TODOS' && isAdmin && (
-                                                <button
-                                                    onClick={() => setRoleVisualizacao(role)}
-                                                    title={`Ver sistema como ${role}`}
-                                                    className="p-1 px-1.5 bg-indigo-500/10 text-indigo-500 rounded-md opacity-0 group-hover/rolehead:opacity-100 hover:bg-indigo-500 hover:text-white transition-all scale-90 hover:scale-100 shadow-sm"
-                                                >
-                                                    <Eye size={10} strokeWidth={3} />
-                                                </button>
-                                            )}
-                                        </div>
+                                    <div className="flex items-center justify-center gap-1.5 group/rolehead">
+                                        {role === 'TODOS' && <Globe size={14} className="text-emerald-500" strokeWidth={2.5} />}
+                                        <span className={`text-[10px] font-black tracking-widest uppercase transition-colors ${role === 'ADMIN' ? 'text-primary' : role === 'TODOS' ? 'text-emerald-600' : 'text-foreground/80'}`}>
+                                            {role}
+                                        </span>
                                     </div>
                                 </th>
                             ))}
@@ -262,7 +249,7 @@ export function SecaoMatrizAcesso({ configuracoes, atualizarConfiguracao, podeEd
 
                                     {grupo.permissoes.map((perm) => (
                                         <tr key={`${grupo.modulo}-${perm.chave}`} className="group transition-all hover:bg-muted/10">
-                                            <td className="sticky left-0 bg-card/95 backdrop-blur-md z-10 px-6 py-4 border-b border-border/40 border-r border-border/20 shadow-[8px_0_15px_-5px_rgba(0,0,0,0.01)] transition-colors group-hover:bg-muted/20">
+                                            <td className="sticky left-0 bg-card/95 backdrop-blur-md z-10 px-6 py-4 border-b border-border/40 transition-colors group-hover:bg-muted/20">
                                                 <div className="flex items-center gap-3 pl-2 group-hover:translate-x-1 transition-transform duration-300">
                                                     <div className="w-1 h-1 rounded-full bg-border group-hover:bg-primary group-hover:scale-125 transition-all outline outline-4 outline-transparent group-hover:outline-primary/5" />
                                                     <span className="text-[11px] font-bold text-muted-foreground group-hover:text-foreground transition-colors tracking-tight">{perm.label}</span>

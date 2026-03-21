@@ -91,18 +91,20 @@ rotasProjetos.get('/', autenticacaoRequerida(), verificarPermissao(['projetos:vi
     const usuario = c.get('usuario');
 
     try {
+        const podeVerTudo = await verificarPermissaoManual(c, 'projetos:visualizar');
+
         const query = `
             SELECT p.*, 
                    (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id) as total_tarefas
             FROM projetos p 
-            WHERE p.arquivado = 0 AND (? = 'ADMIN' OR p.publico = 1 OR EXISTS (
+            WHERE p.arquivado = 0 AND (? = 1 OR p.publico = 1 OR EXISTS (
                 SELECT 1 FROM projetos_equipes pe
                 JOIN usuarios_organizacao uo ON uo.equipe_id = pe.equipe_id
                 WHERE pe.projeto_id = p.id AND uo.usuario_id = ?
             ))
             ORDER BY criado_em DESC
         `;
-        const { results } = await DB.prepare(query).bind(usuario.role, usuario.id).all();
+        const { results } = await DB.prepare(query).bind(podeVerTudo ? 1 : 0, usuario.id).all();
 
         // Buscar equipes de cada projeto
         for (const projeto of (results as any[])) {

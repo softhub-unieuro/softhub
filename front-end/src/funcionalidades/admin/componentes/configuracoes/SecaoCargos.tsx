@@ -138,7 +138,7 @@ export function SecaoCargos({ configuracoes, atualizarConfiguracao, salvarConfig
                 {/* Lista de cargos */}
                 <div className="space-y-3">
                     <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/50 block ml-1">Cargos Ativos</label>
-                    <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1 custom-scrollbar">
+                    <div className="space-y-2">
                         {roles.filter(r => r !== 'TODOS' && r !== 'ADMIN').map(role => (
                             <div
                                 key={role}
