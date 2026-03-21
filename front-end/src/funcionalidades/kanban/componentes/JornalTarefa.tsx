@@ -20,6 +20,7 @@ export function JornalTarefa({ tarefaId }: JornalTarefaProps) {
     const { enviarComentario } = usarComentarios(tarefaId);
     const contextoAuth = useContext(ContextoAutenticacao);
     const podeComentar = usarPermissaoAcesso('tarefas:comentar');
+    const podeVerHistorico = usarPermissaoAcesso('tarefas:visualizar_historico');
     const [novoComentario, setNovoComentario] = useState('');
     const [enviando, setEnviando] = useState(false);
 
@@ -40,6 +41,10 @@ export function JornalTarefa({ tarefaId }: JornalTarefaProps) {
     };
 
     if (erro) return <div className="py-4"><Alerta tipo="erro" mensagem={erro} /></div>;
+
+    const entradasFiltradas = podeVerHistorico 
+        ? entradas 
+        : entradas.filter(e => e.tipo === 'comentario');
 
     return (
         <div className="flex flex-col gap-6 mt-8 animar-entrada">
@@ -87,12 +92,12 @@ export function JornalTarefa({ tarefaId }: JornalTarefaProps) {
                 {/* Linha vertical centralizada nos avatares */}
                 <div className="absolute left-[26px] top-6 bottom-4 w-px bg-border/60" />
 
-                {carregando && entradas.length === 0 ? (
+                {carregando && entradasFiltradas.length === 0 ? (
                     <div className="flex justify-center py-10"><Carregando /></div>
-                ) : entradas.length === 0 ? (
+                ) : entradasFiltradas.length === 0 ? (
                     <div className="text-center py-10 text-muted-foreground text-sm italic">Nenhuma atividade registrada ainda.</div>
                 ) : (
-                    entradas.map((entrada, index) => (
+                    entradasFiltradas.map((entrada, index) => (
                         <div key={entrada.id} className={`relative flex gap-4 group animar-entrada atraso-${(index % 5) + 1}`}>
                             {/* Avatar / Ícone */}
                             <div className="relative z-10 shrink-0">

@@ -12,7 +12,7 @@ interface CardMembroFinoProps {
 }
 
 export const CardMembroFino = memo(({ membro, aoRemover, aoMover }: CardMembroFinoProps) => {
-    const podeEditar = usarPermissaoAcesso('equipes:editar_equipe');
+    const podeAlocar = usarPermissaoAcesso('equipes:alocar_membro');
 
     return (
         <div className="flex items-center justify-between p-2.5 bg-muted/10 border border-transparent hover:border-border hover:bg-card rounded-xl transition-all group">
@@ -23,7 +23,7 @@ export const CardMembroFino = memo(({ membro, aoRemover, aoMover }: CardMembroFi
                     <p className="text-[9px] text-muted-foreground/60 font-bold truncate tracking-tight">{membro.email}</p>
                 </div>
             </div>
-            {podeEditar && (
+            {podeAlocar && (
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all shrink-0">
                     <Tooltip texto="Transferir Membro">
                         <button

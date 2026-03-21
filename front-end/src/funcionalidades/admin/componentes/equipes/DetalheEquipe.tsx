@@ -77,6 +77,7 @@ export const DetalheEquipe = memo(({
     const podeEditarEquipe = usarPermissaoAcesso('equipes:editar_equipe');
     const podeCriarGrupo = usarPermissaoAcesso('equipes:criar_grupo');
     const podeEditarGrupo = usarPermissaoAcesso('equipes:editar_grupo');
+    const podeAlocarMembro = usarPermissaoAcesso('equipes:alocar_membro');
 
     return (
         <div className="card-glass p-6 card-glass-hover flex flex-col h-full overflow-hidden">
@@ -313,7 +314,7 @@ export const DetalheEquipe = memo(({
                                                     <h6 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">
                                                         OPERADORES ({membrosDoGrupo.length})
                                                     </h6>
-                                                    {podeEditarEquipe && (
+                                                    {podeAlocarMembro && (
                                                         <button 
                                                             onClick={() => aoAlocar(g.id, equipe.id)} 
                                                             className="p-1.5 bg-muted/20 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg text-[10px] font-black flex items-center gap-1 transition-all border border-border/50"

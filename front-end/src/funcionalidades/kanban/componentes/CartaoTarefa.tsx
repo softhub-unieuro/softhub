@@ -25,6 +25,7 @@ export function CartaoTarefa({ tarefa, aoClicar, aoVerPerfil }: CartaoTarefaProp
     const isUrgente = tarefa.prioridade === 'urgente';
     const { totalConcluidos, totalItens } = usarChecklist(tarefa.id);
     const podeMover = usarPermissaoAcesso('tarefas:mover');
+    const podeVerDetalhes = usarPermissaoAcesso('tarefas:visualizar_detalhes');
     const { estaOnline } = usarMembrosOnline();
 
     // Configuração DnD Kit
@@ -159,13 +160,15 @@ export function CartaoTarefa({ tarefa, aoClicar, aoVerPerfil }: CartaoTarefaProp
                         </div>
                     </div>
 
-                    <button
-                        onClick={handleAbrirDetalhes}
-                        className="w-full py-2 bg-primary/5 hover:bg-primary text-primary hover:text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 border border-primary/10 hover:border-transparent"
-                    >
-                        <Maximize2 size={12} />
-                        Ver Detalhes
-                    </button>
+                    {podeVerDetalhes && (
+                        <button
+                            onClick={handleAbrirDetalhes}
+                            className="w-full py-2 bg-primary/5 hover:bg-primary text-primary hover:text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 border border-primary/10 hover:border-transparent"
+                        >
+                            <Maximize2 size={12} />
+                            Ver Detalhes
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

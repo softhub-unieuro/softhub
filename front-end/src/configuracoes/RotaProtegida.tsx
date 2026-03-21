@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react';
+import { useMemo } from 'react';
 import { Navigate, useLocation } from 'react-router';
 import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
-import { usarPermissao } from '@/compartilhado/hooks/usarPermissao';
+import { usarPermissao, usarQualquerPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
 
 interface RotaProtegidaProps {
     children: ReactNode;
-    roleMinimo?: string;
+    roleMinimo?: string; // Mantido para compatibilidade onde estritamente necessário
+    permissaoRequerida?: string;
 }
 
 /**
@@ -14,10 +16,17 @@ interface RotaProtegidaProps {
  * 2. Usuário autenticado — senão redireciona para /login guardando intenção original
  * 3. Role suficiente — senão redireciona para /app/dashboard
  */
-export function RotaProtegida({ children, roleMinimo }: RotaProtegidaProps) {
+export function RotaProtegida({ children, roleMinimo, permissaoRequerida }: RotaProtegidaProps) {
     const { estaAutenticado, carregando } = usarAutenticacao();
     const location = useLocation();
-    const temPermissao = usarPermissao(roleMinimo ?? null);
+    const temPermissaoRole = usarPermissao(roleMinimo ?? null);
+
+    const checkPermissoes = useMemo(() => {
+        if (!permissaoRequerida) return [];
+        return permissaoRequerida.split(',').map(p => p.trim());
+    }, [permissaoRequerida]);
+
+    const temPermissaoEspecifica = usarQualquerPermissaoAcesso(checkPermissoes);
 
     if (carregando) {
         return (
@@ -31,8 +40,12 @@ export function RotaProtegida({ children, roleMinimo }: RotaProtegidaProps) {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    if (roleMinimo && !temPermissao) {
+    if (roleMinimo && !temPermissaoRole) {
         return <Navigate to="/app/dashboard" replace />;
+    }
+
+    if (permissaoRequerida && !temPermissaoEspecifica) {
+        return <Navigate to="/app/dashboard" replace state={{ acessoNegado: true }} />;
     }
 
     return <>{children}</>;

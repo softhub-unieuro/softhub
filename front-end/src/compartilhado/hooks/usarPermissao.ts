@@ -67,3 +67,39 @@ export function usarPermissaoAcesso(chavePermissao: string): boolean {
 
     }, [roleEfetiva, chavePermissao, permissoes_roles]);
 }
+
+/**
+ * Checa se o usuário possui PELO MENOS UMA das permissões listadas.
+ */
+export function usarQualquerPermissaoAcesso(chaves: string[]): boolean {
+    const { usuario, configuracoes, roleVisualizacao } = usarAutenticacao();
+    const { permissoes_roles } = configuracoes;
+
+    const roleEfetiva = roleVisualizacao || usuario?.role || 'MEMBRO';
+
+    return useMemo(() => {
+        if (roleEfetiva === 'ADMIN') return true;
+        if (!permissoes_roles) return false;
+
+        const permissoesDaRole = permissoes_roles[roleEfetiva] || {};
+        const permissoesTodos = permissoes_roles['TODOS'] || {};
+
+        if (permissoesDaRole['*'] === true || permissoesTodos['*'] === true) return true;
+
+        for (const chave of chaves) {
+            const [modulo] = chave.split(':');
+            if (permissoesDaRole[`${modulo}:*`] === true || permissoesTodos[`${modulo}:*`] === true) return true;
+            
+            if (
+                permissoesDaRole[chave] === true || 
+                permissoesTodos[chave] === true ||
+                (permissoesDaRole[modulo] && typeof permissoesDaRole[modulo] === 'object' && (permissoesDaRole[modulo] as any)[chave.split(':')[1]] === true) ||
+                (permissoesTodos[modulo] && typeof permissoesTodos[modulo] === 'object' && (permissoesTodos[modulo] as any)[chave.split(':')[1]] === true)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }, [roleEfetiva, chaves.join(','), permissoes_roles]);
+}
