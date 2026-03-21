@@ -11,6 +11,7 @@ export interface ConfiguracoesSistema {
     modo_manutencao: boolean;
     hora_inicio_ponto: string;
     hora_fim_ponto: string;
+    dias_trabalho: number[];
     hierarquia_roles: string[];
     labels_roles: Record<string, string>;
 }
@@ -49,6 +50,9 @@ export function usarConfiguracoes() {
             if (typeof dados.modo_manutencao !== 'boolean') dados.modo_manutencao = false;
             if (typeof dados.hora_inicio_ponto !== 'string') dados.hora_inicio_ponto = '13:00';
             if (typeof dados.hora_fim_ponto !== 'string') dados.hora_fim_ponto = '17:00';
+            if (!Array.isArray(dados.dias_trabalho)) {
+                dados.dias_trabalho = [1, 2, 3, 4, 5]; // Padrão: Segunda a Sexta
+            }
             if (!Array.isArray(dados.hierarquia_roles)) {
                 dados.hierarquia_roles = ['MEMBRO', 'SUBLIDER', 'LIDER', 'GESTOR', 'COORDENADOR', 'ADMIN'];
             }

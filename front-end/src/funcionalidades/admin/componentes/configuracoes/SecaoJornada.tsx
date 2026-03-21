@@ -45,6 +45,49 @@ export function SecaoJornada({ configuracoes, atualizarConfiguracao, podeEditar 
                         />
                     </div>
                 </div>
+
+                {/* Dias da Semana Minimalistas */}
+                <div className="space-y-3 pt-4 border-t border-border/40">
+                    <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 px-1 block">Frequência Semanal</label>
+                    <div className="flex items-center gap-1.5 px-1">
+                        {[
+                            { id: 1, label: 'S', nome: 'Segunda' },
+                            { id: 2, label: 'T', nome: 'Terça' },
+                            { id: 3, label: 'Q', nome: 'Quarta' },
+                            { id: 4, label: 'Q', nome: 'Quinta' },
+                            { id: 5, label: 'S', nome: 'Sexta' },
+                            { id: 6, label: 'S', nome: 'Sábado' },
+                            { id: 0, label: 'D', nome: 'Domingo' }
+                        ].map((dia) => {
+                            const ativo = (configuracoes?.dias_trabalho || [1,2,3,4,5]).includes(dia.id);
+                            return (
+                                <button
+                                    key={dia.id}
+                                    type="button"
+                                    disabled={!podeEditar}
+                                    title={dia.nome}
+                                    onClick={() => {
+                                        const atuais = configuracoes?.dias_trabalho || [1,2,3,4,5];
+                                        const novos = atuais.includes(dia.id)
+                                            ? atuais.filter(id => id !== dia.id)
+                                            : [...atuais, dia.id].sort();
+                                        atualizarConfiguracao('dias_trabalho', novos);
+                                    }}
+                                    className={`
+                                        flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black transition-all duration-300
+                                        ${ativo 
+                                            ? 'bg-sky-500/10 text-sky-500 border border-sky-500/20 shadow-sm shadow-sky-500/5' 
+                                            : 'text-muted-foreground/30 hover:text-muted-foreground/50 hover:bg-muted/30'}
+                                        ${!podeEditar && 'opacity-50 cursor-not-allowed'}
+                                        active:scale-95
+                                    `}
+                                >
+                                    {dia.label}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
                 
                 <p className="text-[10px] text-muted-foreground font-medium leading-relaxed bg-sky-500/[0.03] border border-sky-500/10 p-3 rounded-xl">
                     <Info size={12} className="inline mr-2 text-sky-500" />

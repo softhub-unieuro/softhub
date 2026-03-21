@@ -48,8 +48,8 @@ rotasConfiguracoes.get('/publico', async (c: Context) => {
             if (cache) return c.json(JSON.parse(cache));
         }
 
-        const { results } = await DB.prepare('SELECT chave, valor FROM configuracoes_sistema WHERE chave IN (?, ?, ?, ?, ?, ?, ?, ?)')
-            .bind('permissoes_roles', 'hierarquia_roles', 'dominios_autorizados', 'modo_manutencao', 'hora_inicio_ponto', 'hora_fim_ponto', 'labels_roles', 'ips_autorizados_ponto')
+        const { results } = await DB.prepare('SELECT chave, valor FROM configuracoes_sistema WHERE chave IN (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+            .bind('permissoes_roles', 'hierarquia_roles', 'dominios_autorizados', 'modo_manutencao', 'hora_inicio_ponto', 'hora_fim_ponto', 'labels_roles', 'ips_autorizados_ponto', 'dias_trabalho')
             .all();
 
         const config: Record<string, any> = {
@@ -60,7 +60,8 @@ rotasConfiguracoes.get('/publico', async (c: Context) => {
             ips_autorizados_ponto: [],
             modo_manutencao: false,
             hora_inicio_ponto: '13:00',
-            hora_fim_ponto: '17:00'
+            hora_fim_ponto: '17:00',
+            dias_trabalho: [1, 2, 3, 4, 5]
         };
 
         if (results) {

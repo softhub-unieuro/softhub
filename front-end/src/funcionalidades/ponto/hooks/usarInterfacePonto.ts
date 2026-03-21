@@ -24,6 +24,7 @@ export function usarInterfacePonto() {
     const [semanaSelecionada, setSemanaSelecionada] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }).getTime());
     const [tentativaBloqueada, setTentativaBloqueada] = useState(false);
     const [janelaTrabalho, setJanelaTrabalho] = useState({ inicio: '13:00', fim: '17:00' });
+    const [diasTrabalho, setDiasTrabalho] = useState<number[]>([1, 2, 3, 4, 5]);
     const [agoraRelogio, setAgoraRelogio] = useState(new Date());
 
     const [searchParams] = useSearchParams();
@@ -47,6 +48,9 @@ export function usarInterfacePonto() {
                         fim: res.data.hora_fim_ponto
                     });
                 }
+                if (Array.isArray(res.data.dias_trabalho)) {
+                    setDiasTrabalho(res.data.dias_trabalho);
+                }
             } catch (e) {
                 console.error('Falha ao sincronizar governança de horário');
             }
@@ -66,6 +70,11 @@ export function usarInterfacePonto() {
         const ultimo = registrosHoje.length > 0 ? registrosHoje[0] : null;
         return ultimo?.tipo === 'entrada' ? 'saida' : 'entrada';
     }, [registrosHoje]);
+
+    const foraDoDia = useMemo(() => {
+        const diaHoje = agoraRelogio.getDay();
+        return !diasTrabalho.includes(diaHoje);
+    }, [agoraRelogio, diasTrabalho]);
 
     const foraDoHorario = useMemo(() => {
         const horaBrasiliaStr = agoraRelogio.toLocaleTimeString('pt-BR', { 
@@ -90,8 +99,10 @@ export function usarInterfacePonto() {
             return false;
         }
 
+        if (foraDoDia) return true;
+
         return agoraMinutos < inicioMinutos || agoraMinutos > fimMinutos;
-    }, [agoraRelogio, janelaTrabalho, proximoTipo, registrosHoje]);
+    }, [agoraRelogio, janelaTrabalho, proximoTipo, registrosHoje, foraDoDia]);
 
     const semanasDisponiveis = useMemo(() => {
         const mapa = new Set<number>();
@@ -144,6 +155,7 @@ export function usarInterfacePonto() {
         proximoTipo,
         agoraRelogio,
         foraDoHorario,
+        foraDoDia,
         semanasDisponiveis,
         semanaSelecionada,
         setSemanaSelecionada,

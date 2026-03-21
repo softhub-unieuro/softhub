@@ -61,18 +61,47 @@ rotasPonto.get('/online', autenticacaoRequerida(), async (c: Context) => {
  * Atualiza o KV 'online:ID' com expiração de 60 segundos.
  */
 rotasPonto.post('/presenca', autenticacaoRequerida(), async (c: Context) => {
-    const { softhub_kv } = c.env;
+    const { DB, softhub_kv } = c.env;
     const usuario = c.get('usuario') as any;
 
     if (!softhub_kv) return c.json({ erro: 'KV não configurado' }, 500);
 
     try {
+        const agora = new Date();
+        const diaSemana = new Date(agora.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' })).getDay();
+        
+        // 1. Buscar dias permitidos (Cache First)
+        let diasPermitidos = [1, 2, 3, 4, 5];
+        const v = await softhub_kv.get('dias_trabalho');
+        if (v) {
+            try { 
+                const parsed = JSON.parse(v.replace(/"/g, ''));
+                if (Array.isArray(parsed)) diasPermitidos = parsed;
+            } catch {}
+        } else {
+            const row = await DB.prepare('SELECT valor FROM configuracoes_sistema WHERE chave = ?').bind('dias_trabalho').first() as any;
+            if (row?.valor) {
+                try {
+                    const parsed = JSON.parse(row.valor);
+                    if (Array.isArray(parsed)) {
+                        diasPermitidos = parsed;
+                        await softhub_kv.put('dias_trabalho', JSON.stringify(parsed), { expirationTtl: 3600 });
+                    }
+                } catch {}
+            }
+        }
+
+        // 2. Se hoje não é dia de trabalho, não registra presença operacional
+        if (!diasPermitidos.includes(diaSemana)) {
+            return c.json({ sucesso: false, motivo: 'fora_do_expediente' });
+        }
+
         const dados = {
             id: usuario.id,
             nome: usuario.nome,
             email: usuario.email,
             foto_perfil: usuario.foto_perfil,
-            ultima_vez: new Date().toISOString()
+            ultima_vez: agora.toISOString()
         };
 
         // Registra presença por 60 segundos (KV expira automaticamente)
@@ -105,11 +134,10 @@ rotasPonto.post('/',
         // 1. Buscar Janela de Trabalho na Governança
         let horaInicio = '13:00';
         let horaFim = '17:00';
+        let configs: any = {};
+        const chaves = ['hora_inicio_ponto', 'hora_fim_ponto', 'dias_trabalho'];
 
         try {
-            const chaves = ['hora_inicio_ponto', 'hora_fim_ponto'];
-            const configs: Record<string, string> = {};
-
             for (const k of chaves) {
                 let v = await softhub_kv?.get(k);
                 if (!v) {
@@ -140,6 +168,21 @@ rotasPonto.post('/',
         const agoraMinutos = converterParaMinutos(horaBrasiliaStr);
         const inicioMinutos = converterParaMinutos(horaInicio);
         const fimMinutos = converterParaMinutos(horaFim);
+
+        // Validação de Dia da Semana (Brasília)
+        const diaSemana = new Date(agora.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' })).getDay();
+        let diasPermitidos = [1, 2, 3, 4, 5]; // Segunda a Sexta padrão
+        
+        try {
+            if (configs.dias_trabalho) {
+                const parsed = typeof configs.dias_trabalho === 'string' ? JSON.parse(configs.dias_trabalho) : configs.dias_trabalho;
+                if (Array.isArray(parsed)) diasPermitidos = parsed;
+            }
+        } catch (e) {
+            console.error('[PONTO] Erro ao processar dias_trabalho:', e);
+        }
+
+        const diaValido = diasPermitidos.includes(diaSemana);
 
         try {
             const usuario = c.get('usuario') as any;
@@ -172,11 +215,21 @@ rotasPonto.post('/',
             const permitirForaDoHorario = tipo === 'saida' && ultimo?.tipo === 'entrada';
 
             const TOLERANCIA = 15; // 15 minutos de flexibilidade
-            if (!permitirForaDoHorario && (agoraMinutos < (inicioMinutos - TOLERANCIA) || agoraMinutos > (fimMinutos + TOLERANCIA))) {
-                return c.json({ 
-                    erro: 'Fora do horário permitido.', 
-                    detalhe: `O registro de ponto está autorizado apenas entre ${horaInicio} e ${horaFim} (com tolerância de ${TOLERANCIA}min).` 
-                }, 403);
+            
+            if (!permitirForaDoHorario) {
+                if (!diaValido) {
+                    return c.json({ 
+                        erro: 'Fora do dia permitido.', 
+                        detalhe: 'Hoje não é dia de funcionamento da Fábrica.' 
+                    }, 403);
+                }
+
+                if (agoraMinutos < (inicioMinutos - TOLERANCIA) || agoraMinutos > (fimMinutos + TOLERANCIA)) {
+                    return c.json({ 
+                        erro: 'Fora do horário permitido.', 
+                        detalhe: `O registro de ponto está autorizado apenas entre ${horaInicio} e ${horaFim} (com tolerância de ${TOLERANCIA}min).` 
+                    }, 403);
+                }
             }
 
             // Inserção no banco
