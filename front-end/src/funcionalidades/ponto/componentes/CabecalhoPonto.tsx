@@ -22,21 +22,23 @@ export const CabecalhoPonto = memo(({
             subtitulo="Registre seu horário e acompanhe suas atividades."
             icone={Clock}
         >
-            <Tooltip texto={abaAtiva === 'registro' ? "Ver Justificativas" : "Ver Registros"} posicao="bottom">
-                <button
-                    onClick={onAlternarAba}
-                    className={`flex items-center justify-center w-10 h-10 rounded-xl border transition-all ${abaAtiva === 'justificativas'
-                            ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20'
-                            : 'bg-background border-border text-muted-foreground hover:border-primary/20 hover:text-primary hover:bg-primary/5'
-                        }`}
-                >
-                    {abaAtiva === 'justificativas' ? (
-                        <ScrollText size={16} strokeWidth={2.5} />
-                    ) : (
-                        <History size={16} strokeWidth={2.5} />
-                    )}
-                </button>
-            </Tooltip>
+            {podeJustificar && (
+                <Tooltip texto={abaAtiva === 'registro' ? "Ver Justificativas" : "Ver Registros"} posicao="bottom">
+                    <button
+                        onClick={onAlternarAba}
+                        className={`flex items-center justify-center w-10 h-10 rounded-xl border transition-all ${abaAtiva === 'justificativas'
+                                ? 'bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20'
+                                : 'bg-background border-border text-muted-foreground hover:border-primary/20 hover:text-primary hover:bg-primary/5'
+                            }`}
+                    >
+                        {abaAtiva === 'justificativas' ? (
+                            <ScrollText size={16} strokeWidth={2.5} />
+                        ) : (
+                            <History size={16} strokeWidth={2.5} />
+                        )}
+                    </button>
+                </Tooltip>
+            )}
 
             {podeJustificar && (
                 <button
