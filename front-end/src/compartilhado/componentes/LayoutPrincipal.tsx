@@ -1,4 +1,5 @@
 import { useState, useEffect, type ReactNode } from 'react';
+import { useLocation } from 'react-router';
 import { BarraLateral } from './BarraLateral';
 import { Menu, X } from 'lucide-react';
 import { Tooltip } from './Tooltip';
@@ -23,11 +24,15 @@ interface LayoutPrincipalProps {
  * Sidebar fixa no Desktop e Drawer no Mobile. Sem cabeçalho global.
  */
 export function LayoutPrincipal({ children }: LayoutPrincipalProps) {
+    const location = useLocation();
     const [sidebarAberta, setSidebarAberta] = useState(false);
     const [scannerAberto, setScannerAberto] = useState(false);
     const { projetoAtivoId } = usarAutenticacao();
     const { projetos } = usarProjetos();
     const { sessaoExpirando, continuarLogado, sairAgora } = usarGuardiaoSessao();
+
+    // Inativa o scroll fixo se estiver na página de configurações para permitir scroll com breadcrumbs
+    const ehPaginaConfig = location.pathname.includes('/configuracoes');
 
     // Inicia o hook de monitoramento para saída automática ao fechar a página
     usarSaidaAutomatica();
@@ -90,11 +95,13 @@ export function LayoutPrincipal({ children }: LayoutPrincipalProps) {
                     </button>
 
                     <main className="flex-1 p-6 pt-20 lg:pt-6 overflow-hidden flex flex-col relative z-10 transition-all animar-entrada bg-background min-w-0">
-                        <Breadcrumbs />
-                        <div className="flex-1 min-h-0 overflow-hidden">
-                            <ErrorBoundary modulo="Módulo Selecionado">
-                                {children}
-                            </ErrorBoundary>
+                        <div className={`flex-1 min-h-0 flex flex-col ${ehPaginaConfig ? 'overflow-y-auto overflow-x-hidden custom-scrollbar' : 'overflow-hidden'}`}>
+                            <Breadcrumbs />
+                            <div className={`flex-1 min-h-0 ${ehPaginaConfig ? '' : 'overflow-hidden'}`}>
+                                <ErrorBoundary modulo="Módulo Selecionado">
+                                    {children}
+                                </ErrorBoundary>
+                            </div>
                         </div>
                     </main>
                 </div>

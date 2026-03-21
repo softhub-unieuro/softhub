@@ -62,7 +62,7 @@ export const PaginaConfiguracoes = memo(() => {
     }
 
     return (
-        <div className="w-full animar-entrada pb-10 relative">
+        <div className="w-full animar-entrada pb-10 relative max-w-[1600px] mx-auto">
             <CabecalhoFuncionalidade
                 titulo="Configurações"
                 subtitulo="Governança, Permissões e Hierarquia do SoftHub"

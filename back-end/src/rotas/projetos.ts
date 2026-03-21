@@ -98,7 +98,7 @@ rotasProjetos.get('/', autenticacaoRequerida(), verificarPermissao(['projetos:vi
                 SELECT 1 FROM projetos_equipes pe
                 JOIN usuarios_organizacao uo ON uo.equipe_id = pe.equipe_id
                 WHERE pe.projeto_id = p.id AND uo.usuario_id = ?
-            )
+            ))
             ORDER BY criado_em DESC
         `;
         const { results } = await DB.prepare(query).bind(usuario.role, usuario.id).all();
