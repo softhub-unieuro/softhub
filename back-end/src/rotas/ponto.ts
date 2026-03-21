@@ -104,8 +104,8 @@ rotasPonto.post('/presenca', autenticacaoRequerida(), async (c: Context) => {
             ultima_vez: agora.toISOString()
         };
 
-        // Registra presença por 60 segundos (KV expira automaticamente)
-        await softhub_kv.put(`online:${usuario.id}`, JSON.stringify(dados), { expirationTtl: 60 });
+        // Registra presença por 5 minutos (KV expira automaticamente)
+        await softhub_kv.put(`online:${usuario.id}`, JSON.stringify(dados), { expirationTtl: 300 });
         
         return c.json({ sucesso: true });
     } catch (e) {

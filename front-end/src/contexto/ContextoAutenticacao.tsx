@@ -201,7 +201,7 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
             try { await api.post('/api/ponto/presenca'); } catch (e) { /* Suprime logs de batida de ponto */ }
         };
         enviarPulsacao();
-        const intervalo = setInterval(enviarPulsacao, 45000);
+        const intervalo = setInterval(enviarPulsacao, 300000); // 5 minutos
         return () => clearInterval(intervalo);
     }, [token, usuarioOriginal]);
 
