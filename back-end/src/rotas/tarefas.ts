@@ -29,7 +29,7 @@ rotasTarefas.get('/', autenticacaoRequerida(), verificarPermissao(['tarefas:visu
         let query = `
             SELECT t.id, t.titulo, t.descricao, t.status, t.prioridade, t.pontos, t.modulo
             FROM tarefas t
-            WHERE t.projeto_id = ?
+            WHERE t.projeto_id = ? AND t.arquivado = 0
         `;
         const params: any[] = [projetoId];
 

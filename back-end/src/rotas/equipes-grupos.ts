@@ -27,6 +27,7 @@ rotasGrupos.get('/grupos', autenticacaoRequerida(), verificarPermissao('equipes:
             LEFT JOIN usuarios ul ON e.lider_id = ul.id
             LEFT JOIN usuarios us ON e.sub_lider_id = us.id
             LEFT JOIN usuarios_organizacao uo ON uo.grupo_id = g.id
+            WHERE g.arquivado = 0
             GROUP BY g.id
             ORDER BY e.nome ASC, g.nome ASC
         `).all();
@@ -136,7 +137,7 @@ rotasGrupos.delete('/grupos/:id', autenticacaoRequerida(), verificarPermissao('e
     const id = c.req.param('id');
 
     try {
-        await DB.prepare('DELETE FROM grupos WHERE id = ?').bind(id).run();
+        await DB.prepare('UPDATE grupos SET arquivado = 1 WHERE id = ?').bind(id).run();
 
         if (id) await removerNotificacoesPorEntidade(DB, id);
 

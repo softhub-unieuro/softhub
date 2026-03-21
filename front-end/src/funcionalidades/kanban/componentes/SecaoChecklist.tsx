@@ -11,7 +11,11 @@ interface SecaoChecklistProps {
 
 export function SecaoChecklist({ tarefaId }: SecaoChecklistProps) {
     const { itens, carregando, adicionarItem, alternarItem, removerItem, totalConcluidos, totalItens, progresso } = usarChecklist(tarefaId);
-    const podeGerenciar = usarPermissaoAcesso('tarefas:checklist');
+    
+    // 🛡️ Governança de Checklist: Separando quem MARCA de quem GERA
+    const podeMarcar = usarPermissaoAcesso('tarefas:checklist_marcar');
+    const podeGerenciar = usarPermissaoAcesso('tarefas:checklist_gerenciar');
+    
     const [novoTexto, setNovoTexto] = useState('');
     const [enviando, setEnviando] = useState(false);
 
@@ -57,9 +61,9 @@ export function SecaoChecklist({ tarefaId }: SecaoChecklistProps) {
                 {itens.map((item: any) => (
                     <div key={item.id} className="group flex items-center gap-3 p-3 rounded-2xl hover:bg-muted/40 transition-all border border-transparent hover:border-border/40">
                         <button
-                            onClick={() => podeGerenciar && alternarItem(item.id, !item.concluido)}
-                            disabled={!podeGerenciar}
-                            className={`shrink-0 w-6 h-6 flex items-center justify-center rounded-2xl border-2 transition-all ${!podeGerenciar ? 'opacity-40 cursor-not-allowed border-muted-foreground/20' : item.concluido ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'border-muted-foreground/30 text-transparent hover:border-primary/50'}`}
+                            onClick={() => podeMarcar && alternarItem(item.id, !item.concluido)}
+                            disabled={!podeMarcar}
+                            className={`shrink-0 w-6 h-6 flex items-center justify-center rounded-2xl border-2 transition-all ${!podeMarcar ? 'opacity-40 cursor-not-allowed border-muted-foreground/20' : item.concluido ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'border-muted-foreground/30 text-transparent hover:border-primary/50'}`}
                         >
                             <CheckSquare className={`w-3.5 h-3.5 ${item.concluido ? 'scale-100 opacity-100' : 'scale-75 opacity-0'}`} strokeWidth={3} />
                         </button>

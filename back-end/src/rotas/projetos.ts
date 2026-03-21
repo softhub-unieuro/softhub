@@ -36,7 +36,7 @@ rotasProjetos.get('/publicos', async (c) => {
         const { results } = await DB.prepare(`
             SELECT id, nome, descricao, github_repo, documentacao_url, figma_url, criado_em 
             FROM projetos 
-            WHERE publico = 1 
+            WHERE publico = 1 AND arquivado = 0
             ORDER BY criado_em DESC
         `).all();
 
@@ -61,7 +61,7 @@ rotasProjetos.get('/', autenticacaoRequerida(), verificarPermissao(['projetos:vi
             SELECT p.*, 
                    (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id) as total_tarefas
             FROM projetos p 
-            WHERE ? = 'ADMIN' OR p.publico = 1 OR EXISTS (
+            WHERE p.arquivado = 0 AND (? = 'ADMIN' OR p.publico = 1 OR EXISTS (
                 SELECT 1 FROM projetos_equipes pe
                 JOIN usuarios_organizacao uo ON uo.equipe_id = pe.equipe_id
                 WHERE pe.projeto_id = p.id AND uo.usuario_id = ?
@@ -236,7 +236,7 @@ rotasProjetos.delete('/:id', autenticacaoRequerida(), verificarPermissao('projet
         const projeto = await DB.prepare('SELECT nome FROM projetos WHERE id = ?').bind(id).first() as any;
         if (!projeto) return c.json({ erro: 'Projeto não encontrado' }, 404);
 
-        await DB.prepare('DELETE FROM projetos WHERE id = ?').bind(id).run();
+        await DB.prepare('UPDATE projetos SET arquivado = 1 WHERE id = ?').bind(id).run();
 
         await registrarLog(DB, {
             usuarioId: usuario.id,

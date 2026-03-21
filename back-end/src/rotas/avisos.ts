@@ -26,7 +26,8 @@ rotasAvisos.get('/', autenticacaoRequerida(), verificarPermissao('avisos:visuali
              u.id as criador_id, u.nome as criador_nome, u.foto_perfil as criador_foto
       FROM avisos a
       JOIN usuarios u ON a.criado_por = u.id
-      WHERE (a.expira_em IS NULL OR datetime(a.expira_em) >= datetime('now'))
+      WHERE (a.expira_em IS NULL OR datetime(a.expira_em) >= datetime('now')) 
+      AND a.arquivado = 0
       ORDER BY a.criado_em DESC
     `).all();
 
@@ -152,7 +153,7 @@ rotasAvisos.delete('/:id', autenticacaoRequerida(), async (c: Context) => {
              }
         }
 
-        await DB.prepare('DELETE FROM avisos WHERE id = ?').bind(id).run();
+        await DB.prepare('UPDATE avisos SET arquivado = 1 WHERE id = ?').bind(id).run();
         
         // Remove notificações vinculadas
         if (id) await removerNotificacoesPorEntidade(DB, id);

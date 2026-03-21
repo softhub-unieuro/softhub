@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Star, MessageSquareQuote, Send, CheckCircle2 } from 'lucide-react';
+import { Star, MessageSquareQuote, Send, CheckCircle2, Sparkles } from 'lucide-react';
 import { api } from '@/compartilhado/servicos/api';
+import { servicoIA } from '@/compartilhado/servicos/servico-ia';
 import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
 import { logger } from '@/utilitarios/gerenciador-logs';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
@@ -24,6 +25,20 @@ export function SecaoFeedbackMentoria({
     const [feedback, setFeedback] = useState(feedbackAtual || '');
     const [nota, setNota] = useState(notaAtual || 0);
     const [enviando, setEnviando] = useState(false);
+    const [refinando, setRefinando] = useState(false);
+
+    const handleRefinarIA = async () => {
+        if (!feedback.trim() || feedback.length < 10) return;
+        setRefinando(true);
+        try {
+            const novoFeedback = await servicoIA.aprimorarDescricao('Feedback de Mentoria', feedback);
+            if (novoFeedback) setFeedback(novoFeedback);
+        } catch (e: any) {
+            logger.aviso('IA', 'Módulo de linguagem ocupado. Tente novamente.');
+        } finally {
+            setRefinando(false);
+        }
+    };
 
     if (status !== 'concluida') return null;
 
@@ -96,9 +111,24 @@ export function SecaoFeedbackMentoria({
 
                 {/* Campo de Texto */}
                 <div>
-                    <label className="block text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest mb-2">
-                        Comentários do Líder/Mentor
-                    </label>
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="block text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">
+                            Comentários do Líder/Mentor
+                        </label>
+                        <button
+                            type="button"
+                            onClick={handleRefinarIA}
+                            disabled={refinando || !feedback || feedback.length < 10}
+                            className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-primary hover:text-primary/70 transition-all disabled:opacity-30 group"
+                        >
+                            {refinando ? (
+                                <Carregando tamanho="sm" Centralizar={false} />
+                            ) : (
+                                <Sparkles size={12} className="text-amber-500 group-hover:scale-125 transition-transform" />
+                            )}
+                            Sugerir Melhoria
+                        </button>
+                    </div>
                     {podeAvaliar && !notaSalva ? (
                         <div className="space-y-3">
                             <textarea

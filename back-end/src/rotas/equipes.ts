@@ -27,6 +27,7 @@ rotasEquipes.get('/equipes', autenticacaoRequerida(), verificarPermissao('equipe
             LEFT JOIN usuarios ul ON e.lider_id = ul.id
             LEFT JOIN usuarios us ON e.sub_lider_id = us.id
             LEFT JOIN usuarios_organizacao uo ON uo.equipe_id = e.id
+            WHERE e.arquivado = 0
             GROUP BY e.id
             ORDER BY e.nome ASC
         `).all();
@@ -175,7 +176,7 @@ rotasEquipes.delete('/equipes/:id', autenticacaoRequerida(), verificarPermissao(
     try {
         const atual = await DB.prepare('SELECT lider_id, sub_lider_id FROM equipes WHERE id = ?').bind(id).first() as any;
         
-        await DB.prepare('DELETE FROM equipes WHERE id = ?').bind(id).run();
+        await DB.prepare('UPDATE equipes SET arquivado = 1 WHERE id = ?').bind(id).run();
 
         if (id) await removerNotificacoesPorEntidade(DB, id);
 

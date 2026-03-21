@@ -135,14 +135,18 @@ rotasGerenciamento.delete('/:id', autenticacaoRequerida(), verificarPermissao('t
         const acessoEquipe = await obterAcessoEquipeNoProjeto(DB, tarefa.projeto_id, usuario);
         if (acessoEquipe === 'LEITURA' || acessoEquipe === 'NENHUM') return c.json({ erro: 'Acesso negado.' }, 403);
 
-        await DB.prepare('DELETE FROM tarefas WHERE id = ?').bind(id).run();
+        // 🛡️ Regra: Sem DELETE real (Soft Delete)
+        await DB.prepare('UPDATE tarefas SET arquivado = 1, atualizado_em = ? WHERE id = ?')
+            .bind(new Date().toISOString(), id)
+            .run();
+            
         if (id) await removerNotificacoesPorEntidade(DB, id);
 
         await registrarLog(DB, {
             usuarioId: usuario.id,
-            acao: 'TAREFA_REMOVIDA_HARD',
+            acao: 'TAREFA_ARQUIVADA',
             modulo: 'kanban',
-            descricao: `Tarefa "${tarefa.titulo}" removida permanentemente do projeto ${tarefa.projeto_id}`,
+            descricao: `Tarefa "${tarefa.titulo}" arquivada (Soft Delete)`,
             ip: c.req.header('CF-Connecting-IP') ?? '',
             entidadeTipo: 'tarefas',
             entidadeId: id,

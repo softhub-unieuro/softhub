@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from '@/compartilhado/componentes/Modal';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
 import { api } from '@/compartilhado/servicos/api';
-import { Wand2, Sparkles, AlertCircle } from 'lucide-react';
+import { Wand2, Sparkles, AlertCircle, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { LABELS_PRIORIDADE } from '@/utilitarios/constantes';
 import { servicoIA } from '@/compartilhado/servicos/servico-ia';
@@ -30,10 +30,25 @@ export function ModalCriarTarefa({ aberto, aoFechar, aoCriar }: ModalCriarTarefa
     });
 
     const [processandoDescricaoIA, setProcessandoDescricaoIA] = useState(false);
+    const [processandoPrioridadeIA, setProcessandoPrioridadeIA] = useState(false);
     const [erroIA, setErroIA] = useState<string | null>(null);
     const [carregandoCriacao, setCarregandoCriacao] = useState(false);
     const titulo = watch('titulo');
     const descricao = watch('descricao');
+
+    const handleSugerirPrioridadeIA = async () => {
+        if (!titulo || !descricao) return;
+        setProcessandoPrioridadeIA(true);
+        setErroIA(null);
+        try {
+            const res = await servicoIA.sugerirPrioridade(titulo + ' ' + descricao);
+            if (res?.prioridade) setValue('prioridade', res.prioridade);
+        } catch (e: any) {
+            setErroIA('Não foi possível analisar a prioridade agora.');
+        } finally {
+            setProcessandoPrioridadeIA(false);
+        }
+    };
 
     const handleAprimorarDescricaoIA = async () => {
         if (!titulo || !descricao) return;
@@ -107,7 +122,22 @@ export function ModalCriarTarefa({ aberto, aoFechar, aoCriar }: ModalCriarTarefa
                 </div>
 
                 <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 ml-1">Prioridade</label>
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="block text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Prioridade</label>
+                        <button
+                            type="button"
+                            onClick={handleSugerirPrioridadeIA}
+                            disabled={processandoPrioridadeIA || !titulo || !descricao}
+                            className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-primary hover:text-primary/70 transition-all disabled:opacity-30 group"
+                        >
+                            {processandoPrioridadeIA ? (
+                                <Carregando tamanho="sm" Centralizar={false} />
+                            ) : (
+                                <Zap size={12} className="text-amber-500 group-hover:scale-125 transition-transform" />
+                            )}
+                            Sugerir com IA
+                        </button>
+                    </div>
                     <div className="flex flex-wrap gap-2">
                         {Object.entries(LABELS_PRIORIDADE).map(([key, label]) => (
                             <label

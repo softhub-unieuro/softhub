@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     linkedin_url TEXT,
     website_url TEXT,
     versao_token INTEGER NOT NULL DEFAULT 1,
+    arquivado INTEGER NOT NULL DEFAULT 0,
     criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 
@@ -51,6 +52,7 @@ CREATE TABLE IF NOT EXISTS equipes (
     descricao TEXT,
     lider_id TEXT REFERENCES usuarios(id) ON DELETE SET NULL,
     sub_lider_id TEXT REFERENCES usuarios(id) ON DELETE SET NULL,
+    arquivado INTEGER NOT NULL DEFAULT 0,
     criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 
@@ -59,6 +61,7 @@ CREATE TABLE IF NOT EXISTS grupos (
     nome TEXT NOT NULL,
     descricao TEXT,
     equipe_id TEXT REFERENCES equipes(id) ON DELETE CASCADE,
+    arquivado INTEGER NOT NULL DEFAULT 0,
     criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 
@@ -85,6 +88,7 @@ CREATE TABLE IF NOT EXISTS projetos (
     documentacao_url TEXT,
     figma_url TEXT,
     setup_url TEXT,
+    arquivado INTEGER NOT NULL DEFAULT 0,
     criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 
@@ -100,6 +104,7 @@ CREATE TABLE IF NOT EXISTS tarefas (
     feedback_lider TEXT,
     nota_aprendizado INTEGER DEFAULT 0,
     data_conclusao TEXT,
+    arquivado INTEGER NOT NULL DEFAULT 0,
     criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
     atualizado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
@@ -174,6 +179,7 @@ CREATE TABLE IF NOT EXISTS avisos (
     prioridade TEXT NOT NULL DEFAULT 'info',
     criado_por TEXT NOT NULL REFERENCES usuarios(id),
     expira_em TEXT,
+    arquivado INTEGER NOT NULL DEFAULT 0,
     criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 
@@ -279,7 +285,8 @@ INSERT OR IGNORE INTO configuracoes_sistema (id, chave, valor) VALUES
         "tarefas:criar": true,
         "tarefas:editar": true,
         "tarefas:mover": true,
-        "tarefas:checklist": true,
+        "tarefas:checklist_marcar": true,
+        "tarefas:checklist_gerenciar": true,
         "ponto:visualizar": true,
         "ponto:aprovar_justificativa": true,
         "equipes:visualizar": true,
@@ -298,7 +305,8 @@ INSERT OR IGNORE INTO configuracoes_sistema (id, chave, valor) VALUES
         "tarefas:visualizar_backlog": true,
         "tarefas:visualizar_detalhes": true,
         "tarefas:mover": true,
-        "tarefas:checklist": true,
+        "tarefas:checklist_marcar": true,
+        "tarefas:checklist_gerenciar": true,
         "ponto:visualizar": true,
         "ponto:aprovar_justificativa": true,
         "equipes:visualizar": true,
@@ -312,6 +320,7 @@ INSERT OR IGNORE INTO configuracoes_sistema (id, chave, valor) VALUES
         "tarefas:visualizar_backlog": true,
         "tarefas:visualizar_detalhes": true,
         "tarefas:comentar": true,
+        "tarefas:checklist_marcar": true,
         "ponto:registrar": true,
         "ponto:visualizar": true,
         "ponto:justificar": true,
@@ -320,7 +329,8 @@ INSERT OR IGNORE INTO configuracoes_sistema (id, chave, valor) VALUES
     },
     "TODOS": {
         "avisos:visualizar": true,
-        "ia:consultar": true
+        "ia:consultar": true,
+        "tarefas:checklist_marcar": true
     }
 }'),
 ('b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e', 'dominios_autorizados', '["unieuro.com.br", "unieuro.edu.br"]'),
