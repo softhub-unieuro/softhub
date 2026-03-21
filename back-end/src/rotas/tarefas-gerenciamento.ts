@@ -17,6 +17,9 @@ const CriarTarefaSchema = z.object({
     status: z.enum(['backlog', 'todo', 'in_progress', 'em_revisao', 'concluida']).default('backlog'),
     modulo: z.string().optional(),
     pontos: z.number().int().min(0).max(100).optional(),
+    equipe_id: z.string().optional().nullable(),
+    grupo_id: z.string().optional().nullable(),
+    responsaveis: z.array(z.string()).optional(),
 });
 
 /**
@@ -28,7 +31,7 @@ rotasGerenciamento.post('/',
     zValidator('json', CriarTarefaSchema), 
     async (c: Context) => {
     
-    const { DB } = c.env;
+    const { DB, softhub_kv } = c.env;
     const body = (c.req as any).valid('json');
     const usuario = c.get('usuario') as any;
 
@@ -44,9 +47,28 @@ rotasGerenciamento.post('/',
 
         const id = crypto.randomUUID();
         await DB.prepare(`
-            INSERT INTO tarefas (id, projeto_id, titulo, descricao, prioridade, status, modulo, pontos)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `).bind(id, body.projeto_id, body.titulo, body.descricao || null, body.prioridade, body.status, body.modulo || null, body.pontos ?? 1).run();
+            INSERT INTO tarefas (id, projeto_id, titulo, descricao, prioridade, status, modulo, pontos, equipe_id, grupo_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(id, body.projeto_id, body.titulo, body.descricao || null, body.prioridade, body.status, body.modulo || null, body.pontos ?? 1, body.equipe_id || null, body.grupo_id || null).run();
+
+        // 🚀 Atribui responsáveis iniciais, se fornecidos
+        if (body.responsaveis && body.responsaveis.length > 0) {
+            const batch = body.responsaveis.map((uid: string) => {
+                return DB.prepare('INSERT OR IGNORE INTO tarefas_responsaveis (tarefa_id, usuario_id) VALUES (?, ?)')
+                         .bind(id, uid);
+            });
+            await DB.batch(batch);
+
+            // Notifica os responsáveis
+            await criarNotificacoes(DB, {
+                usuariosIds: body.responsaveis,
+                tipo: 'tarefa',
+                titulo: 'Nova Tarefa Atribuída',
+                mensagem: `Você foi designado para a tarefa "${body.titulo}".`,
+                link: `/app/kanban?tarefa=${id}`,
+                entidadeId: id
+            }, softhub_kv);
+        }
 
         await registrarLog(DB, {
             usuarioId: usuario.id,

@@ -12,6 +12,8 @@ export interface Tarefa {
     feedback_lider?: string | null;
     nota_aprendizado?: number | null;
     data_conclusao?: string | null;
+    equipe_id?: string | null;
+    equipe_nome?: string | null;
     responsaveis: Array<{
         id: string;
         nome: string;

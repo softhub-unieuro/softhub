@@ -6,7 +6,7 @@ import type { Tarefa } from '@/funcionalidades/kanban/hooks/usarKanban';
 import { useDraggable } from '@dnd-kit/core';
 import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
 import { usarChecklist } from '@/funcionalidades/kanban/hooks/usarChecklist';
-import { CheckCircle2, ChevronDown, ChevronUp, Maximize2 } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronUp, Maximize2, Users } from 'lucide-react';
 
 import { usarMembrosOnline } from '@/compartilhado/hooks/usarMembrosOnline';
 
@@ -87,6 +87,11 @@ export function CartaoTarefa({ tarefa, aoClicar, aoVerPerfil }: CartaoTarefaProp
                                     {tarefa.pontos} pts
                                 </span>
                             )}
+                            {tarefa.equipe_nome && (
+                                <span className="text-[9px] font-bold text-muted-foreground/50 bg-muted/20 px-1.5 py-0.5 rounded-md border border-border/40 truncate max-w-[80px]">
+                                    {tarefa.equipe_nome}
+                                </span>
+                            )}
                             <Emblema
                                 texto={LABELS_PRIORIDADE[tarefa.prioridade]}
                                 variante={CORES_PRIORIDADE[tarefa.prioridade]}
@@ -137,6 +142,13 @@ export function CartaoTarefa({ tarefa, aoClicar, aoVerPerfil }: CartaoTarefaProp
                                 <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-2xl border shadow-sm transition-colors ${totalConcluidos === totalItens ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' : 'bg-muted/50 text-muted-foreground/70 border-border/60'}`}>
                                     <CheckCircle2 className="w-[14px] h-[14px]" strokeWidth={2.5} />
                                     <span className="text-[11px] font-black tracking-tight">{totalConcluidos}/{totalItens}</span>
+                                </div>
+                            )}
+
+                            {tarefa.equipe_nome && (
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-2xl bg-muted/30 border border-border/40 text-muted-foreground/70">
+                                    <Users size={12} strokeWidth={2.5} />
+                                    <span className="text-[11px] font-black tracking-tight">{tarefa.equipe_nome}</span>
                                 </div>
                             )}
                         </div>

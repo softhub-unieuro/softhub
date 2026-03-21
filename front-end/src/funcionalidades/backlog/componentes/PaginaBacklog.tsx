@@ -4,7 +4,8 @@ import {
     ChevronRight,
     User,
     FolderKanban,
-    Layers
+    Layers,
+    ClipboardList
 } from 'lucide-react';
 import { usarBacklog } from '../hooks/usarBacklog';
 import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
@@ -69,7 +70,7 @@ const PaginaBacklog = memo(() => {
                     <Layers size={24} className="text-muted-foreground" />
                 </div>
                 <h3 className="text-foreground font-black uppercase tracking-widest mb-2">Nenhum Projeto Selecionado</h3>
-                <p className="text-muted-foreground text-sm">Selecione um projeto na barra lateral para ver a Lista de Tarefas.</p>
+                <p className="text-muted-foreground text-sm">Selecione um projeto na barra lateral para ver o Backlog.</p>
             </div>
         );
     }
@@ -83,9 +84,9 @@ const PaginaBacklog = memo(() => {
     return (
         <div className="w-full space-y-6 animar-entrada pb-20">
             <CabecalhoFuncionalidade
-                titulo="Lista de Tarefas"
+                titulo="Backlog"
                 subtitulo="Organize o que precisa ser feito e acompanhe o progresso."
-                icone={ListTodo}
+                icone={ClipboardList}
             >
                 <div className="flex items-center gap-4">
                     {podeCriar && (
@@ -155,7 +156,7 @@ const PaginaBacklog = memo(() => {
                 </div>
             ) : tarefas.length === 0 ? (
                 <EstadoVazio
-                    titulo="Lista Vazia"
+                    titulo="Backlog Vazio"
                     descricao="Nenhuma tarefa corresponde aos filtros. Tente mudar os filtros ou crie uma nova tarefa."
                 />
             ) : (

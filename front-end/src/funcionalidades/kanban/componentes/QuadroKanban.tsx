@@ -53,7 +53,7 @@ const LABELS_COLUNAS: Record<string, string> = {
 export const QuadroKanban = memo(() => {
     const { projetoAtivoId } = usarAutenticacao();
     const { projetos, carregando: carregandoProjetos } = usarProjetos();
-    
+
     const [filtros, setFiltros] = useState<any>({});
     const { tarefas, carregando, erro, moverCard } = usarKanban(projetoAtivoId, filtros);
     const [activeTarefa, setActiveTarefa] = useState<Tarefa | null>(null);
@@ -168,7 +168,7 @@ export const QuadroKanban = memo(() => {
             >
                 <div className="flex gap-2.5">
                     {podeVerDocumentos && (
-                        <button 
+                        <button
                             onClick={() => setModalDocsAberto(true)}
                             className="h-11 px-6 bg-primary/5 text-primary border border-primary/20 hover:bg-primary/10 rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest hover:-translate-y-0.5 active:scale-95 transition-all"
                         >
@@ -188,9 +188,9 @@ export const QuadroKanban = memo(() => {
                 </div>
             </CabecalhoFuncionalidade>
 
-            <div className="shrink-0 mb-6">
-                <PainelFiltrosKanban filtros={filtros} aoFiltrar={handleFiltrar} />
-            </div>
+
+            <PainelFiltrosKanban filtros={filtros} aoFiltrar={handleFiltrar} />
+
 
             {!carregandoProjetos && projetos.length === 0 ? (
                 <KanbanVazioProjetos podeGerenciarProjetos={podeGerenciarProjetos} />
@@ -215,25 +215,25 @@ export const QuadroKanban = memo(() => {
                             {tarefas.length === 0 && temFiltroAtivo && (
                                 <div className="mb-6">
                                     <div className="bg-card/20 border border-border/50 rounded-[32px] flex items-center justify-center py-6">
-                                        <EstadoVazio 
-                                            tipo="pesquisa" 
-                                            titulo="Nenhuma tarefa encontrada" 
-                                            descricao="Não há tarefas que correspondam aos filtros ou termo de busca aplicados." 
-                                            compacto={true} 
-                                            acao={{ rotulo: "Limpar todos os filtros", aoClicar: handleLimparFiltros }} 
+                                        <EstadoVazio
+                                            tipo="pesquisa"
+                                            titulo="Nenhuma tarefa encontrada"
+                                            descricao="Não há tarefas que correspondam aos filtros ou termo de busca aplicados."
+                                            compacto={true}
+                                            acao={{ rotulo: "Limpar todos os filtros", aoClicar: handleLimparFiltros }}
                                         />
                                     </div>
                                 </div>
                             )}
                             <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
                                 <div className="flex-1 min-h-0 w-full overflow-hidden">
-                                    <div className="flex h-full w-full gap-4 pb-4">
+                                    <div className="flex h-full w-full gap-4">
                                         {COLUNAS_KANBAN.map((coluna, index) => (
-                                            <ColunaDropZone 
-                                                key={coluna} 
-                                                id={coluna} 
-                                                titulo={LABELS_COLUNAS[coluna]} 
-                                                tarefas={tarefasPorStatus[coluna] || []} 
+                                            <ColunaDropZone
+                                                key={coluna}
+                                                id={coluna}
+                                                titulo={LABELS_COLUNAS[coluna]}
+                                                tarefas={tarefasPorStatus[coluna] || []}
                                                 aoApertarTarefa={setTarefaDetalhes}
                                                 aoVerPerfil={handleVerPerfil}
                                                 delayClass={`atraso-${index + 1}`}
@@ -259,9 +259,9 @@ export const QuadroKanban = memo(() => {
 
             {idPerfilParaVer && (
                 <PerfilProvider customUsuarioId={idPerfilParaVer}>
-                    <ModalEdicaoPerfil 
-                        aberto={!!idPerfilParaVer} 
-                        aoFechar={handleFecharPerfil} 
+                    <ModalEdicaoPerfil
+                        aberto={!!idPerfilParaVer}
+                        aoFechar={handleFecharPerfil}
                     />
                 </PerfilProvider>
             )}

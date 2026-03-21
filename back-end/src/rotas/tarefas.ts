@@ -28,8 +28,9 @@ rotasTarefas.get('/', autenticacaoRequerida(), verificarPermissao(['tarefas:visu
 
     try {
         let query = `
-            SELECT t.id, t.titulo, t.descricao, t.status, t.prioridade, t.pontos, t.modulo
+            SELECT t.id, t.titulo, t.descricao, t.status, t.prioridade, t.pontos, t.modulo, t.equipe_id, e.nome as equipe_nome
             FROM tarefas t
+            LEFT JOIN equipes e ON e.id = t.equipe_id
             WHERE t.projeto_id = ? AND t.arquivado = 0
         `;
         const params: any[] = [projetoId];

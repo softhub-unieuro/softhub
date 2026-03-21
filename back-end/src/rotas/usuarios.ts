@@ -55,4 +55,23 @@ rotasUsuarios.get('/', autenticacaoRequerida(), verificarPermissao('membros:gere
     }
 });
 
+/**
+ * Retorna as opções básicas de usuários para seleção em formulários.
+ * Apenas leitura (nome, id, foto).
+ */
+rotasUsuarios.get('/opcoes', autenticacaoRequerida(), async (c: Context) => {
+    const { DB } = c.env;
+    try {
+        const res = await DB.prepare(`
+            SELECT id, nome, foto_perfil
+            FROM usuarios 
+            WHERE arquivado = 0
+            ORDER BY nome ASC
+        `).all();
+        return c.json({ membros: res.results || [] });
+    } catch (erro: any) {
+        return c.json({ erro: 'Falha ao buscar opções de membros' }, 500);
+    }
+});
+
 export default rotasUsuarios;
