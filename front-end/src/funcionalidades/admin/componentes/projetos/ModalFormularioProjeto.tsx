@@ -52,7 +52,7 @@ export const ModalFormularioProjeto = memo(({
         defaultValues: projetoInicial
     });
 
-    const { sugerirInfra, carregando: iaProcessando } = usarIA();
+    const { sugerirInfra, criarRepositorioGitHub, carregando: iaProcessando } = usarIA();
     const { exibirToast } = usarToast();
     const [infraSugerida, setInfraSugerida] = useState<string | null>(null);
     const [copiado, setCopiado] = useState(false);
@@ -83,6 +83,22 @@ export const ModalFormularioProjeto = memo(({
             exibirToast('Infraestrutura sugerida com sucesso!');
         } catch (e) {
             exibirToast('Não foi possível gerar a sugestão.', 'erro');
+        }
+    };
+
+    const handleCriarRepo = async () => {
+        const nome = watch('nome');
+        const desc = watch('descricao');
+        const publico = watch('publico');
+        
+        if (!nome) return exibirToast('Dê um nome ao projeto primeiro!', 'erro');
+
+        try {
+            const res = await criarRepositorioGitHub(nome, desc, publico);
+            setValue('github_repo', res.repo);
+            exibirToast(`Repositório "${res.repo}" criado com sucesso!`);
+        } catch (e: any) {
+            exibirToast(e.response?.data?.erro || 'Erro ao criar repositório.', 'erro');
         }
     };
 
@@ -127,23 +143,39 @@ export const ModalFormularioProjeto = memo(({
                         <div className="pt-2">
                              <div className="flex justify-between items-center mb-2">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Repositório GitHub (Opcional)</label>
-                                <button
-                                    type="button"
-                                    onClick={handleSugerirInfra}
-                                    disabled={iaProcessando}
-                                    className="text-[9px] font-black uppercase tracking-wider text-primary hover:text-primary/70 flex items-center gap-1.5 transition-all group/ia"
-                                >
-                                    {iaProcessando ? (
-                                        <Carregando tamanho="sm" Centralizar={false} />
-                                    ) : (
-                                        <>
-                                            <div className="p-1 rounded-md bg-primary/10 group-hover/ia:bg-primary/20 transition-colors">
-                                                <Plus size={10} strokeWidth={3} />
+                                <div className="flex gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={handleSugerirInfra}
+                                        disabled={iaProcessando}
+                                        className="text-[9px] font-black uppercase tracking-wider text-primary hover:text-primary/70 flex items-center gap-1.5 transition-all group/ia"
+                                    >
+                                        {iaProcessando ? (
+                                            <Carregando tamanho="sm" Centralizar={false} />
+                                        ) : (
+                                            <>
+                                                <div className="p-1 rounded-md bg-primary/10 group-hover/ia:bg-primary/20 transition-colors">
+                                                    <Plus size={10} strokeWidth={3} />
+                                                </div>
+                                                Deploy (IA)
+                                            </>
+                                        )}
+                                    </button>
+
+                                    {!projetoEditando && (
+                                        <button
+                                            type="button"
+                                            onClick={handleCriarRepo}
+                                            disabled={iaProcessando}
+                                            className="text-[9px] font-black uppercase tracking-wider text-emerald-600 hover:text-emerald-700 flex items-center gap-1.5 transition-all group/git"
+                                        >
+                                            <div className="p-1 rounded-md bg-emerald-100 group-hover/git:bg-emerald-200 transition-colors">
+                                                <Github size={10} strokeWidth={3} />
                                             </div>
-                                            Sugerir Deploy (IA)
-                                        </>
+                                            Criar Novo
+                                        </button>
                                     )}
-                                </button>
+                                </div>
                             </div>
                             <div className="relative">
                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

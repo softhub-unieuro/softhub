@@ -5,6 +5,7 @@ import { Skeleton } from '@/compartilhado/componentes/Skeleton';
 import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 import { Link } from 'react-router';
 import { pluralizar } from '@/utilitarios/formatadores';
+import { GITHUB_USUARIO } from '@/utilitarios/constantes';
 import { ModalDetalhesPortfolio } from './ModalDetalhesPortfolio';
 
 /**
@@ -137,7 +138,7 @@ export const PaginaPortfolio = memo(() => {
                                         <div className="flex items-center justify-between pt-4 border-t border-slate-100">
                                             <div className="flex items-center gap-3">
                                                 {p.github_repo && (
-                                                    <a href={`https://github.com/madebycotrim/${p.github_repo}`} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-slate-900 transition-colors" title="Ver código no GitHub">
+                                                    <a href={`https://github.com/${GITHUB_USUARIO}/${p.github_repo}`} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-slate-900 transition-colors" title="Ver código no GitHub">
                                                         <Github size={18} />
                                                     </a>
                                                 )}
@@ -178,7 +179,7 @@ export const PaginaPortfolio = memo(() => {
                         © {new Date().getFullYear()} — Todos os direitos reservados
                     </p>
                     <div className="flex items-center gap-6">
-                        <a href="https://github.com/madebycotrim" className="p-2.5 bg-slate-200 rounded-xl hover:bg-primary hover:text-primary-foreground transition-all">
+                        <a href={`https://github.com/${GITHUB_USUARIO}`} className="p-2.5 bg-slate-200 rounded-xl hover:bg-primary hover:text-primary-foreground transition-all">
                             <Github size={18} />
                         </a>
                         <a href="https://unieuro.edu.br" className="p-2.5 bg-slate-200 rounded-xl hover:bg-primary hover:text-primary-foreground transition-all">

@@ -1,4 +1,5 @@
 import { Hono, Context } from 'hono';
+import { Octokit } from '@octokit/rest';
 import { Env } from '../index';
 import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
 import { sugerirPrioridade, resumirTarefa, analisarJustificativa, formatarAviso, aprimorarDescricao, gerarInfra } from '../servicos/servico-ai';
@@ -125,6 +126,46 @@ rotasIA.post('/sugerir-infra', async (c) => {
         return c.json({ sugestao });
     } catch (e: any) {
         return c.json({ erro: 'IA temporariamente indisponível.' }, 500);
+    }
+});
+
+/**
+ * POST /api/ia/github/criar-repo
+ * Cria um repositório real no GitHub usando o token do servidor
+ */
+rotasIA.post('/github/criar-repo', async (c) => {
+    const { GITHUB_TOKEN } = c.env;
+    const { nome, descricao, publico } = await c.req.json();
+
+    if (!GITHUB_TOKEN) {
+        return c.json({ 
+            erro: 'Token do GitHub não configurado.', 
+            detalhe: 'O administrador deve configurar o GITHUB_TOKEN nas secrets da Worker.' 
+        }, 500);
+    }
+
+    if (!nome) return c.json({ erro: 'Nome do repositório é necessário.' }, 400);
+
+    try {
+        const octokit = new Octokit({ auth: GITHUB_TOKEN });
+        
+        const { data } = await octokit.repos.createForAuthenticatedUser({
+            name: nome.toLowerCase().replace(/[^a-z0-9-_]/g, '-'),
+            description: (descricao || 'Projeto criado pelo SoftHub IA').slice(0, 500),
+            private: !publico,
+            auto_init: true
+        });
+
+        return c.json({
+            sucesso: true,
+            repo: data.name.toLowerCase(),
+            url: data.html_url
+        });
+    } catch (e: any) {
+        return c.json({ 
+            erro: 'GitHub recusou a criação.', 
+            detalhe: e.response?.data?.message || e.message 
+        }, 500);
     }
 });
 

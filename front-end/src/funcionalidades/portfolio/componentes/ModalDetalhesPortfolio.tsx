@@ -5,6 +5,7 @@ import { api } from '@/compartilhado/servicos/api';
 import { Github, Figma, BookText, Users, Code2, ExternalLink, Calendar, Info } from 'lucide-react';
 import { Avatar } from '@/compartilhado/componentes/Avatar';
 import { formatarDataHora } from '@/utilitarios/formatadores';
+import { GITHUB_USUARIO } from '@/utilitarios/constantes';
 
 interface MembroPortfolio {
     id: string;
@@ -59,7 +60,7 @@ export function ModalDetalhesPortfolio({ projetoId, aberto, aoFechar }: ModalDet
                 try {
                     // Nota: Assume-se que o repositório é público e está sob a organização padrão ou usuário.
                     // Se precisar de auth, usaríamos o octokit configurado no backend.
-                    const readmeRes = await fetch(`https://raw.githubusercontent.com/madebycotrim/${res.data.github_repo}/main/README.md`);
+                    const readmeRes = await fetch(`https://raw.githubusercontent.com/${GITHUB_USUARIO}/${res.data.github_repo}/main/README.md`);
                     if (readmeRes.ok) {
                         const texto = await readmeRes.text();
                         setReadme(texto);
@@ -121,7 +122,7 @@ export function ModalDetalhesPortfolio({ projetoId, aberto, aoFechar }: ModalDet
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {projeto.github_repo && (
                                     <a 
-                                        href={`https://github.com/madebycotrim/${projeto.github_repo}`} 
+                                        href={`https://github.com/${GITHUB_USUARIO}/${projeto.github_repo}`} 
                                         target="_blank" 
                                         rel="noreferrer"
                                         className="flex items-center gap-4 p-5 bg-white border border-border/10 rounded-3xl hover:border-primary/30 transition-all group"
@@ -131,7 +132,7 @@ export function ModalDetalhesPortfolio({ projetoId, aberto, aoFechar }: ModalDet
                                         </div>
                                         <div className="flex-1">
                                             <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Repositório</h4>
-                                            <p className="text-xs font-bold text-slate-900 truncate">madebycotrim/{projeto.github_repo}</p>
+                                            <p className="text-xs font-bold text-slate-900 truncate">{GITHUB_USUARIO}/{projeto.github_repo}</p>
                                         </div>
                                         <ExternalLink size={14} className="text-slate-300 group-hover:text-primary transition-colors" />
                                     </a>
@@ -190,7 +191,7 @@ export function ModalDetalhesPortfolio({ projetoId, aberto, aoFechar }: ModalDet
                                             <p className="text-xs text-slate-400 font-medium">A documentação completa pode ser acessada diretamente no repositório GitHub.</p>
                                             {projeto.github_repo && (
                                                 <a 
-                                                    href={`https://github.com/madebycotrim/${projeto.github_repo}`} 
+                                                    href={`https://github.com/${GITHUB_USUARIO}/${projeto.github_repo}`} 
                                                     target="_blank" 
                                                     className="px-6 py-2 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase tracking-widest"
                                                 >

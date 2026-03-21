@@ -49,11 +49,22 @@ export function usarIA() {
         }
     }, []);
 
+    const criarRepositorioGitHub = useCallback(async (nome: string, descricao: string, publico: boolean) => {
+        setCarregando(true);
+        try {
+            const res = await api.post('/api/ia/github/criar-repo', { nome, descricao, publico });
+            return res.data;
+        } finally {
+            setCarregando(false);
+        }
+    }, []);
+
     return {
         carregando,
         aprimorarTarefa,
         refinarAviso,
         sugerirPrioridade,
-        sugerirInfra
+        sugerirInfra,
+        criarRepositorioGitHub
     };
 }

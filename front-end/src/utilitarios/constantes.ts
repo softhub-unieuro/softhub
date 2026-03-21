@@ -60,7 +60,6 @@ export const VARIANTE_COR_ROLES = {
     MEMBRO: 'emerald',     // Verde (Operação)
 } as const;
 
-// ID de Referência (Opcional — o sistema agora é dinâmico)
-// Se houver projetos no banco, o sistema selecionará o primeiro automaticamente.
-export const PROJETO_PADRAO_ID = ''; 
+// Configurações do GitHub (Utilizado no Portfólio Público)
+export const GITHUB_USUARIO = 'madebycotrim'; 
 

@@ -36,6 +36,7 @@ export type Env = {
     BOOTSTRAP_ADMIN_EMAIL: string;
     softhub_kv: KVNamespace;
     AI: any;
+    GITHUB_TOKEN: string;
 };
 
 const app = new Hono<{ Bindings: Env }>({ strict: false });
