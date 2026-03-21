@@ -37,7 +37,7 @@ export function BarraFiltros({
     className = ""
 }: BarraFiltrosProps) {
     return (
-        <div className={`my-6 flex flex-col lg:flex-row gap-3 items-start lg:items-center justify-between p-3 bg-card border border-border rounded-2xl shadow-sm w-full animate-in fade-in slide-in-from-top-4 duration-700 ${className}`}>
+        <div className={`my-4 flex flex-col lg:flex-row gap-3 items-start lg:items-center justify-between p-3 bg-card border border-border rounded-2xl shadow-sm w-full animate-in fade-in slide-in-from-top-4 duration-700 ${className}`}>
             <div className="flex flex-col lg:flex-row flex-1 items-stretch lg:items-center gap-3 w-full">
                 {/* Busca Principal */}
                 <div className={`relative group flex-1 max-w-xl transition-opacity duration-300 ${desabilitarBusca ? 'opacity-30 grayscale pointer-events-none' : ''}`}>

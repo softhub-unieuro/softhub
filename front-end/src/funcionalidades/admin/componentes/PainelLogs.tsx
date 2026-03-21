@@ -75,6 +75,7 @@ export const PainelLogs = memo(() => {
             </CabecalhoFuncionalidade>
 
             <BarraFiltros
+                className="m-0"
                 busca={busca}
                 aoMudarBusca={handleMudarBusca}
                 placeholderBusca="Localizar registro..."
@@ -148,14 +149,14 @@ export const PainelLogs = memo(() => {
                             descricao="Refine seus filtros ou busque em períodos anteriores."
                         />
                     ) : (
-                        <table className="w-full border-collapse">
-                            <thead className="bg-muted/10 border-b border-border sticky top-0 z-10 backdrop-blur-md">
-                                <tr>
-                                    <th className="px-5 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 w-[180px]">CRONÔMETRO (UTC)</th>
-                                    <th className="px-3 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 w-[120px]">OPERAÇÃO</th>
-                                    <th className="px-3 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 w-[200px]">AGENTE RESPONSÁVEL</th>
+                        <table className="w-full border-collapse table-fixed min-w-[1000px] lg:min-w-full">
+                            <thead className="sticky top-0 z-20 bg-card/95 backdrop-blur-xl border-b border-border/50 shadow-sm transition-all duration-300">
+                                <tr className="divide-x divide-border/5">
+                                    <th className="px-5 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 w-[140px]">CRONÔMETRO</th>
+                                    <th className="px-3 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 w-[180px]">OPERAÇÃO</th>
+                                    <th className="px-3 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 w-[200px]">AGENTE</th>
                                     <th className="px-3 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">DESCRIÇÃO DO EVENTO</th>
-                                    <th className="px-5 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 w-[220px]">MÓDULO DE ORIGEM</th>
+                                    <th className="px-5 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 w-[150px] text-right">MÓDULO</th>
                                 </tr>
                             </thead>
                             <tbody className={`divide-y divide-border/20 transition-opacity duration-300 ${carregando ? 'opacity-50' : 'opacity-100'}`}>

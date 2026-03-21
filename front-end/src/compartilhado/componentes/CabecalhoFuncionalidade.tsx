@@ -28,7 +28,7 @@ export function CabecalhoFuncionalidade({
     };
 
     return (
-        <div className="mb-8 animar-entrada">
+        <div className="animar-entrada">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                     {/* Ícone — mesmo estilo dos stat cards do sistema */}

@@ -15,6 +15,7 @@ export interface LogSistema {
     nome: string | null;
     email: string | null;
     role: string | null;
+    foto_perfil: string | null;
     ip: string | null;
     dados_anteriores: string | null;
     dados_novos: string | null;

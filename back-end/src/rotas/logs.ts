@@ -59,11 +59,11 @@ rotasLogs.get('/', autenticacaoRequerida(), async (c: Context) => {
 
     try {
         const queryCount = `SELECT COUNT(*) as total FROM logs l LEFT JOIN usuarios u ON l.usuario_id = u.id ${whereClause}`;
-        const countRes = await DB.prepare(queryCount).bind(...bParams).first<{ total: number }>();
+        const countRes = (await DB.prepare(queryCount).bind(...bParams).first()) as { total: number };
         const total = countRes?.total || 0;
 
         const querySelect = `
-            SELECT l.id, l.usuario_id, u.nome, u.email, u.role, 
+            SELECT l.id, l.usuario_id, u.nome, u.email, u.role, u.foto_perfil,
                    l.acao, l.modulo, l.descricao, l.ip, l.entidade_tipo, l.entidade_id, 
                    l.dados_anteriores, l.dados_novos, l.criado_em
             FROM logs l

@@ -89,11 +89,13 @@ export function LayoutPrincipal({ children }: LayoutPrincipalProps) {
                         <Menu size={20} strokeWidth={2.5} />
                     </button>
 
-                    <main className="flex-1 p-6 pt-20 lg:pt-6 overflow-y-auto relative z-10 transition-all overflow-x-hidden animar-entrada scrollbar-none bg-background/50 min-w-0">
+                    <main className="flex-1 p-6 pt-20 lg:pt-6 overflow-hidden flex flex-col relative z-10 transition-all animar-entrada bg-background min-w-0">
                         <Breadcrumbs />
-                        <ErrorBoundary modulo="Módulo Selecionado">
-                            {children}
-                        </ErrorBoundary>
+                        <div className="flex-1 min-h-0 overflow-hidden">
+                            <ErrorBoundary modulo="Módulo Selecionado">
+                                {children}
+                            </ErrorBoundary>
+                        </div>
                     </main>
                 </div>
             </div>
