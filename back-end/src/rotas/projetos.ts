@@ -23,8 +23,41 @@ const ProjetoSchema = z.object({
 });
 
 /**
+ * GET /api/projetos/publico/:id
+ * Detalhes completos de um projeto público (incluindo equipe).
+ */
+rotasProjetos.get('/publico/:id', async (c) => {
+    const { DB } = c.env;
+    const id = c.req.param('id');
+    try {
+        // 1. Dados Básicos do Projeto
+        const projeto = await DB.prepare(`
+            SELECT id, nome, descricao, github_repo, figma_url, documentacao_url, criado_em 
+            FROM projetos 
+            WHERE id = ? AND publico = 1 AND arquivado = 0
+        `).bind(id).first() as any;
+
+        if (!projeto) return c.json({ erro: 'Projeto não localizado ou privado.' }, 404);
+
+        // 2. Membros da Equipe (União de todas as equipes vinculadas ao projeto)
+        const { results: membros } = await DB.prepare(`
+            SELECT DISTINCT u.id, u.nome, u.email, u.foto_perfil, u.role
+            FROM usuarios u
+            JOIN usuarios_organizacao uo ON u.id = uo.usuario_id
+            JOIN projetos_equipes pe ON uo.equipe_id = pe.equipe_id
+            WHERE pe.projeto_id = ?
+            ORDER BY u.nome ASC
+        `).bind(id).all();
+
+        return c.json({ ...projeto, membros });
+    } catch (e: any) {
+        return c.json({ erro: 'Falha ao buscar detalhes do projeto público.' }, 500);
+    }
+});
+
+/**
  * GET /api/projetos/publicos
- * Rota pública para o portfólio.
+ * Rota pública para o portfólio (Lista resumida).
  */
 rotasProjetos.get('/publicos', async (c) => {
     const { DB, softhub_kv } = c.env;

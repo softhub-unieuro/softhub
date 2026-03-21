@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Square, CheckSquare, ChevronDown, Trash2, Eye, LayoutGrid, ShieldCheck, Lock, Activity } from 'lucide-react';
+import { Square, CheckSquare, ChevronDown, Trash2, Eye, LayoutGrid, ShieldCheck, Lock, Activity, TrendingUp } from 'lucide-react';
 import { Avatar } from '@/compartilhado/componentes/Avatar';
 import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
@@ -21,7 +21,7 @@ interface LinhaMembroProps {
     salvando: boolean;
     selecionado: boolean;
     onToggleSelect: (id: string, isShift?: boolean) => void;
-    onAlterarRole: (membro: Membro, role: string) => void;
+    onAlterarRole: (membro: Membro) => void;
     onRemover: (membro: Membro) => void;
     onVerPerfil: (id: string) => void;
     onAlocar: (membro: Membro) => void;
@@ -80,42 +80,27 @@ export const LinhaMembro = memo(({ membro, salvando, selecionado, onToggleSelect
 
             <td className="px-5 py-3.5">
                 <div className="flex items-center gap-2">
-                    <div className="inline-flex relative group/sel">
-                        <div className={`absolute inset-0 rounded-full transition-all duration-300 ${classesCores.bg} ${classesCores.bgHover}`} />
-
-                        <select
-                            className={`
-                                relative appearance-none bg-transparent border-none 
-                                rounded-full px-3.5 py-1.5 pr-7 text-[9px] font-bold uppercase tracking-wider 
-                                outline-none transition-all z-10 
-                                ${classesCores.text}
-                                ${roleBloqueada ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}
-                            `}
-                            value={membro.role}
-                            onChange={e => onAlterarRole(membro, e.target.value)}
+                    <Tooltip texto={roleBloqueada ? (ehBootstrap ? "Administrador Protegido" : "Sem permissão para alterar") : "Gerenciar Carreira"}>
+                        <button
                             disabled={roleBloqueada}
+                            onClick={() => onAlterarRole(membro)}
+                            className={`
+                                relative flex items-center gap-2 rounded-full px-3.5 py-1.5 transition-all
+                                ${classesCores.bg} ${classesCores.text}
+                                ${roleBloqueada ? 'opacity-70 cursor-not-allowed' : 'hover:scale-[1.05] hover:shadow-lg hover:shadow-primary/5 active:scale-95 group/btn'}
+                            `}
                         >
-                            {ehBootstrap && <option value="ADMIN">ADMINISTRADOR</option>}
-                            {!ehBootstrap && rolesDisponiveis.map(r => (
-                                <option key={r} value={r} className="bg-white text-slate-900 font-bold">
-                                    {(LABELS_ROLES as any)[r] || r}
-                                </option>
-                            ))}
-                        </select>
-
-                        {!roleBloqueada && (
-                            <ChevronDown
-                                size={11}
-                                className={`absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none z-20 transition-all duration-300 ${classesCores.chevron}`}
-                            />
-                        )}
-                        {ehBootstrap && (
-                            <Lock
-                                size={10}
-                                className={`absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none z-20 opacity-40 ${classesCores.text}`}
-                            />
-                        )}
-                    </div>
+                            <span className="text-[9px] font-black uppercase tracking-wider">
+                                {ehBootstrap ? "ADMINISTRADOR" : (LABELS_ROLES[membro.role as keyof typeof LABELS_ROLES] || membro.role)}
+                            </span>
+                            
+                            {!roleBloqueada ? (
+                                <TrendingUp size={11} className="transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
+                            ) : (
+                                <Lock size={10} className="opacity-40" />
+                            )}
+                        </button>
+                    </Tooltip>
 
                     {/* ⚡ RAIO DE SIMULAÇÃO (Perfeitamente Alinhado) */}
                     {ehDonoReal && ehBootstrap && (

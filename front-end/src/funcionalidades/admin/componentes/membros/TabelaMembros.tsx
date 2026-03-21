@@ -16,7 +16,7 @@ interface TabelaMembrosProps {
     selecionados: Set<string>;
     rolesDisponiveis: string[];
     toggleSelect: (id: string) => void;
-    alterarRole: (membro: Membro, role: string) => void;
+    aoPromover: (membro: Membro) => void;
     handleSetMembroExcluir: (membro: Membro) => void;
     handleVerPerfil: (id: string) => void;
     setMembroAlocacao: (membro: Membro | null) => void;
@@ -35,7 +35,7 @@ export const TabelaMembros = memo(({
     selecionados,
     rolesDisponiveis,
     toggleSelect,
-    alterarRole,
+    aoPromover,
     handleSetMembroExcluir,
     handleVerPerfil,
     setMembroAlocacao,
@@ -63,7 +63,7 @@ export const TabelaMembros = memo(({
                                 salvando={salvandoIds.has(m.id)}
                                 selecionado={selecionados.has(m.id)}
                                 onToggleSelect={toggleSelect}
-                                onAlterarRole={alterarRole}
+                                onAlterarRole={aoPromover}
                                 onRemover={handleSetMembroExcluir}
                                 onVerPerfil={handleVerPerfil}
                                 onAlocar={(m: Membro) => setMembroAlocacao(m)}

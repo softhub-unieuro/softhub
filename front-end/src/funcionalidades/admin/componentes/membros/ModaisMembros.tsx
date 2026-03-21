@@ -8,6 +8,7 @@ import { FormularioCadastroMembro } from './FormularioCadastroMembro';
 import { PerfilProvider } from '@/funcionalidades/perfil/contexto/PerfilContexto';
 import { ModalEdicaoPerfil } from '@/funcionalidades/perfil/componentes/ModalEdicaoPerfil';
 import { ModalAlocacaoDireta } from './ModalAlocacaoDireta';
+import { ModalPromocaoMembro } from './ModalPromocaoMembro';
 import type { Membro } from '@/funcionalidades/admin/hooks/usarMembros';
 
 interface ModaisMembrosProps {
@@ -38,6 +39,9 @@ interface ModaisMembrosProps {
     alocarMembro: (mId: string, eId: string | null, gId: string | null) => Promise<any>;
     exibirToast: (msg: string, tipo?: any) => void;
     recarregar: () => Promise<void>;
+    membroParaPromover: Membro | null;
+    setMembroParaPromover: (m: Membro | null) => void;
+    handleConfirmarPromocao: (m: Membro, novaRole: string) => Promise<void>;
 }
 
 export const ModaisMembros = memo(({
@@ -46,7 +50,8 @@ export const ModaisMembros = memo(({
     handleRemoverConfirmado, modalOnlineAberto, setModalOnlineAberto, membrosOnline,
     modalSemEquipeAberto, setModalSemEquipeAberto, membrosSemEquipe, podeAlocar,
     setMembroAlocacao, handleVerPerfil, idPerfilParaVer, handleFecharPerfil,
-    membroAlocacao, grupos, equipes, alocarMembro, exibirToast, recarregar
+    membroAlocacao, grupos, equipes, alocarMembro, exibirToast, recarregar,
+    membroParaPromover, setMembroParaPromover, handleConfirmarPromocao
 }: ModaisMembrosProps) => {
     return (
         <>
@@ -212,18 +217,26 @@ export const ModaisMembros = memo(({
                 </PerfilProvider>
             )}
 
-            {/* Modal de Alocação Direta */}
             <ModalAlocacaoDireta
                 aberto={!!membroAlocacao}
                 aoFechar={() => setMembroAlocacao(null)}
                 membro={membroAlocacao}
                 grupos={grupos}
                 equipes={equipes}
-                aoAlocar={async (mId: any, eId: any, gId: any) => {
+                aoAlocar={async (mId, eId, gId) => {
                     await alocarMembro(mId, eId, gId);
                     exibirToast(`Membro alocado com sucesso!`);
                     await recarregar();
                 }}
+            />
+
+            {/* WF 31 - Gestão de Carreira (Novo) */}
+            <ModalPromocaoMembro 
+                aberto={!!membroParaPromover}
+                aoFechar={() => setMembroParaPromover(null)}
+                membro={membroParaPromover}
+                rolesDisponiveis={rolesDisponiveis}
+                aoConfirmar={handleConfirmarPromocao}
             />
         </>
     );

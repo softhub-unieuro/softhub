@@ -10,9 +10,6 @@ import { invalidarSessaoCache } from '../servicos/servico-acesso';
 
 const rotasAdmin = new Hono<{ Bindings: Env; Variables: { usuario: any } }>();
 
-/**
- * Altera a role (cargo) de um membro.
- */
 rotasAdmin.patch('/:id/role', autenticacaoRequerida(), verificarPermissao(['membros:alterar_role', 'membros:gerenciar']), async (c: Context) => {
     const { DB, softhub_kv, BOOTSTRAP_ADMIN_EMAIL } = c.env;
     const usuarioLogado = c.get('usuario');
@@ -58,17 +55,26 @@ rotasAdmin.patch('/:id/role', autenticacaoRequerida(), verificarPermissao(['memb
             }, 403);
         }
 
-        // 3. 🛡️ NOVO: Restrição Hierárquica por Permissão
-        const podeGerenciarTudo = await verificarPermissaoManual(c, 'membros:gerenciar');
-        const podePromoverAteLider = await verificarPermissaoManual(c, 'membros:promover_ate_lider');
+        // 3. 🛡️ Segurança Hierárquica: Não é permitido promover alguém ao seu próprio nível ou acima.
+        const idxExecutor = configuradas.indexOf(usuarioLogado.role);
+        const idxNovo = configuradas.indexOf(roleNormalizada);
+        const idxAtual = configuradas.indexOf(atual.role);
 
-        if (!podeGerenciarTudo && podePromoverAteLider) {
-            const idxLider = configuradas.indexOf('LIDER');
-            const idxAlvo = configuradas.indexOf(roleNormalizada);
-            if (idxAlvo > idxLider && roleNormalizada !== 'MEMBRO') {
-                 return c.json({ 
-                    erro: 'Permissão Insuficiente.',
-                    detalhe: 'Seu cargo só permite promover membros até o nível de LÍDER.' 
+        // Se não for ADMIN de segurança, aplicar travas de subordinação
+        if (usuarioLogado.role !== 'ADMIN') {
+            // Travas de Promoção: Não pode elevar ninguém ao seu nível ou além
+            if (idxNovo <= idxExecutor) {
+                return c.json({ 
+                    erro: 'Governança Violada.',
+                    detalhe: 'Você não possui autoridade para promover membros ao seu cargo ou superior.' 
+                }, 403);
+            }
+
+            // Travas de Edição: Não pode alterar cargos de quem está no seu nível ou acima
+            if (idxAtual <= idxExecutor) {
+                return c.json({ 
+                    erro: 'Governança Violada.',
+                    detalhe: 'Membros em níveis hierárquicos equivalentes ou superiores ao seu são imutáveis por sua conta.' 
                 }, 403);
             }
         }

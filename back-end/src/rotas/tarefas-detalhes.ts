@@ -162,17 +162,47 @@ rotasTarefasDetalhes.get('/:id/historico', autenticacaoRequerida(), verificarPer
     const tarefaId = c.req.param('id');
 
     try {
+        // Unificamos o histórico legado com os novos logs de auditoria para visualização completa
         const query = `
-            SELECT h.*, u.nome as usuario_nome, u.foto_perfil as usuario_foto
+            SELECT 
+                l.id, 
+                l.entidade_id as tarefa_id, 
+                l.usuario_id, 
+                u.nome as usuario_nome, 
+                u.foto_perfil as usuario_foto,
+                l.acao as campo_alterado, 
+                l.dados_anteriores as valor_antigo, 
+                l.dados_novos as valor_novo, 
+                l.criado_em as alterado_em,
+                l.descricao
+            FROM logs l
+            JOIN usuarios u ON l.usuario_id = u.id
+            WHERE l.entidade_id = ? AND l.entidade_tipo = 'tarefas'
+            
+            UNION ALL
+            
+            SELECT 
+                h.id, 
+                h.tarefa_id, 
+                h.usuario_id, 
+                u.nome as usuario_nome, 
+                u.foto_perfil as usuario_foto,
+                h.campo_alterado, 
+                h.valor_antigo, 
+                h.valor_novo, 
+                h.alterado_em,
+                NULL as descricao
             FROM tarefa_historico h
             JOIN usuarios u ON h.usuario_id = u.id
             WHERE h.tarefa_id = ?
-            ORDER BY h.alterado_em DESC
+            
+            ORDER BY alterado_em DESC
         `;
-        const { results } = await DB.prepare(query).bind(tarefaId).all();
+        const { results } = await DB.prepare(query).bind(tarefaId, tarefaId).all();
         return c.json(results);
     } catch (e) {
-        return c.json({ erro: 'Falha ao buscar histórico da tarefa' }, 500);
+        console.error('[HISTORICO]', e);
+        return c.json({ erro: 'Falha ao buscar histórico unificado da tarefa' }, 500);
     }
 });
 
@@ -205,8 +235,22 @@ rotasTarefasDetalhes.post('/:id/checklist', autenticacaoRequerida(), verificarPe
 
     try {
         const id = crypto.randomUUID();
+        const tarefa = await DB.prepare('SELECT titulo FROM tarefas WHERE id = ?').bind(tarefaId).first() as any;
+        if (!tarefa) return c.json({ erro: 'Tarefa não encontrada' }, 404);
+
         await DB.prepare('INSERT INTO checklist_tarefa (id, tarefa_id, texto) VALUES (?, ?, ?)')
             .bind(id, tarefaId, texto.trim()).run();
+
+        await registrarLog(DB, {
+            usuarioId: usuario.id,
+            acao: 'TAREFA_CHECKLIST_ADICIONADO',
+            modulo: 'kanban',
+            descricao: `Item "${texto.trim()}" adicionado ao checklist da tarefa "${tarefa.titulo}"`,
+            ip: c.req.header('CF-Connecting-IP') ?? '',
+            entidadeTipo: 'tarefas',
+            entidadeId: tarefaId,
+            dadosNovos: { texto: texto.trim() }
+        });
 
         return c.json({ id }, 201);
     } catch (e) {
@@ -224,13 +268,43 @@ rotasTarefasDetalhes.patch('/:tarefaId/checklist/:itemId', autenticacaoRequerida
     const { DB } = c.env;
     const { concluido, texto } = (c.req as any).valid('json');
     const itemId = c.req.param('itemId');
+    const tarefaId = c.req.param('tarefaId');
+
+    const usuario = c.get('usuario') as any;
 
     try {
+        const item = await DB.prepare('SELECT c.texto, c.concluido, t.titulo FROM checklist_tarefa c JOIN tarefas t ON c.tarefa_id = t.id WHERE c.id = ?').bind(itemId).first() as any;
+        if (!item) return c.json({ erro: 'Item não encontrado' }, 404);
+
         if (concluido !== undefined) {
             await DB.prepare('UPDATE checklist_tarefa SET concluido = ? WHERE id = ?').bind(concluido ? 1 : 0, itemId).run();
+            
+            await registrarLog(DB, {
+                usuarioId: usuario.id,
+                acao: 'TAREFA_CHECKLIST_ALTERADO',
+                modulo: 'kanban',
+                descricao: `Item "${item.texto}" da tarefa "${item.titulo}" marcado como ${concluido ? 'CONCLUÍDO' : 'PENDENTE'}`,
+                ip: c.req.header('CF-Connecting-IP') ?? '',
+                entidadeTipo: 'tarefas',
+                entidadeId: tarefaId,
+                dadosAnteriores: { concluido: !!item.concluido },
+                dadosNovos: { concluido: !!concluido }
+            });
         }
         if (texto !== undefined) {
             await DB.prepare('UPDATE checklist_tarefa SET texto = ? WHERE id = ?').bind(texto.trim(), itemId).run();
+            
+            await registrarLog(DB, {
+                usuarioId: usuario.id,
+                acao: 'TAREFA_CHECKLIST_EDICAO',
+                modulo: 'kanban',
+                descricao: `Item do checklist da tarefa "${item.titulo}" renomeado para "${texto.trim()}"`,
+                ip: c.req.header('CF-Connecting-IP') ?? '',
+                entidadeTipo: 'tarefas',
+                entidadeId: tarefaId,
+                dadosAnteriores: { texto: item.texto },
+                dadosNovos: { texto: texto.trim() }
+            });
         }
         return c.json({ sucesso: true });
     } catch (e) {
@@ -243,8 +317,26 @@ rotasTarefasDetalhes.delete('/:tarefaId/checklist/:itemId', autenticacaoRequerid
     const { DB } = c.env;
     const itemId = c.req.param('itemId');
 
+    const usuario = c.get('usuario') as any;
+    const tarefaId = c.req.param('tarefaId');
+
     try {
+        const item = await DB.prepare('SELECT c.texto, t.titulo FROM checklist_tarefa c JOIN tarefas t ON c.tarefa_id = t.id WHERE c.id = ?').bind(itemId).first() as any;
+        if (!item) return c.json({ erro: 'Item já não existe' }, 200);
+
         await DB.prepare('DELETE FROM checklist_tarefa WHERE id = ?').bind(itemId).run();
+
+        await registrarLog(DB, {
+            usuarioId: usuario.id,
+            acao: 'TAREFA_CHECKLIST_REMOVIDO',
+            modulo: 'kanban',
+            descricao: `Item "${item.texto}" removido do checklist da tarefa "${item.titulo}"`,
+            ip: c.req.header('CF-Connecting-IP') ?? '',
+            entidadeTipo: 'tarefas',
+            entidadeId: tarefaId,
+            dadosAnteriores: { texto: item.texto }
+        });
+
         return c.json({ sucesso: true });
     } catch (e) {
         return c.json({ erro: 'Falha ao remover item' }, 500);

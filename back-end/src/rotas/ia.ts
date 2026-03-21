@@ -1,7 +1,7 @@
 import { Hono, Context } from 'hono';
 import { Env } from '../index';
 import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
-import { sugerirPrioridade, resumirTarefa, analisarJustificativa, formatarAviso, aprimorarDescricao } from '../servicos/servico-ai';
+import { sugerirPrioridade, resumirTarefa, analisarJustificativa, formatarAviso, aprimorarDescricao, gerarInfra } from '../servicos/servico-ai';
 
 const rotasIA = new Hono<{ Bindings: Env; Variables: { usuario: any } }>();
 
@@ -105,6 +105,24 @@ rotasIA.post('/aprimorar-descricao', async (c) => {
     try {
         const descricaoMelhorada = await aprimorarDescricao(AI, titulo, descricao);
         return c.json({ descricao: descricaoMelhorada });
+    } catch (e: any) {
+        return c.json({ erro: 'IA temporariamente indisponível.' }, 500);
+    }
+});
+
+/**
+ * POST /api/ia/sugerir-infra
+ * Sugere GitHub Actions / Docker configs
+ */
+rotasIA.post('/sugerir-infra', async (c) => {
+    const { AI } = c.env;
+    const { nome, descricao } = await c.req.json();
+
+    if (!nome) return c.json({ erro: 'Nome do projeto é necessário.' }, 400);
+
+    try {
+        const sugestao = await gerarInfra(AI, nome, descricao || '');
+        return c.json({ sugestao });
     } catch (e: any) {
         return c.json({ erro: 'IA temporariamente indisponível.' }, 500);
     }

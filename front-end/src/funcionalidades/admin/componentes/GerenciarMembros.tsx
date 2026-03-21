@@ -50,6 +50,7 @@ export const GerenciarMembros = memo(() => {
     const [modalSemEquipeAberto, setModalSemEquipeAberto] = useState(false);
     const [membroAlocacao, setMembroAlocacao] = useState<Membro | null>(null);
     const [idPerfilParaVer, setIdPerfilParaVer] = useState<string | null>(null);
+    const [membroParaPromover, setMembroParaPromover] = useState<Membro | null>(null);
 
     // Queries de Apoio (Online / Justificativas)
     const { data: membrosOnline = [] } = useQuery({
@@ -125,6 +126,15 @@ export const GerenciarMembros = memo(() => {
         await removerMembro(m);
     }, [membroParaExcluir, removerMembro]);
 
+    const handleConfirmarPromocao = useCallback(async (membro: Membro, novaRole: string) => {
+        try {
+            await alterarRole(membro, novaRole);
+            setMembroParaPromover(null);
+        } catch (e: any) {
+            exibirToast(e.response?.data?.erro || 'Erro ao promover membro.', 'erro');
+        }
+    }, [alterarRole, exibirToast]);
+
     return (
         <div className="flex flex-col h-full w-full min-w-0 overflow-hidden space-y-6 animar-entrada">
             <CabecalhoFuncionalidade
@@ -186,7 +196,7 @@ export const GerenciarMembros = memo(() => {
                 selecionados={selecionados}
                 rolesDisponiveis={rolesDisponiveis}
                 toggleSelect={toggleSelect}
-                alterarRole={alterarRole}
+                aoPromover={setMembroParaPromover}
                 handleSetMembroExcluir={setMembroParaExcluir}
                 handleVerPerfil={setIdPerfilParaVer}
                 setMembroAlocacao={setMembroAlocacao}
@@ -228,6 +238,9 @@ export const GerenciarMembros = memo(() => {
                 alocarMembro={alocarMembro}
                 exibirToast={exibirToast}
                 recarregar={recarregar}
+                membroParaPromover={membroParaPromover}
+                setMembroParaPromover={setMembroParaPromover}
+                handleConfirmarPromocao={handleConfirmarPromocao}
             />
         </div>
     );

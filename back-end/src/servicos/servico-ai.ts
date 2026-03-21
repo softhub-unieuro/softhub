@@ -137,3 +137,17 @@ export async function aprimorarDescricao(ai: any, titulo: string, descricao: str
     const res = await chamarIA(ai, prompt, 'Você é o Tech Lead da Fábrica de Software especializado em documentação e requisitos técnicos.');
     return res.conteudo.trim();
 }
+
+/**
+ * 6. Geração de Infraestrutura (GitHub Actions / Docker)
+ */
+export async function gerarInfra(ai: any, nome: string, descricao: string) {
+    const prompt = `Gere um arquivo .github/workflows/deploy.yml premium para o projeto "${nome}". 
+    Descrição do contexto: "${descricao}". 
+    O projeto usa Node.js por padrão e deve incluir steps de Build, Test e Deploy (simulado).
+    
+    Responda APENAS o código YAML do arquivo, sem explicações, aspas extras ou introduções.`;
+
+    const res = await chamarIA(ai, prompt, 'Você é o Arquiteto de DevOps da Fábrica de Software especializado em CI/CD e infra como código.');
+    return res.conteudo.trim();
+}

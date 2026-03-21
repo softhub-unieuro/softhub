@@ -39,10 +39,21 @@ export function usarIA() {
         }
     }, []);
 
+    const sugerirInfra = useCallback(async (nome: string, descricao: string) => {
+        setCarregando(true);
+        try {
+            const res = await api.post('/api/ia/sugerir-infra', { nome, descricao });
+            return res.data.sugestao;
+        } finally {
+            setCarregando(false);
+        }
+    }, []);
+
     return {
         carregando,
         aprimorarTarefa,
         refinarAviso,
-        sugerirPrioridade
+        sugerirPrioridade,
+        sugerirInfra
     };
 }
