@@ -52,8 +52,14 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
         }
 
         const cacheKey = `dashboard_metrics_${projetoId || 'global'}_${usuarioLogado.id}`;
-        const cached = await softhub_kv.get(cacheKey);
-        if (cached) return c.json(JSON.parse(cached));
+        const cached = await softhub_kv?.get(cacheKey);
+        if (cached) {
+            try {
+                return c.json(JSON.parse(cached));
+            } catch (e) {
+                console.warn('[DASHBOARD] Cache KV inválido:', e);
+            }
+        }
 
         const placeholders = projetosIdsFiltro.map(() => '?').join(',');
         
@@ -118,7 +124,7 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
             projetosAtivos: listaProjetos // Agora retorna [{id, nome}]
         };
 
-        await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 30 }); // 30s — quase instantâneo
+        await softhub_kv?.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 30 }); // 30s — quase instantâneo
         return c.json(resposta);
     } catch (erro) {
         console.error('[ERRO DB] GET /dashboard', erro);

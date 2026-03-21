@@ -141,6 +141,27 @@ app.route('/api/ia', rotasIA);
 app.route('/api/perfil', rotasPerfil);
 
 // ─── Health check (Rota pública) ──────────────────────────────────────────────
+app.get('/api/status', async (c) => {
+    const { DB, softhub_kv } = c.env;
+    const report: any = { status: 'check', d1: 'desconhecido', kv: 'desconhecido' };
+    
+    try {
+        await DB.prepare('SELECT 1').first();
+        report.d1 = 'ok';
+    } catch (e: any) {
+        report.d1 = 'erro: ' + e.message;
+    }
+    
+    try {
+        await softhub_kv.get('test_ping'); // Sem ?, queremos ver se explode
+        report.kv = 'ok';
+    } catch (e: any) {
+        report.kv = 'erro: ' + e.message;
+    }
+    
+    return c.json(report);
+});
+
 app.get('/', (c) => c.json({
     status: 'ok',
     servico: 'Fábrica de Software',
