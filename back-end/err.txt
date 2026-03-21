@@ -1,0 +1,1 @@
+{"erro":"Falha ao buscar configurações públicas","detalhe":"KV put() limit exceeded for the day."}
