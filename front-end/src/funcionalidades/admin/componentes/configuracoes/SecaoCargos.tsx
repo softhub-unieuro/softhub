@@ -179,7 +179,7 @@ export function SecaoCargos({ configuracoes, atualizarConfiguracao, salvarConfig
                                 </div>
                                 <div className="flex items-center gap-1">
                                     {/* Botão de Previsualização (Discord Style) */}
-                                    {!CARGOS_FIXOS.includes(role) && isAdmin && (
+                                    {!CARGOS_FIXOS.includes(role) && isAdmin && editandoRole !== role && (
                                         <button
                                             onClick={(e) => { e.stopPropagation(); setRoleVisualizacao(role); }}
                                             title={`Ver sistema como ${role}`}

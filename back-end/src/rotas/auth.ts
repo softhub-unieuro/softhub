@@ -165,7 +165,8 @@ rotasAuth.post('/msal', async (c) => {
             acao: isNew ? 'CADASTRO_MSAL' : 'LOGIN_MSAL',
             modulo: 'auth',
             descricao: `Login realizado via Microsoft: ${email}`,
-            ip
+            ip,
+            dadosNovos: { email, role: usuario.role, novo_usuario: isNew }
         });
 
         return c.json({ token: tokenLocal, usuario });

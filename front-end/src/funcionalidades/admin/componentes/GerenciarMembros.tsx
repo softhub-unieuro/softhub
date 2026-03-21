@@ -80,7 +80,7 @@ export const GerenciarMembros = memo(() => {
 
     const rolesDisponiveis = useMemo(() => {
         const base = configuracoes?.permissoes_roles ? Object.keys(configuracoes.permissoes_roles) : ['MEMBRO', 'LIDER', 'ADMIN'];
-        return base.filter(r => r !== 'ADMIN');
+        return base.filter(r => r !== 'ADMIN' && r !== 'TODOS');
     }, [configuracoes]);
 
     // Lógica de Filtragem e Paginação

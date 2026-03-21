@@ -180,7 +180,8 @@ rotasPonto.post('/',
             }
 
             // Inserção no banco
-            await DB.prepare(`INSERT INTO ponto_registros (id, usuario_id, tipo, ip_origem) VALUES (?, ?, ?, ?)`).bind(crypto.randomUUID(), usuario.id, tipo, ipOrigem).run();
+            const pontoId = crypto.randomUUID();
+            await DB.prepare(`INSERT INTO ponto_registros (id, usuario_id, tipo, ip_origem) VALUES (?, ?, ?, ?)`).bind(pontoId, usuario.id, tipo, ipOrigem).run();
 
             // 🚀 Atualiza Presence no KV
             if (tipo === 'entrada') {
@@ -201,7 +202,9 @@ rotasPonto.post('/',
                 modulo: 'ponto',
                 descricao: `Batida de ${tipo} registrada IP: ${ipOrigem}`,
                 ip: ipOrigem,
-                entidadeTipo: 'ponto_registros'
+                entidadeTipo: 'ponto_registros',
+                entidadeId: pontoId,
+                dadosNovos: { tipo, ip_origem: ipOrigem }
             });
 
             return c.json({ sucesso: true });

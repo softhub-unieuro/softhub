@@ -187,10 +187,11 @@ rotasEquipes.delete('/equipes/:id', autenticacaoRequerida(), verificarPermissao(
             usuarioId: usuarioLogado.id,
             acao: 'EQUIPE_REMOVIDA_HARD',
             modulo: 'equipes',
-            descricao: `Equipe ${id} removida permanentemente`,
+            descricao: `Equipe ${id} removida permanentemente do sistema.`,
             ip: c.req.header('CF-Connecting-IP') ?? '',
             entidadeTipo: 'equipes',
             entidadeId: id,
+            dadosAnteriores: { lider_id: atual.lider_id, sub_lider_id: atual.sub_lider_id }
         });
 
         return c.json({ sucesso: true });

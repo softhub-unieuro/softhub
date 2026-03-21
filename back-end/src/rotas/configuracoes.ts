@@ -2,6 +2,7 @@ import { Hono, Context } from 'hono';
 import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
 import { Env } from '../index';
 import { salvarConfiguracao } from '../servicos/servico-configuracoes';
+import { registrarLog } from '../servicos/servico-logs';
 
 const rotasConfiguracoes = new Hono<{ Bindings: Env }>();
 
@@ -99,6 +100,16 @@ rotasConfiguracoes.post('/', autenticacaoRequerida(), verificarPermissao('config
         // Usa o serviço para cada chave, garantindo a invalidação do KV
         for (const [chave, valor] of Object.entries(body)) {
             await salvarConfiguracao({ DB, softhub_kv }, chave, valor);
+            await registrarLog(DB, {
+                usuarioId: c.get('usuario').id,
+                acao: 'CONFIG_SISTEMA_ATUALIZADA_LOTE',
+                modulo: 'admin',
+                descricao: `Configuração '${chave}' atualizada via atualização em lote.`,
+                ip: c.req.header('CF-Connecting-IP') ?? '',
+                entidadeTipo: 'configuracoes_sistema',
+                entidadeId: chave,
+                dadosNovos: { valor }
+            });
         }
         
         // Invalida o cache público global
@@ -150,6 +161,17 @@ rotasConfiguracoes.patch('/:chave', autenticacaoRequerida(), verificarPermissao(
 
     try {
         await salvarConfiguracao({ DB, softhub_kv }, chave, valor);
+
+        await registrarLog(DB, {
+            usuarioId: usuario.id,
+            acao: 'CONFIG_SISTEMA_ATUALIZADA',
+            modulo: 'admin',
+            descricao: `Configuração '${chave}' foi alterada.`,
+            ip: c.req.header('CF-Connecting-IP') ?? '',
+            entidadeTipo: 'configuracoes_sistema',
+            entidadeId: chave,
+            dadosNovos: { valor }
+        });
         
         // Invalida o cache público global
         if (softhub_kv) {
@@ -198,6 +220,18 @@ rotasConfiguracoes.patch('/roles/:antigo/renomear', autenticacaoRequerida('ADMIN
         }
 
         await DB.prepare('UPDATE usuarios SET role = ? WHERE role = ?').bind(novo, antigo).run();
+
+        await registrarLog(DB, {
+            usuarioId: (c.get('usuario') as any)?.id,
+            acao: 'ROLE_RENOMEADA',
+            modulo: 'admin',
+            descricao: `Cargo '${antigo}' renomeado para '${novo}'. Todos os usuários foram migrados.`,
+            ip: c.req.header('CF-Connecting-IP') ?? '',
+            entidadeTipo: 'configuracoes_sistema',
+            entidadeId: 'permissoes_roles',
+            dadosAnteriores: { antigo },
+            dadosNovos: { novo }
+        });
 
         if (softhub_kv) {
             await softhub_kv.delete('configs_publicas');

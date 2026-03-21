@@ -160,10 +160,11 @@ rotasAvisos.delete('/:id', autenticacaoRequerida(), async (c: Context) => {
             usuarioId: usuario.id,
             acao: 'AVISO_REMOVIDO',
             modulo: 'avisos',
-            descricao: `Aviso ${id} removido do mural`,
+            descricao: `Aviso de ${avisoExistente.criado_por} removido do mural`,
             ip: c.req.header('CF-Connecting-IP') ?? '',
             entidadeTipo: 'avisos',
-            entidadeId: id
+            entidadeId: id,
+            dadosAnteriores: { criado_por: avisoExistente.criado_por }
         });
 
         // Invalida cache de avisos

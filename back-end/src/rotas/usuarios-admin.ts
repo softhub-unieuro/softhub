@@ -73,10 +73,12 @@ rotasAdmin.patch('/:id/role', autenticacaoRequerida(), verificarPermissao(['memb
             usuarioId: usuarioLogado.id,
             acao: 'MEMBRO_ROLE_ALTERADA',
             modulo: 'admin',
-            descricao: `Role de ${atual.email} alterada para ${roleNormalizada}`,
+            descricao: `Role de ${atual.email} alterada de ${atual.role} para ${roleNormalizada}`,
             ip: c.req.header('CF-Connecting-IP') ?? '',
             entidadeTipo: 'usuarios',
-            entidadeId: id
+            entidadeId: id,
+            dadosAnteriores: { role: atual.role },
+            dadosNovos: { role: roleNormalizada }
         });
 
         return c.json({ sucesso: true });
@@ -121,7 +123,8 @@ rotasAdmin.delete('/:id', autenticacaoRequerida(), verificarPermissao('membros:d
             descricao: `Membro ${atual.email} removido do sistema.`,
             ip: c.req.header('CF-Connecting-IP') ?? '',
             entidadeTipo: 'usuarios',
-            entidadeId: id
+            entidadeId: id,
+            dadosAnteriores: { email: atual.email, role: atual.role }
         });
 
         return c.json({ sucesso: true });
@@ -176,7 +179,8 @@ rotasAdmin.post('/', autenticacaoRequerida(), verificarPermissao('membros:gerenc
             descricao: `Usuário ${emailLimpo} pré-autorizado como ${roleFinal}`,
             ip: c.req.header('CF-Connecting-IP') ?? '',
             entidadeTipo: 'usuarios',
-            entidadeId: novoId
+            entidadeId: novoId,
+            dadosNovos: { email: emailLimpo, role: roleFinal }
         });
 
         return c.json({ sucesso: true, id: novoId }, 201);

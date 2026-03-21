@@ -39,7 +39,8 @@ rotasPontoJustificativas.post('/justificativas', autenticacaoRequerida(), verifi
             descricao: `Justificativa enviada para ${data}`,
             ip: c.req.header('CF-Connecting-IP') ?? '',
             entidadeTipo: 'justificativas_ponto',
-            entidadeId: justId
+            entidadeId: justId,
+            dadosNovos: { data, tipo, motivo }
         });
 
         return c.json({ id: justId }, 201);

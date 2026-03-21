@@ -56,10 +56,12 @@ rotasPontoJustificativasAdmin.patch('/admin/justificativas/:id/aprovar', autenti
             usuarioId: usuario.id,
             acao: 'PONTO_JUSTIFICATIVA_APROVADA',
             modulo: 'ponto',
-            descricao: `Justificativa aprovada para usuário ${alvar.usuario_id}`,
+            descricao: `Justificativa aprovada para usuário ${alvar.usuario_id} referente ao dia ${alvar.data}`,
             ip: c.req.header('CF-Connecting-IP') ?? '',
             entidadeTipo: 'justificativas_ponto',
-            entidadeId: justificativaId
+            entidadeId: justificativaId,
+            dadosAnteriores: { status: alvar.status },
+            dadosNovos: { status: 'aprovada' }
         });
 
         return c.json({ sucesso: true });
@@ -89,6 +91,17 @@ rotasPontoJustificativasAdmin.patch('/admin/justificativas/:id/rejeitar', autent
             SET status = 'rejeitada', motivo_rejeicao = ?, avaliado_por = ?, avaliado_em = strftime('%Y-%m-%dT%H:%M:%SZ', 'now') 
             WHERE id = ?
         `).bind(motivoRejeicao, usuario.id, justificativaId).run();
+
+        await registrarLog(DB, {
+            usuarioId: usuario.id,
+            acao: 'PONTO_JUSTIFICATIVA_REJEITADA',
+            modulo: 'ponto',
+            descricao: `Justificativa rejeitada para usuário ${alvar.usuario_id}. Motivo: ${motivoRejeicao}`,
+            ip: c.req.header('CF-Connecting-IP') ?? '',
+            entidadeTipo: 'justificativas_ponto',
+            entidadeId: justificativaId,
+            dadosNovos: { motivoRejeicao }
+        });
 
         await criarNotificacoes(DB, {
             usuarioId: alvar.usuario_id,

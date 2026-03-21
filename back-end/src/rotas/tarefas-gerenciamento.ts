@@ -51,10 +51,11 @@ rotasGerenciamento.post('/',
             usuarioId: usuario.id,
             acao: 'TAREFA_CRIADA',
             modulo: 'kanban',
-            descricao: `Tarefa "${body.titulo}" criada`,
+            descricao: `Tarefa "${body.titulo}" criada no projeto ${body.projeto_id}`,
             ip: c.req.header('CF-Connecting-IP') ?? '',
             entidadeTipo: 'tarefas',
-            entidadeId: id
+            entidadeId: id,
+            dadosNovos: body
         });
 
         return c.json({ id, sucesso: true }, 201);
@@ -96,10 +97,11 @@ rotasGerenciamento.post('/:id/responsaveis',
             usuarioId: usuario.id,
             acao: 'TAREFA_RESPONSAVEL_ADICIONADO',
             modulo: 'kanban',
-            descricao: `Responsável ${usuario_id} adicionado à tarefa`,
+            descricao: `Responsável ${usuario_id} adicionado à tarefa "${tarefa.titulo}"`,
             ip: c.req.header('CF-Connecting-IP') ?? '',
             entidadeTipo: 'tarefas',
-            entidadeId: id
+            entidadeId: id,
+            dadosNovos: { usuario_id, tarefa_titulo: tarefa.titulo }
         });
 
         await criarNotificacoes(DB, {
@@ -140,10 +142,11 @@ rotasGerenciamento.delete('/:id', autenticacaoRequerida(), verificarPermissao('t
             usuarioId: usuario.id,
             acao: 'TAREFA_REMOVIDA_HARD',
             modulo: 'kanban',
-            descricao: `Tarefa "${tarefa.titulo}" removida permanentemente`,
+            descricao: `Tarefa "${tarefa.titulo}" removida permanentemente do projeto ${tarefa.projeto_id}`,
             ip: c.req.header('CF-Connecting-IP') ?? '',
             entidadeTipo: 'tarefas',
-            entidadeId: id
+            entidadeId: id,
+            dadosAnteriores: { titulo: tarefa.titulo, projeto_id: tarefa.projeto_id }
         });
 
         return c.json({ sucesso: true });
