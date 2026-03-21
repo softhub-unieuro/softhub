@@ -2,7 +2,7 @@ import { Hono, Context } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { Env } from '../index';
-import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
+import { autenticacaoRequerida, verificarPermissao, verificarPermissaoManual } from '../middleware/auth';
 import { registrarLog } from '../servicos/servico-logs';
 import { criarNotificacoes, removerNotificacoesPorEntidade } from '../servicos/servico-notificacoes';
 import { obterAcessoEquipeNoProjeto } from '../servicos/servico-acesso';
@@ -36,7 +36,8 @@ rotasGerenciamento.post('/',
         const projeto = await DB.prepare('SELECT id FROM projetos WHERE id = ?').bind(body.projeto_id).first();
         if (!projeto) return c.json({ erro: 'O projeto especificado não existe.' }, 404);
 
-        const acessoEquipe = await obterAcessoEquipeNoProjeto(DB, body.projeto_id, usuario);
+        const podeVerTudo = await verificarPermissaoManual(c, 'projetos:visualizar');
+        const acessoEquipe = podeVerTudo ? 'GESTAO' : await obterAcessoEquipeNoProjeto(DB, body.projeto_id, usuario);
         if (acessoEquipe === 'LEITURA' || acessoEquipe === 'NENHUM') {
             return c.json({ erro: 'Sua equipe tem apenas permissão de Leitura neste projeto.' }, 403);
         }
@@ -86,7 +87,8 @@ rotasGerenciamento.post('/:id/responsaveis',
         const tarefa = await DB.prepare('SELECT titulo, projeto_id FROM tarefas WHERE id = ?').bind(id).first() as any;
         if (!tarefa) return c.json({ erro: 'Tarefa não encontrada' }, 404);
 
-        const acessoEquipe = await obterAcessoEquipeNoProjeto(DB, tarefa.projeto_id, usuario);
+        const podeVerTudo = await verificarPermissaoManual(c, 'projetos:visualizar');
+        const acessoEquipe = podeVerTudo ? 'GESTAO' : await obterAcessoEquipeNoProjeto(DB, tarefa.projeto_id, usuario);
         if (acessoEquipe === 'LEITURA' || acessoEquipe === 'NENHUM') {
             return c.json({ erro: 'Permissão de leitura insuficiente.' }, 403);
         }
@@ -132,7 +134,8 @@ rotasGerenciamento.delete('/:id', autenticacaoRequerida(), verificarPermissao('t
         const tarefa = await DB.prepare('SELECT titulo, projeto_id FROM tarefas WHERE id = ?').bind(id).first() as any;
         if (!tarefa) return c.json({ erro: 'Tarefa não encontrada' }, 404);
 
-        const acessoEquipe = await obterAcessoEquipeNoProjeto(DB, tarefa.projeto_id, usuario);
+        const podeVerTudo = await verificarPermissaoManual(c, 'projetos:visualizar');
+        const acessoEquipe = podeVerTudo ? 'GESTAO' : await obterAcessoEquipeNoProjeto(DB, tarefa.projeto_id, usuario);
         if (acessoEquipe === 'LEITURA' || acessoEquipe === 'NENHUM') return c.json({ erro: 'Acesso negado.' }, 403);
 
         // 🛡️ Regra: Sem DELETE real (Soft Delete)

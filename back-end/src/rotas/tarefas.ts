@@ -1,6 +1,6 @@
 import { Hono, Context } from 'hono';
 import { Env } from '../index';
-import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
+import { autenticacaoRequerida, verificarPermissao, verificarPermissaoManual } from '../middleware/auth';
 import { obterAcessoEquipeNoProjeto } from '../servicos/servico-acesso';
 
 const rotasTarefas = new Hono<{ Bindings: Env, Variables: { usuario: any } }>({ strict: false });
@@ -17,7 +17,8 @@ rotasTarefas.get('/', autenticacaoRequerida(), verificarPermissao(['tarefas:visu
     if (!projetoId) return c.json({ erro: 'ID do projeto é obrigatório.' }, 400);
 
     // Validação de acesso básica antes de listar
-    const acesso = await obterAcessoEquipeNoProjeto(DB, projetoId, usuario);
+    const podeVerTudo = await verificarPermissaoManual(c, 'projetos:visualizar');
+    const acesso = podeVerTudo ? 'GESTAO' : await obterAcessoEquipeNoProjeto(DB, projetoId, usuario);
     if (acesso === 'NENHUM') return c.json({ erro: 'Você não tem acesso a este projeto.' }, 403);
 
     const busca = c.req.query('busca');
