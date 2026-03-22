@@ -20,10 +20,10 @@ rotasPonto.get('/', autenticacaoRequerida(), async (c: Context) => {
             repo.buscarRegistrosHoje(c.env.DB, usuario.id),
             repo.buscarHistoricoPonto(c.env.DB, usuario.id)
         ]);
-        
-        return c.json({ 
-            hoje: hojeRes.results || [], 
-            historico: historicoRes.results || [] 
+
+        return c.json({
+            hoje: hojeRes.results || [],
+            historico: historicoRes.results || []
         });
     } catch (e: any) {
         return c.json({ erro: 'Falha ao buscar dados de ponto', detalhe: e.message }, 500);
@@ -33,9 +33,9 @@ rotasPonto.get('/', autenticacaoRequerida(), async (c: Context) => {
 /**
  * Registra uma entrada ou saída de ponto (Alias para /registrar).
  */
-rotasPonto.post('/', 
-    autenticacaoRequerida(), 
-    validarRedeLocal, 
+rotasPonto.post('/',
+    autenticacaoRequerida(),
+    validarRedeLocal,
     kvRateLimit({ windowMs: 15 * 1000, limit: 1, identifier: 'user', keyPrefix: 'ponto_registrar' }),
     async (c: Context) => {
         const { tipo } = await c.req.json();
@@ -48,9 +48,9 @@ rotasPonto.post('/',
 
         try {
             const resultado = await servico.registrarPonto(
-                { DB: c.env.DB, KV: c.env.softhub_kv }, 
-                usuario, 
-                tipo, 
+                { DB: c.env.DB, KV: c.env.softhub_kv },
+                usuario,
+                tipo,
                 ipOrigem
             );
             return c.json(resultado);
@@ -64,9 +64,9 @@ rotasPonto.post('/',
  * Registra uma entrada ou saída de ponto.
  * Requer estar na rede da UNIEURO e autenticação válida.
  */
-rotasPonto.post('/registrar', 
-    autenticacaoRequerida(), 
-    validarRedeLocal, 
+rotasPonto.post('/registrar',
+    autenticacaoRequerida(),
+    validarRedeLocal,
     kvRateLimit({ windowMs: 15 * 1000, limit: 1, identifier: 'user', keyPrefix: 'ponto_registrar' }),
     async (c: Context) => {
         const { tipo } = await c.req.json();
@@ -79,9 +79,9 @@ rotasPonto.post('/registrar',
 
         try {
             const resultado = await servico.registrarPonto(
-                { DB: c.env.DB, KV: c.env.softhub_kv }, 
-                usuario, 
-                tipo, 
+                { DB: c.env.DB, KV: c.env.softhub_kv },
+                usuario,
+                tipo,
                 ipOrigem
             );
             return c.json(resultado);
@@ -124,7 +124,7 @@ rotasPonto.get('/historico', autenticacaoRequerida(), async (c: Context) => {
 rotasPonto.get('/:usuarioId/historico', autenticacaoRequerida(), verificarPermissao('relatorios:visualizar'), async (c: Context) => {
     const usuarioId = c.req.param('usuarioId');
     if (!usuarioId) return c.json({ erro: 'ID do usuário é obrigatório.' }, 400);
-    
+
     try {
         const { results } = await repo.buscarHistoricoPonto(c.env.DB, usuarioId, 100);
         return c.json({ historico: results || [] });
@@ -137,9 +137,9 @@ rotasPonto.get('/:usuarioId/historico', autenticacaoRequerida(), verificarPermis
  * Exporta registros de ponto em formato CSV.
  * Requer permissão 'ponto:exportar'.
  */
-rotasPonto.get('/exportar', 
-    autenticacaoRequerida(), 
-    verificarPermissao('ponto:exportar'), 
+rotasPonto.get('/exportar',
+    autenticacaoRequerida(),
+    verificarPermissao('ponto:exportar'),
     async (c: Context) => {
         const { usuarioId, mes, ano } = c.req.query();
 
@@ -184,7 +184,7 @@ rotasPonto.get('/online', autenticacaoRequerida(), async (c: Context) => {
             if (val) {
                 try {
                     membros.push(JSON.parse(val));
-                } catch (e) {}
+                } catch (e) { }
             }
         }
         return c.json({ online: membros });
@@ -200,21 +200,21 @@ rotasPonto.get('/online', autenticacaoRequerida(), async (c: Context) => {
 rotasPonto.post('/presenca', autenticacaoRequerida(), async (c: Context) => {
     const { softhub_kv } = c.env;
     const usuario = c.get('usuario');
-    
+
     if (!softhub_kv) return c.json({ ok: true });
 
     try {
         const chave = `presenca:${usuario.id}`;
         const data = await softhub_kv.get(chave);
-        
+
         // Se já houver registro de presença (ponto aberto), renovamos o TTL
         if (data) {
             await softhub_kv.put(chave, data, { expirationTtl: 28800 }); // 8 horas
         }
-        
+
         // Heartbeat genérico (opcional, para saber quem está no app mesmo sem ponto)
         await softhub_kv.put(`heartbeat:${usuario.id}`, 'true', { expirationTtl: 600 }); // 10 minutos
-        
+
         return c.json({ ok: true });
     } catch (e: any) {
         // Heartbeat não deve falhar a experiência do usuário
