@@ -1,42 +1,22 @@
 import { memo, useState, useEffect } from 'react';
-import { 
-    Camera, 
-    Save, 
-    Mail, 
-    Shield,
-    Trophy,
-    Pencil,
-    X,
-    ExternalLink,
-    Sparkles,
-    Github,
-    Linkedin,
-    Globe,
-    Image as ImageIcon,
-    Users,
-    Layers
+import {
+    Camera, Save, Mail, Shield, Pencil, X, ExternalLink,
+    Github, Linkedin, Globe, Image as ImageIcon, Users, Layers,
+    Target, Trophy, CheckCircle2, ListTodo, Sparkles, Zap, Coffee
 } from 'lucide-react';
 import { usarPerfil } from '@/funcionalidades/perfil/hooks/usarPerfil';
 import { Avatar } from '@/compartilhado/componentes/Avatar';
 import { Modal } from '@/compartilhado/componentes/Modal';
-import { Emblema } from '@/compartilhado/componentes/Emblema';
-import { formatarDataHora } from '@/utilitarios/formatadores';
 
 interface ModalEdicaoPerfilProps {
     aberto: boolean;
     aoFechar: () => void;
 }
 
-/**
- * Modal Cinematic de Perfil Profissional.
- * Imersivo, sem cabeçalho padrão, com banner customizável.
- * Exibe informações organizacionais (Equipe, Grupo, Cargo) e mural limpo.
- */
 export const ModalEdicaoPerfil = memo(({ aberto, aoFechar }: ModalEdicaoPerfilProps) => {
-    const { perfil, atualizarPerfil, salvando } = usarPerfil();
+    const { perfil, stats, atualizarPerfil, salvando } = usarPerfil();
     const [editando, setEditando] = useState(false);
-    
-    // Estados para Edição
+
     const [bio, setBio] = useState('');
     const [fotoPerfil, setFotoPerfil] = useState('');
     const [fotoBanner, setFotoBanner] = useState('');
@@ -56,305 +36,221 @@ export const ModalEdicaoPerfil = memo(({ aberto, aoFechar }: ModalEdicaoPerfilPr
         }
     }, [perfil, aberto]);
 
-    const handleSalvar = async () => {
-        try {
-            await atualizarPerfil({ 
-                bio, 
-                foto_perfil: fotoPerfil,
-                foto_banner: fotoBanner,
-                github_url: githubUrl,
-                linkedin_url: linkedinUrl,
-                website_url: websiteUrl
-            });
-            setEditando(false);
-        } catch (e) {
-            // Toast já tratado
-        }
-    };
-
-    // Lógica de Cor Idêntica ao Avatar para o Banner (Fallback)
-    const getCorBanner = (nomeRef: string) => {
-        const getHash = (str: string) => {
-            let hash = 0;
-            const textoParaHash = str.trim().toUpperCase();
-            for (let i = 0; i < textoParaHash.length; i++) {
-                hash = textoParaHash.charCodeAt(i) + ((hash << 5) - hash);
-            }
-            return Math.abs(hash);
-        };
-
-        const coresFallback = [
-            'bg-blue-600', 'bg-emerald-600', 'bg-violet-600', 'bg-rose-600', 'bg-amber-600',
-            'bg-indigo-600', 'bg-cyan-600', 'bg-fuchsia-600', 'bg-teal-600'
-        ];
-        
-        const index = getHash(nomeRef) % coresFallback.length;
-        return coresFallback[index];
-    };
-
     if (!perfil) return null;
 
-    const bannerCorClass = getCorBanner(perfil.nome);
-    const exibirBannerCustom = editando ? fotoBanner : perfil.foto_banner;
+    const handleSalvar = async () => {
+        try {
+            await atualizarPerfil({
+                bio, foto_perfil: fotoPerfil, foto_banner: fotoBanner,
+                github_url: githubUrl, linkedin_url: linkedinUrl, website_url: websiteUrl
+            });
+            setEditando(false);
+        } catch (e) {}
+    };
+
+    const aproveitamento = stats?.tarefas?.aproveitamento || 0;
 
     return (
         <Modal aberto={aberto} aoFechar={aoFechar} titulo="Perfil" largura="xl" semHeader={true}>
-            <div className="relative -mt-6 -mx-8 overflow-hidden bg-white/50">
+            <div className="relative bg-[#FDFDFE] -my-6 -mx-8 min-h-[660px] flex flex-col rounded-2xl overflow-hidden font-sans">
                 
-                {/* Banner de Topo com Cor Dinâmica ou Imagem Customizada */}
-                <div className={`h-45 ${!exibirBannerCustom ? bannerCorClass : ''} relative overflow-hidden transition-all duration-500`}>
-                    {exibirBannerCustom && (
-                        <img 
-                            src={exibirBannerCustom} 
-                            className="w-full h-full object-cover animate-in fade-in duration-500" 
-                            alt="Banner de perfil"
-                        />
-                    )}
-                    <div className="absolute inset-0 bg-black/10" />
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.15),transparent)]" />
-                    
-                    {/* Ações Flutuantes */}
-                    <div className="absolute top-4 right-6 z-20 flex items-center gap-2">
-                        {!editando && (
-                            <button 
-                                onClick={() => setEditando(true)}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-black/20 backdrop-blur-xl border border-white/20 text-white rounded-xl hover:bg-black/30 transition-all active:scale-95 group"
-                            >
-                                <Pencil size={12} className="group-hover:rotate-12 transition-transform" />
-                                <span className="text-[9px] font-black uppercase tracking-widest">Editar Mural</span>
-                            </button>
-                        )}
-                        
+                {/* 1. BACKGROUND DINÂMICO (SUTIL) */}
+                <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                    <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-indigo-50/50 rounded-full blur-[120px]" />
+                    <div className="absolute bottom-[-20%] left-[-10%] w-[400px] h-[400px] bg-blue-50/30 rounded-full blur-[100px]" />
+                </div>
+
+                {/* BOTÕES DE AÇÃO FLUTUANTES SUPERIORES */}
+                <div className="absolute top-6 right-8 z-50 flex items-center gap-2">
+                    {!editando && (
                         <button 
-                            onClick={aoFechar}
-                            className="p-1.5 bg-black/20 backdrop-blur-xl border border-white/20 text-white rounded-xl hover:bg-black/30 transition-all active:scale-95 group"
-                            aria-label="Fechar"
+                            onClick={() => setEditando(true)} 
+                            className="flex items-center gap-2 px-3 py-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50/50 rounded-xl transition-all group font-bold text-[10px] uppercase tracking-[0.15em]"
                         >
-                            <X size={14} className="group-hover:rotate-90 transition-transform duration-300" />
+                            <Pencil size={14} className="group-hover:rotate-12 transition-transform" />
+                            Editar Perfil
                         </button>
-                    </div>
+                    )}
+                    <button 
+                        onClick={aoFechar} 
+                        className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50/50 rounded-xl transition-all group"
+                    >
+                        <X size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+                    </button>
                 </div>
 
-                {/* Layout de Conteúdo */}
-                <div className="px-8 relative z-10">
-                    <div className="flex flex-col lg:flex-row gap-8">
-                        
-                        {/* Sidebar: Identidade */}
-                        <div className="lg:w-72 shrink-0">
-                            <div className="relative -mt-16 group mb-5 flex md:block justify-center">
-                                <div className="w-32 h-32 md:w-36 md:h-36 rounded-[40px] border-[6px] border-white shadow-xl overflow-hidden bg-white ring-1 ring-slate-100">
-                                    <Avatar nome={perfil.nome} fotoPerfil={editando ? fotoPerfil : perfil.foto_perfil} tamanho="full" />
-                                </div>
-                                {editando && (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-[40px] border-[6px] border-transparent opacity-0 group-hover:opacity-100 transition-all cursor-pointer">
-                                        <Camera className="text-white" size={24} />
+                <div className="relative z-10 flex-1 flex flex-col md:flex-row p-6 md:p-10 gap-10">
+                    
+                    {!editando ? (
+                        <>
+                            {/* COLUNA ESQUERDA: IDENTIDADE MINIMALISTA */}
+                            <div className="md:w-72 flex flex-col shrink-0 animate-in fade-in slide-in-from-left-4 duration-700">
+                                <div className="flex flex-col items-center">
+                                    <div className="relative mb-8 group">
+                                        <div className="w-40 h-40 rounded-[2.5rem] p-1 bg-gradient-to-tr from-indigo-100 via-white to-blue-100 shadow-sm transition-transform duration-500 group-hover:scale-[1.02]">
+                                            <div className="w-full h-full rounded-[2.2rem] overflow-hidden border-[6px] border-white shadow-xl">
+                                                <Avatar nome={perfil.nome} fotoPerfil={perfil.foto_perfil} tamanho="full" />
+                                            </div>
+                                        </div>
+                                        <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-white border border-slate-100 shadow-lg rounded-2xl flex items-center justify-center text-indigo-500 group-hover:scale-110 transition-transform">
+                                            <Zap size={18} fill="currentColor" strokeWidth={0} />
+                                        </div>
                                     </div>
-                                )}
+
+                                    <div className="text-center space-y-1 px-4">
+                                        <h1 className="text-xl font-bold text-slate-900 tracking-tight leading-tight line-clamp-2">{perfil.nome}</h1>
+                                        <p className="text-[10px] font-black text-indigo-500/80 uppercase tracking-[0.2em]">{perfil.email}</p>
+                                    </div>
+
+                                    <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-100 to-transparent my-8" />
+
+                                    <div className="w-full space-y-3">
+                                        <div className="flex items-center gap-3 p-3 bg-white/60 backdrop-blur-sm border border-slate-100 rounded-[1.2rem] group hover:border-indigo-100 transition-colors">
+                                            <Users size={14} className="text-slate-400 group-hover:text-indigo-400 transition-colors" />
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate">{perfil.equipe_nome || 'S / Equipe'}</span>
+                                        </div>
+                                        <div className="flex items-center gap-3 p-3 bg-white/60 backdrop-blur-sm border border-slate-100 rounded-[1.2rem] group hover:border-blue-100 transition-colors">
+                                            <Layers size={14} className="text-slate-400 group-hover:text-blue-400 transition-colors" />
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate">{perfil.grupo_nome || 'S / Grupo'}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* CONTATOS DISCRETOS EMBAIXO */}
+                                    <div className="mt-10 flex items-center gap-2">
+                                        {[
+                                            { icon: Github, href: perfil.github_url },
+                                            { icon: Linkedin, href: perfil.linkedin_url },
+                                            { icon: Globe, href: perfil.website_url },
+                                            { icon: Mail, href: `mailto:${perfil.email}` }
+                                        ].map((social, idx) => (
+                                            social.href && (
+                                                <a key={idx} href={social.href} target="_blank" className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition-all hover:-translate-y-1">
+                                                    <social.icon size={16} />
+                                                </a>
+                                            )
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="space-y-5">
-                                <div className="text-center md:text-left">
-                                    <h2 className="text-xl font-black tracking-tight text-slate-900 leading-tight truncate">{perfil.nome}</h2>
-                                    <p className="text-[11px] font-bold text-slate-400 mt-1 truncate">{perfil.email}</p>
+                            {/* COLUNA DIREITA: CONTEÚDO PREMIUM */}
+                            <div className="flex-1 flex flex-col gap-6 animate-in fade-in slide-in-from-right-4 duration-700 delay-100">
+                                
+                                {/* BIO GLASSMORPHISM */}
+                                <div className="bg-white/40 backdrop-blur-md border border-white rounded-[2rem] p-8 shadow-sm relative group hover:bg-white transition-all duration-500">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <Coffee size={14} className="text-amber-500/60" />
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Minha Essência</span>
+                                    </div>
+                                    <p className="text-base font-medium text-slate-600 leading-relaxed italic pr-10">
+                                        "{perfil.bio || 'Preparando minha jornada profissional com foco e inovação...'}"
+                                    </p>
+                                    <Sparkles size={24} className="absolute right-8 top-8 text-amber-100 group-hover:text-amber-300 transition-colors duration-700" />
                                 </div>
 
-                                {/* Status Compacto: Organização */}
-                                <div className="p-1 bg-slate-50/80 rounded-3xl border border-slate-100 space-y-1">
-                                    <div className="flex items-center gap-3 p-2.5 hover:bg-white rounded-2xl transition-all group">
-                                        <div className="w-7 h-7 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center">
-                                            <Users size={12} />
+                                {/* DASHBOARD DE PERFORMANCE REQUINTADO */}
+                                <div className="grid grid-cols-2 gap-5 flex-1">
+                                    
+                                    <div className="bg-slate-900 rounded-[2rem] p-7 shadow-xl shadow-slate-200 flex flex-col justify-between group hover:scale-[1.02] transition-transform overflow-hidden relative">
+                                        <div className="absolute top-0 right-0 p-8 text-white/5 rotate-12 group-hover:rotate-0 transition-transform duration-700">
+                                            <Trophy size={100} />
                                         </div>
-                                        <div>
-                                            <p className="text-[7px] font-black uppercase tracking-widest text-slate-400">Equipe</p>
-                                            <p className="text-[11px] font-bold text-slate-700 leading-none mt-0.5">{perfil.equipe_nome || '--'}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3 p-2.5 hover:bg-white rounded-2xl transition-all group">
-                                        <div className="w-7 h-7 rounded-xl bg-violet-50 text-violet-500 flex items-center justify-center">
-                                            <Layers size={12} />
-                                        </div>
-                                        <div>
-                                            <p className="text-[7px] font-black uppercase tracking-widest text-slate-400">Grupo</p>
-                                            <p className="text-[11px] font-bold text-slate-700 leading-none mt-0.5">{perfil.grupo_nome || '--'}</p>
+                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] relative z-10">Desafios Atuais</span>
+                                        <div className="relative z-10">
+                                            <div className="text-5xl font-bold text-white tracking-tighter mb-1">{stats?.tarefas?.total || 0}</div>
+                                            <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Ativas no momento
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3 p-2.5 hover:bg-white rounded-2xl transition-all group">
-                                        <div className="w-7 h-7 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center">
-                                            <Shield size={12} />
-                                        </div>
-                                        <div>
-                                            <p className="text-[7px] font-black uppercase tracking-widest text-slate-400">Acesso</p>
-                                            <p className="text-[11px] font-bold text-slate-700 leading-none mt-0.5">{perfil.role}</p>
-                                        </div>
-                                    </div>
-                                </div>
 
-                                {/* Sociais */}
-                                <div className="flex items-center justify-between px-3 text-slate-300">
-                                    <a href={perfil.github_url || '#'} target="_blank" rel="noopener noreferrer" 
-                                       className={`transition-colors ${perfil.github_url ? 'hover:text-slate-900' : 'opacity-20 cursor-not-allowed'}`}>
-                                        <Github size={16} />
-                                    </a>
-                                    <a href={perfil.linkedin_url || '#'} target="_blank" rel="noopener noreferrer"
-                                       className={`transition-colors ${perfil.linkedin_url ? 'hover:text-blue-600' : 'opacity-20 cursor-not-allowed'}`}>
-                                        <Linkedin size={16} />
-                                    </a>
-                                    <a href={perfil.website_url || '#'} target="_blank" rel="noopener noreferrer"
-                                       className={`transition-colors ${perfil.website_url ? 'hover:text-emerald-600' : 'opacity-20 cursor-not-allowed'}`}>
-                                        <Globe size={16} />
-                                    </a>
-                                    <div className="w-px h-3 bg-slate-200" />
-                                    <a href={`mailto:${perfil.email}`} className="hover:text-primary transition-colors cursor-pointer">
-                                        <Mail size={16} />
-                                    </a>
+                                    <div className="bg-white border border-slate-100 rounded-[2rem] p-7 shadow-sm group hover:border-indigo-100 transition-all flex flex-col justify-between">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Entregas Totais</span>
+                                        <div>
+                                            <div className="text-5xl font-bold text-slate-900 tracking-tighter mb-1 group-hover:text-indigo-600 transition-colors">{stats?.tarefas?.concluidas || 0}</div>
+                                            <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                                <CheckCircle2 size={12} className="text-emerald-500" /> Missões Concluídas
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="col-span-2 bg-gradient-to-r from-indigo-500 to-blue-600 rounded-[2rem] p-8 text-white flex items-center justify-between shadow-lg shadow-indigo-100 group cursor-default">
+                                        <div className="flex items-center gap-6">
+                                            <div className="relative w-16 h-16 shrink-0">
+                                                <svg className="w-16 h-16 transform -rotate-90">
+                                                    <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="6" />
+                                                    <circle cx="32" cy="32" r="28" fill="none" stroke="white" strokeWidth="6" strokeDasharray={175.9} strokeDashoffset={175.9 - (aproveitamento / 100) * 175.9} strokeLinecap="round" className="transition-all duration-1000 ease-out shadow-lg" />
+                                                </svg>
+                                                <Target size={18} className="absolute inset-0 m-auto text-white group-hover:scale-110 transition-transform" />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/60 mb-1">Aproveitamento Global</h4>
+                                                <p className="text-white/80 text-xs font-medium leading-tight max-w-[180px]">Produtividade calculada com base em todas as sprints</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-5xl font-black text-white tracking-tight">{aproveitamento}<span className="text-xl opacity-40 ml-1">%</span></div>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-100/60">Taxa de Sucesso</span>
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
-                        </div>
+                        </>
+                    ) : (
+                        /* MODO EDIÇÃO REFINADO */
+                        <div className="flex-1 bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-50 animate-in zoom-in-95 duration-500 flex flex-col">
+                            <div className="flex items-center gap-5 mb-10 pb-10 border-b border-slate-50">
+                                <div className="w-16 h-16 rounded-[1.3rem] bg-indigo-50 text-indigo-500 flex items-center justify-center shrink-0">
+                                    <Sparkles size={24} />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Personalização Premium</h2>
+                                    <p className="text-slate-400 text-sm">Refine sua presença visual na Fábrica de Software.</p>
+                                </div>
+                            </div>
 
-                        {/* Mural Principal */}
-                        <div className="flex-1 lg:pt-8 space-y-8">
-                            
-                            {editando ? (
-                                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {/* Coluna 1: Visual */}
-                                        <div className="space-y-4">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 mb-2 block">Foto de Perfil (URL)</label>
-                                                <div className="relative group/input">
-                                                    <Camera className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within/input:text-primary" />
-                                                    <input
-                                                        type="url"
-                                                        value={fotoPerfil}
-                                                        onChange={e => setFotoPerfil(e.target.value) }
-                                                        className="w-full h-11 bg-background border border-border rounded-2xl pl-11 pr-5 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono placeholder:text-muted-foreground/30"
-                                                        placeholder="https://..."
-                                                    />
-                                                </div>
+                            <div className="grid grid-cols-2 gap-x-12 gap-y-8">
+                                <div className="space-y-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Identidade Visual (URL)</label>
+                                        <input type="url" value={fotoPerfil} onChange={e => setFotoPerfil(e.target.value)} className="w-full h-12 bg-slate-50/50 border border-slate-100 rounded-xl px-4 text-sm font-medium focus:bg-white focus:ring-4 focus:ring-indigo-100 focus:border-indigo-300 transition-all outline-none" placeholder="Link da foto..." />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Sua Própria Bio</label>
+                                        <textarea value={bio} onChange={e => setBio(e.target.value)} className="w-full h-32 bg-slate-50/50 border border-slate-100 rounded-xl p-4 text-sm font-medium focus:bg-white focus:ring-4 focus:ring-indigo-100 focus:border-indigo-300 transition-all outline-none resize-none leading-relaxed" placeholder="Como você quer ser lembrado?..." />
+                                    </div>
+                                </div>
+                                <div className="space-y-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Links Externos</label>
+                                        <div className="space-y-3">
+                                            <div className="relative group">
+                                                <Github size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-slate-900 transition-colors" />
+                                                <input type="url" value={githubUrl} onChange={e => setGithubUrl(e.target.value)} className="w-full h-11 bg-slate-50/50 border border-slate-100 rounded-xl pl-11 pr-4 text-xs font-medium focus:bg-white transition-all outline-none" placeholder="GitHub URL" />
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 mb-2 block">Banner de Perfil (URL)</label>
-                                                <div className="relative group/input">
-                                                    <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within/input:text-primary" />
-                                                    <input
-                                                        type="url"
-                                                        value={fotoBanner}
-                                                        onChange={e => setFotoBanner(e.target.value)}
-                                                        className="w-full h-11 bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-5 text-sm font-medium outline-none focus:border-primary/40 transition-all font-mono"
-                                                        placeholder="Capa do perfil (link)..."
-                                                    />
-                                                </div>
+                                            <div className="relative group">
+                                                <Linkedin size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-600 transition-colors" />
+                                                <input type="url" value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)} className="w-full h-11 bg-slate-50/50 border border-slate-100 rounded-xl pl-11 pr-4 text-xs font-medium focus:bg-white transition-all outline-none" placeholder="LinkedIn URL" />
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 mb-2 block">Biografia Profissional</label>
-                                                <textarea
-                                                    value={bio}
-                                                    onChange={e => setBio(e.target.value)}
-                                                    className="w-full h-[108px] bg-background border border-border rounded-2xl p-5 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none leading-relaxed placeholder:text-muted-foreground/30"
-                                                    placeholder="Sua jornada..."
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* Coluna 2: Redes Sociais */}
-                                        <div className="space-y-4">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 mb-2 block">GitHub (URL)</label>
-                                                <div className="relative group/input">
-                                                    <Github className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within/input:text-slate-900" />
-                                                    <input
-                                                        type="url"
-                                                        value={githubUrl}
-                                                        onChange={e => setGithubUrl(e.target.value)}
-                                                        className="w-full h-11 bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-5 text-sm font-medium outline-none focus:border-primary/40 transition-all font-mono"
-                                                        placeholder="github.com/usuario"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 mb-2 block">LinkedIn (URL)</label>
-                                                <div className="relative group/input">
-                                                    <Linkedin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within/input:text-blue-600" />
-                                                    <input
-                                                        type="url"
-                                                        value={linkedinUrl}
-                                                        onChange={e => setLinkedinUrl(e.target.value)}
-                                                        className="w-full h-11 bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-5 text-sm font-medium outline-none focus:border-primary/40 transition-all font-mono"
-                                                        placeholder="linkedin.com/in/usuario"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 mb-2 block">Portfólio / Site</label>
-                                                <div className="relative group/input">
-                                                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within/input:text-emerald-600" />
-                                                    <input
-                                                        type="url"
-                                                        value={websiteUrl}
-                                                        onChange={e => setWebsiteUrl(e.target.value)}
-                                                        className="w-full h-11 bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-5 text-sm font-medium outline-none focus:border-primary/40 transition-all font-mono"
-                                                        placeholder="meusite.com"
-                                                    />
-                                                </div>
-                                            </div>
-                                            
-                                            {/* Informativo de Trava de Nome */}
-                                            <div className="p-4 bg-slate-100 rounded-2xl border border-slate-200">
-                                                <div className="flex items-center gap-2 text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">
-                                                    <Shield size={10} /> Segurança Institucional
-                                                </div>
-                                                <p className="text-[9px] text-slate-500 leading-tight">O seu nome é seu registro institucional e não pode ser alterado por aqui para manter a integridade dos logs.</p>
+                                            <div className="relative group">
+                                                <Globe size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors" />
+                                                <input type="url" value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} className="w-full h-11 bg-slate-50/50 border border-slate-100 rounded-xl pl-11 pr-4 text-xs font-medium focus:bg-white transition-all outline-none" placeholder="Portfolio URL" />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            ) : (
-                                <div className="space-y-8 animate-in fade-in duration-700">
-                                    {/* Mural Content */}
-                                    <div className="relative">
-                                        <Sparkles size={16} className="absolute -top-1 -left-1 text-primary opacity-20" />
-                                        <p className="text-lg font-medium text-slate-600 leading-relaxed italic pr-4">
-                                            "{perfil.bio || 'Preparando minha jornada profissional na Fábrica...'}"
-                                        </p>
-                                    </div>
+                            </div>
 
-                                    {/* Link de Portfólio Externo */}
-                                    {perfil.website_url && (
-                                        <a href={perfil.website_url} target="_blank" rel="noopener noreferrer" 
-                                           className="flex items-center justify-between p-5 bg-primary/5 border border-primary/10 text-primary rounded-[28px] group hover:bg-primary hover:text-white transition-all duration-500">
-                                            <div className="flex items-center gap-3">
-                                                <Globe size={18} />
-                                                <span className="text-[10px] font-black uppercase tracking-widest">Ver Portfólio Externo</span>
-                                            </div>
-                                            <ExternalLink size={14} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                                        </a>
-                                    )}
-                                </div>
-                            )}
+                            <div className="mt-auto pt-10 flex items-center justify-end gap-3">
+                                <button onClick={() => setEditando(false)} className="px-6 py-3 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-700 transition-all">Cancelar</button>
+                                <button onClick={handleSalvar} disabled={salvando} className="px-10 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 transition-all flex items-center gap-2">
+                                    <Save size={16} /> {salvando ? 'Sincronizando...' : 'Confirmar Alterações'}
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
-
-                {/* Footer Minimalista */}
-                {editando && (
-                    <div className="flex items-center justify-end bg-white relative pr-8 pt-6">
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setEditando(false)}
-                                className="h-12 px-6 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                                Descartar
-                            </button>
-                            <button
-                                onClick={handleSalvar}
-                                disabled={salvando}
-                                className="h-12 px-8 bg-primary text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                            >
-                                <Save size={12} /> {salvando ? 'Salvando...' : 'Aplicar'}
-                            </button>
-                        </div>
-                    </div>
-                )}
             </div>
         </Modal>
     );

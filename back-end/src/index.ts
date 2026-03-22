@@ -42,31 +42,6 @@ export type Env = {
 
 const app = new Hono<{ Bindings: Env }>({ strict: false });
 
-// ─── Middlewares Globais ───────────────────────────────────────────────────
-
-// 0. Patch Protetor do KV (Previne 500 no limite do Cloudflare)
-app.use('*', async (c, next) => {
-    if (c.env.softhub_kv && !(c.env.softhub_kv as any)._patched) {
-        const originalPut = c.env.softhub_kv.put.bind(c.env.softhub_kv);
-        c.env.softhub_kv.put = async (key: string, value: string | ArrayBuffer | ArrayBufferView | ReadableStream<any>, options?: KVNamespacePutOptions) => {
-            try {
-                return await originalPut(key, value, options);
-            } catch (e) {
-                console.warn('[KV LIMIT] Falha no put ignorada:', e);
-            }
-        };
-        const originalDelete = c.env.softhub_kv.delete.bind(c.env.softhub_kv);
-        c.env.softhub_kv.delete = async (key: string) => {
-            try {
-                return await originalDelete(key);
-            } catch (e) {
-                console.warn('[KV LIMIT] Falha no delete ignorada:', e);
-            }
-        };
-        (c.env.softhub_kv as any)._patched = true;
-    }
-    await next();
-});
 
 // 1. CORS (DEVE ser o primeiro)
 app.use('*', cors({

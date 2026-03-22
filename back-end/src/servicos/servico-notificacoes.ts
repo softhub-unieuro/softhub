@@ -1,4 +1,5 @@
 import { D1Database } from '@cloudflare/workers-types';
+import { logger } from '../utilitarios/logger';
 
 /**
  * Cria uma notificação para o usuário. 
@@ -67,8 +68,12 @@ export async function criarNotificacoes(db: any, params: ParamsNotificacao, kv?:
             
             // 🚀 Atualiza flag no KV para cada usuário notificado
             if (kv) {
-                for (const id of idsToNotify) {
-                    await kv.put(`tem_notificacao:${id}`, 'true', { expirationTtl: 86400 }); // Expira em 24h se não houver atividade
+                try {
+                    for (const id of idsToNotify) {
+                        await kv.put(`tem_notificacao:${id}`, 'true', { expirationTtl: 86400 }); // Expira em 24h se não houver atividade
+                    }
+                } catch (e: any) {
+                    logger.error('[KV ERROR] Falha ao atualizar flags de notificação', { erro: e.message });
                 }
             }
         }

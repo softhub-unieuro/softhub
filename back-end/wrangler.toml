@@ -15,7 +15,7 @@ id = "148fcf4fa8464a24b5f8f038ee1657f3"
 binding = "AI"
 
 [triggers]
-crons = ["45 16 * * *", "59 23 * * *"]
+crons = ["45 16 * * *", "59 23 * * *", "0 3 * * 0"]
 
 [vars]
 BOOTSTRAP_ADMIN_EMAIL = "mateus099803@unieuro.com.br"

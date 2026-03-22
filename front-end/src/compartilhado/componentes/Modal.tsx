@@ -10,13 +10,22 @@ interface ModalProps {
     children: ReactNode;
     largura?: 'sm' | 'md' | 'lg' | 'xl' | 'auto';
     semHeader?: boolean;
+    semBorda?: boolean;
 }
 
 /**
  * Modal genérico usado em toda a aplicação.
  * Renderizado no Root (document.body) via Portal para evitar problemas de z-index
  */
-export function Modal({ aberto, aoFechar, titulo, children, largura = 'md', semHeader = false }: ModalProps) {
+export function Modal({ 
+    aberto, 
+    aoFechar, 
+    titulo, 
+    children, 
+    largura = 'md', 
+    semHeader = false,
+    semBorda = false 
+}: ModalProps) {
     const [montado, setMontado] = useState(false);
 
     useEffect(() => {
@@ -63,7 +72,7 @@ export function Modal({ aberto, aoFechar, titulo, children, largura = 'md', semH
             <div
                 className={`
                     relative ${largura === 'auto' ? 'w-auto' : 'w-full ' + larguras[largura]} pointer-events-auto
-                    bg-white border border-slate-200 rounded-2xl 
+                    bg-white ${semBorda ? 'border-none' : 'border border-slate-200'} rounded-2xl 
                     shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)]
                     flex flex-col max-h-[90vh] overflow-hidden transform transition-all
                     animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-400 ease-out
@@ -73,7 +82,9 @@ export function Modal({ aberto, aoFechar, titulo, children, largura = 'md', semH
                 aria-labelledby="modal-titulo"
             >
                 {/* Brilho Superior Sutil (Premium Touch) */}
-                <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+                {!semBorda && (
+                    <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+                )}
 
                 {/* Header: Clean & Modern */}
                 {!semHeader && (
@@ -101,6 +112,7 @@ export function Modal({ aberto, aoFechar, titulo, children, largura = 'md', semH
             </div>
         </div>
     );
+
 
     return createPortal(modalElement, document.body);
 }

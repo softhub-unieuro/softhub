@@ -1,3 +1,6 @@
+import { D1Database } from '@cloudflare/workers-types';
+import { logger } from '../utilitarios/logger';
+
 /**
  * Interface para os bindings do ambiente necessários.
  * Usamos tipagem flexível para evitar conflitos entre versões do @cloudflare/workers-types.
@@ -47,8 +50,8 @@ export async function obterConfiguracao(env: EnvConfig, chave: string): Promise<
         }
 
         return null;
-    } catch (e) {
-        console.error(`[CONFIG] Erro ao obter configuração "${chave}":`, e);
+    } catch (e: any) {
+        logger.error(`[CONFIG] Falha ao obter "${chave}"`, { erro: e.message, chave });
         return null;
     }
 }
@@ -71,12 +74,16 @@ export async function salvarConfiguracao(env: EnvConfig, chave: string, valor: a
 
     // 2. Invalida o Cache (KV)
     if (softhub_kv) {
-        await softhub_kv.delete(chave);
-        
-        // Se for uma configuração que impacta a hierarquia ou permissões, limpamos as chaves globais
-        if (['hierarquia_roles', 'permissoes_roles'].includes(chave)) {
-            await softhub_kv.delete('hierarquia_roles');
-            await softhub_kv.delete('permissoes_roles');
+        try {
+            await softhub_kv.delete(chave);
+            
+            // Se for uma configuração que impacta a hierarquia ou permissões, limpamos as chaves globais
+            if (['hierarquia_roles', 'permissoes_roles'].includes(chave)) {
+                await softhub_kv.delete('hierarquia_roles');
+                await softhub_kv.delete('permissoes_roles');
+            }
+        } catch (e: any) {
+            logger.error(`[KV ERROR] Falha ao invalidar cache para "${chave}"`, { erro: e.message, chave });
         }
     }
 }

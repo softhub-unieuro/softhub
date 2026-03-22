@@ -26,6 +26,7 @@ import {
 // Saudação inteligente baseada na hora do dia
 function obterSaudacao(): string {
     const hora = new Date().getHours();
+    if (hora >= 0 && hora < 6) return 'Boa madrugada';
     if (hora < 12) return 'Bom dia';
     if (hora < 18) return 'Boa tarde';
     return 'Boa noite';
@@ -112,7 +113,9 @@ export const PaginaDashboard = memo(() => {
                                 </div>
                             </div>
                             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-foreground leading-[0.95]">
-                                {obterSaudacao()}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-blue-400 to-indigo-400">{usuario?.nome?.split(' ')[0]}</span>
+                                {obterSaudacao()}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-blue-400 to-indigo-400">
+                                    {usuario?.nome?.split(' ')[0]}!
+                                </span> {new Date().getHours() >= 18 || new Date().getHours() < 6 ? '🌙' : '✨'}
                             </h1>
                             <p className="text-muted-foreground/50 text-sm font-medium max-w-md">
                                 {pendentes > 0 

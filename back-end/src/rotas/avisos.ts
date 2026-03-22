@@ -2,7 +2,7 @@ import { Hono, Context } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { Env } from '../index';
-import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
+import { autenticacaoRequerida, verificarPermissao, verificarPermissaoManual } from '../middleware/auth';
 import { registrarLog } from '../servicos/servico-logs';
 import { criarNotificacoes, removerNotificacoesPorEntidade } from '../servicos/servico-notificacoes';
 const rotasAvisos = new Hono<{ Bindings: Env, Variables: { usuario: any } }>();
@@ -137,24 +137,12 @@ rotasAvisos.delete('/:id', autenticacaoRequerida(), async (c: Context) => {
         }
 
         // Regra: ADMIN, usuários com permissão global OU o próprio criador podem remover
+        // Regra Unificada (CODE-002): ADMIN, usuários com permissão 'avisos:gerenciar' OU o próprio criador
         const ehCriador = avisoExistente.criado_por === usuario.id;
-        const ehAdmin = usuario.role === 'ADMIN';
-        
-        // Se não for admin nem criador, verificamos se tem a permissão global no KV/D1 (opcional mas seguro)
-        if (!ehAdmin && !ehCriador) {
-             // Aqui poderíamos chamar uma versão interna do verificarPermissao, 
-             // mas para simplificar e seguir a regra do projeto solo: 
-             // Se não for o criador e não for Admin/Liderança superior (validado via role ou permissão), negamos.
-             // Para este caso, vamos considerar que apenas ADMIN ou Criador podem deletar por enquanto, 
-             // ou expandir conforme a matriz de permissões se necessário.
-             
-             // Vamos manter a consistência com os outros módulos:
-             const rolesLideranca = ['ADMIN', 'COORDENADOR', 'GESTOR', 'LIDER', 'SUBLIDER'];
-             const ehLideranca = rolesLideranca.includes(usuario.role);
+        const temPermissaoGerenciar = await verificarPermissaoManual(c, 'avisos:gerenciar');
 
-             if (!ehLideranca) {
-                 return c.json({ erro: 'Você só pode remover seus próprios avisos.' }, 403);
-             }
+        if (!ehCriador && !temPermissaoGerenciar) {
+            return c.json({ erro: 'Você não tem permissão para remover este aviso.' }, 403);
         }
 
         await DB.prepare('UPDATE avisos SET arquivado = 1 WHERE id = ?').bind(id).run();
