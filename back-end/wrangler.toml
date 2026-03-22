@@ -20,3 +20,4 @@ crons = ["45 16 * * *", "59 23 * * *"]
 [vars]
 APP_ENV = "production"
 BOOTSTRAP_ADMIN_EMAIL = "mateus099803@unieuro.com.br"
+GITHUB_OWNER = "mateus099803"

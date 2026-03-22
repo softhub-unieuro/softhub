@@ -82,20 +82,32 @@ export default function TelaLogin() {
 
     // ─── Processador de Autenticação Backend ──────────────────────────────────
     const realizarAutenticacaoNoBackend = async (conta: any) => {
-        const config = configRef.current; // Usa a ref para não depender do estado no callback
-        if (travaAuthGlobal || !config) return;
-        travaAuthGlobal = true;
+        if (travaAuthGlobal) return;
+        
+        let config = configRef.current;
+        
+        // Se a config ainda não carregou (race condition), aguardamos até 2 segundos
+        if (!config) {
+            let tentativas = 0;
+            while (!config && tentativas < 20) {
+                await new Promise(r => setTimeout(r, 100));
+                config = configRef.current;
+                tentativas++;
+            }
+        }
 
+        // Se mesmo assim não houver config, usamos fallback de segurança para não travar o login
         const email = (conta.username || '').toLowerCase();
-        const dominiosValidos = config.dominios_autorizados || ['unieuro.com.br'];
+        const dominiosValidos = config?.dominios_autorizados || ['unieuro.com.br', 'unieuro.edu.br'];
         
         if (!dominiosValidos.some((d: string) => email.endsWith(`@${d.toLowerCase()}`))) {
             logger.aviso('Login', `Domínio não autorizado: ${email}`);
             setErroLocal(`Use o e-mail institucional (${dominiosValidos.map((d: string) => `@${d}`).join(' ou ')}).`);
             setCarregando(false);
-            travaAuthGlobal = false;
             return;
         }
+
+        travaAuthGlobal = true; // Só travamos AGORA que vamos realmente chamar o backend
 
         try {
             setCarregando(true);
@@ -108,7 +120,6 @@ export default function TelaLogin() {
                 accessToken: tokenResponse.accessToken,
                 idToken: tokenResponse.idToken
             });
-
 
             entrar(response.data.usuario, response.data.token);
             navigate('/app/dashboard', { replace: true });
@@ -128,7 +139,7 @@ export default function TelaLogin() {
     useEffect(() => {
         let montado = true;
 
-        // 1. Tenta capturar resultado de redirect pendente - APENAS UMA VEZ
+        // 1. Captura o resultado do redirect (Fluxo Principal)
         instance.handleRedirectPromise().then((response) => {
             if (montado && response?.account) {
                 realizarAutenticacaoNoBackend(response.account);
@@ -137,9 +148,10 @@ export default function TelaLogin() {
             if (montado) console.error('[Login] MSAL Error:', err);
         });
 
-        // 2. Escuta eventos de sucesso do MSAL
+        // 2. Escuta eventos adicionais (Fallback caso o promise perca o contexto)
         const callbackId = instance.addEventCallback((event: any) => {
-            if (montado && event.eventType === 'msal:loginSuccess' && event.payload?.account) {
+            const isSuccess = event.eventType === 'msal:loginSuccess' || event.eventType === 'msal:handleRedirectEnd';
+            if (montado && isSuccess && event.payload?.account && !travaAuthGlobal) {
                 realizarAutenticacaoNoBackend(event.payload.account);
             }
         });
@@ -148,7 +160,7 @@ export default function TelaLogin() {
             montado = false;
             if (callbackId) instance.removeEventCallback(callbackId);
         };
-    }, [instance]); // Removeu configPublica, entrar e navigate das dependências
+    }, [instance]);
 
     const handleLogin = async () => {
         setCarregando(true);

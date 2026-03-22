@@ -16,8 +16,8 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
         return c.json({ erro: 'Autenticação necessária.' }, 401);
     }
 
+    let todosOsProjetos: any[] = [];
     try {
-        // 1. Buscar TODOS os projetos que o usuário participa (via equipe)
         const sqlProjetos = `
             SELECT DISTINCT p.id, p.nome 
             FROM projetos p
@@ -35,46 +35,41 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
 
             ORDER BY nome ASC
         `;
+        const res = await DB.prepare(sqlProjetos).bind(usuarioLogado.id, usuarioLogado.id).all();
+        todosOsProjetos = res.results || [];
+    } catch (e: any) {
+        log('error', '[DASHBOARD] Falha ao buscar projetos', { erro: e.message });
+        return c.json({ erro: 'Erro ao carregar seus projetos.', detalhe: e.message }, 500);
+    }
 
-        log('debug', '[DASHBOARD] Buscando projetos do usuário', { usuarioId: usuarioLogado.id });
-        const { results: todosOsProjetos } = await DB.prepare(sqlProjetos).bind(usuarioLogado.id, usuarioLogado.id).all();
+    const listaProjetos = todosOsProjetos as { id: string, nome: string }[];
+    let projetosIdsFiltro: string[] = [];
 
-        const listaProjetos = todosOsProjetos as { id: string, nome: string }[];
+    if (projetoId && projetoId !== 'global') {
+        projetosIdsFiltro = [projetoId as string];
+    } else {
+        projetosIdsFiltro = listaProjetos.map(p => p.id);
+    }
 
-        // 2. Definir quais projetos filtrar para as métricas atuais
-        let projetosIdsFiltro: string[] = [];
+    if (projetosIdsFiltro.length === 0) {
+        return c.json({
+            metricas: { totalTarefas: 0, tarefasConcluidas: 0, tarefasAtrasadas: 0, horasRegistradasHoje: 0, progressoGeral: 0 },
+            avisos: [],
+            minhasTarefas: [],
+            projetosAtivos: []
+        });
+    }
 
-        if (projetoId && projetoId !== 'global') {
-            projetosIdsFiltro = [projetoId];
-        } else {
-            // Dashboard Global: Usa todos os projetos da lista
-            projetosIdsFiltro = listaProjetos.map(p => p.id);
-        }
-
-        if (projetosIdsFiltro.length === 0) {
-            log('info', '[DASHBOARD] Usuário sem projetos ativos', { usuarioId: usuarioLogado.id });
-            return c.json({
-                metricas: { totalTarefas: 0, tarefasConcluidas: 0, tarefasAtrasadas: 0, horasRegistradasHoje: 0, progressoGeral: 0 },
-                avisos: [],
-                minhasTarefas: [],
-                projetosAtivos: []
-            });
-        }
-
-        const cacheKey = `dashboard_metrics_${projetoId || 'global'}_${usuarioLogado.id}`;
+    const cacheKey = `dashboard_metrics_${projetoId || 'global'}_${usuarioLogado.id}`;
+    try {
         const cached = await softhub_kv?.get(cacheKey);
-        if (cached) {
-            try {
-                return c.json(JSON.parse(cached));
-            } catch (e: any) {
-                log('warn', '[DASHBOARD] Cache KV inválido', { erro: e.message, chave: cacheKey });
-            }
-        }
+        if (cached) return c.json(JSON.parse(cached));
+    } catch (e) {}
 
-        const placeholders = projetosIdsFiltro.map(() => '?').join(',');
-        
-        // Métricas Consolidadas (FILTRADAS PELO USUÁRIO)
-        log('debug', '[DASHBOARD] Carregando métricas', { projetos: projetosIdsFiltro });
+    const placeholders = projetosIdsFiltro.map(() => '?').join(',');
+    
+    try {
+        // Métricas
         const countQuery = await DB.prepare(`
             SELECT
                 COUNT(*) as total,
@@ -85,7 +80,7 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
             WHERE t.projeto_id IN (${placeholders}) AND tr.usuario_id = ?
         `).bind(...projetosIdsFiltro, usuarioLogado.id).first() as any;
 
-        const horasHoje = await DB.prepare(`
+        const horasHojeRaw = await DB.prepare(`
             SELECT COUNT(*) as batidas FROM ponto_registros 
             WHERE usuario_id = ? AND date(registrado_em, '-3 hours') = date('now', '-3 hours')
         `).bind(usuarioLogado.id).first() as any;
@@ -97,12 +92,11 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
             totalTarefas: total,
             tarefasConcluidas: concluidas,
             tarefasAtrasadas: Number(countQuery?.atrasadas || 0),
-            horasRegistradasHoje: (Number(horasHoje?.batidas || 0)) * 4,
+            horasRegistradasHoje: (Number(horasHojeRaw?.batidas || 0)) * 4,
             progressoGeral: total > 0 ? Math.round((concluidas / total) * 100) : 0
         };
 
-        // Avisos (Global — sem cache, sempre frescos)
-        log('debug', '[DASHBOARD] Carregando avisos');
+        // Avisos
         const { results: avisos } = await DB.prepare(`
             SELECT a.id, a.titulo, a.conteudo, a.prioridade, a.criado_em, 
                    u.nome as autor_nome, u.foto_perfil as autor_foto
@@ -116,8 +110,7 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
             LIMIT 5
         `).all();
 
-        // Minhas Tarefas (de todos os projetos monitorados)
-        log('debug', '[DASHBOARD] Carregando minhas tarefas');
+        // Tarefas
         const { results: minhasTarefas } = await DB.prepare(`
             SELECT t.id, t.titulo, t.status, t.prioridade, p.nome as projeto_nome
             FROM tarefas t
@@ -134,29 +127,15 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
                 criado_por: { nome: a.autor_nome, foto: a.autor_foto }
             })), 
             minhasTarefas: minhasTarefas || [],
-            projetosAtivos: listaProjetos // Agora retorna [{id, nome}]
+            projetosAtivos: listaProjetos
         };
 
-        if (softhub_kv) {
-            await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 30 }); // 30s — quase instantâneo
-        }
+        if (softhub_kv) await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 30 });
         return c.json(resposta);
 
     } catch (erro: any) {
-        log('error', '[DASHBOARD] Falha ao buscar dashboard consolidado', { 
-            erro: erro.message, 
-            stack: erro.stack,
-            projetoId,
-            usuarioId: usuarioLogado?.id,
-            timestamp: new Date().toISOString()
-        });
-
-        // Tenta retornar um estado mínimo antes de explodir com 500
-        return c.json({ 
-            erro: 'Falha ao buscar dashboard consolidado',
-            detalhe: erro.message,
-            acao: 'Verifique se as tabelas e colunas do banco D1 estão sincronizadas com o schema.sql'
-        }, 500);
+        log('error', '[DASHBOARD] Falha no processamento de dados', { erro: erro.message, stack: erro.stack });
+        return c.json({ erro: 'Erro ao processar dados do dashboard.', detalhe: erro.message }, 500);
     }
 });
 
