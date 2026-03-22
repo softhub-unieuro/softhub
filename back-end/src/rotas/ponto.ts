@@ -111,9 +111,25 @@ rotasPonto.get('/historico', autenticacaoRequerida(), async (c: Context) => {
     const usuario = c.get('usuario');
     try {
         const { results } = await repo.buscarHistoricoPonto(c.env.DB, usuario.id);
-        return c.json({ historico: results });
+        return c.json({ historico: results || [] });
     } catch (e: any) {
         return c.json({ erro: 'Falha ao buscar histórico', detalhe: e.message }, 500);
+    }
+});
+
+/**
+ * Retorna o histórico de ponto de um usuário específico para auditoria.
+ * Requer permissão 'relatorios:visualizar' ou superior.
+ */
+rotasPonto.get('/:usuarioId/historico', autenticacaoRequerida(), verificarPermissao('relatorios:visualizar'), async (c: Context) => {
+    const usuarioId = c.req.param('usuarioId');
+    if (!usuarioId) return c.json({ erro: 'ID do usuário é obrigatório.' }, 400);
+    
+    try {
+        const { results } = await repo.buscarHistoricoPonto(c.env.DB, usuarioId, 100);
+        return c.json({ historico: results || [] });
+    } catch (e: any) {
+        return c.json({ erro: 'Falha ao buscar histórico do membro', detalhe: e.message }, 500);
     }
 });
 

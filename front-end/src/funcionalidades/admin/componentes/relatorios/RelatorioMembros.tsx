@@ -1,17 +1,29 @@
-import { memo } from 'react';
+import { memo, useState, useCallback } from 'react';
 import { formatarDataHora } from '@/utilitarios/formatadores';
+import { ModalHistoricoMembro } from './ModalHistoricoMembro';
 
 interface RelatorioMembrosProps {
     membrosFiltrados: any[];
 }
 
 export const RelatorioMembros = memo(({ membrosFiltrados }: RelatorioMembrosProps) => {
+    const [membroSelecionado, setMembroSelecionado] = useState<{ id: string, nome: string, email: string } | null>(null);
+    const [modalAberto, setModalAberto] = useState(false);
+
+    const handleVerHistorico = useCallback((membro: any) => {
+        setMembroSelecionado({ id: membro.id, nome: membro.nome, email: membro.email });
+        setModalAberto(true);
+    }, []);
+
     return (
         <div className="bg-white border border-slate-100 rounded-[3rem] overflow-hidden shadow-sm">
-            <div className="p-10 border-b border-slate-50 bg-slate-50/10">
-                <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase">Histórico Técnico de Assiduidade</h3>
-                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Conferência individual detalhada de cada membro ativo.</p>
+            <div className="p-10 border-b border-slate-50 bg-slate-50/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                    <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase leading-none">Auditoria de Assiduidade Individual</h3>
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Selecione um membro para visualizar o histórico de registros imutáveis.</p>
+                </div>
             </div>
+
             <div className="overflow-x-auto">
                 <table className="w-full text-left">
                     <thead>
@@ -24,14 +36,18 @@ export const RelatorioMembros = memo(({ membrosFiltrados }: RelatorioMembrosProp
                     </thead>
                     <tbody className="divide-y divide-slate-50 text-nowrap">
                         {membrosFiltrados.map((m: any) => (
-                            <tr key={m.id} className="hover:bg-slate-50/50 transition-all group">
+                            <tr 
+                                key={m.id} 
+                                onClick={() => handleVerHistorico(m)}
+                                className="hover:bg-indigo-50/30 transition-all group cursor-pointer"
+                            >
                                 <td className="px-10 py-8">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-[1.2rem] bg-slate-100 flex items-center justify-center font-black text-slate-400 text-lg group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                                        <div className="w-12 h-12 rounded-[1.2rem] bg-slate-100 flex items-center justify-center font-black text-slate-400 text-lg group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
                                             {m.nome.charAt(0)}
                                         </div>
                                         <div>
-                                            <p className="text-sm font-black text-slate-800 uppercase leading-none mb-1">{m.nome}</p>
+                                            <p className="text-sm font-black text-slate-800 uppercase leading-none mb-1 group-hover:text-indigo-600 transition-colors">{m.nome}</p>
                                             <p className="text-[10px] text-slate-400 font-bold">{m.email}</p>
                                         </div>
                                     </div>
@@ -43,7 +59,7 @@ export const RelatorioMembros = memo(({ membrosFiltrados }: RelatorioMembrosProp
                                     </div>
                                 </td>
                                 <td className="px-10 py-8 text-center">
-                                    <span className="text-2xl font-black text-slate-900 leading-none">{m.dias_presentes}</span>
+                                    <span className="text-2xl font-black text-slate-900 leading-none group-hover:scale-110 transition-transform inline-block">{m.dias_presentes}</span>
                                 </td>
                                 <td className="px-10 py-8 text-right">
                                     <p className="text-[11px] font-black text-slate-600">
@@ -56,6 +72,12 @@ export const RelatorioMembros = memo(({ membrosFiltrados }: RelatorioMembrosProp
                     </tbody>
                 </table>
             </div>
+
+            <ModalHistoricoMembro
+                aberto={modalAberto}
+                aoFechar={() => setModalAberto(false)}
+                membro={membroSelecionado}
+            />
         </div>
     );
 });
