@@ -29,10 +29,15 @@ rotasNotificacoes.get('/', autenticacaoRequerida(), async (c: Context) => {
         `).bind(usuarioLogado.id).all();
 
         // 3. Atualiza KV com base no resultado real
-        if (results.length === 0) {
-            await softhub_kv?.put(cacheKey, 'false', { expirationTtl: 86400 });
-        } else {
-            await softhub_kv?.put(cacheKey, 'true', { expirationTtl: 86400 });
+        // 3. Atualiza cache com tratativa de quota (Graceful failure)
+        try {
+            if (results.length === 0) { // If no notifications
+                await softhub_kv?.put(cacheKey, 'false', { expirationTtl: 86400 });
+            } else { // If there are notifications
+                await softhub_kv?.put(cacheKey, 'true', { expirationTtl: 86400 });
+            }
+        } catch (kvError: any) {
+            log('warn', '[NOTIF-KV] Falha ao atualizar flag de cache', { erro: kvError.message });
         }
 
         return c.json({ notificacoes: results });
@@ -60,7 +65,11 @@ rotasNotificacoes.patch('/:id/lida', autenticacaoRequerida(), async (c: Context)
             .bind(usuarioLogado.id)
             .first();
         
-        await softhub_kv?.put(`tem_notificacao:${usuarioLogado.id}`, restantes ? 'true' : 'false', { expirationTtl: 86400 });
+        try {
+            await softhub_kv?.put(`tem_notificacao:${usuarioLogado.id}`, restantes ? 'true' : 'false', { expirationTtl: 86400 });
+        } catch (kvError: any) {
+            log('warn', '[NOTIF-KV] Falha ao atualizar flag pos-leitura', { erro: kvError.message });
+        }
 
         return c.json({ sucesso: true });
     } catch (erro: any) {
@@ -82,7 +91,11 @@ rotasNotificacoes.delete('/limpar-todas', autenticacaoRequerida(), async (c: Con
             .run();
 
         // 🚀 Zera flag no KV
-        await softhub_kv?.put(`tem_notificacao:${usuarioLogado.id}`, 'false', { expirationTtl: 86400 });
+        try {
+            await softhub_kv?.put(`tem_notificacao:${usuarioLogado.id}`, 'false', { expirationTtl: 86400 });
+        } catch (kvError: any) {
+            log('warn', '[NOTIF-KV] Falha ao resetar flags de notificacao', { erro: kvError.message });
+        }
 
         return c.json({ sucesso: true });
     } catch (erro: any) {

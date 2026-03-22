@@ -75,9 +75,13 @@ rotasConfiguracoes.get('/publico', async (c: Context) => {
             });
         }
 
-        // 2. Salva no KV por 1 hora
+        // 2. Salva no KV por 1 hora (Graceful failure se exceder cota)
         if (softhub_kv) {
-            await softhub_kv.put(CHAVE_CACHE, JSON.stringify(config), { expirationTtl: 3600 });
+            try {
+                await softhub_kv.put(CHAVE_CACHE, JSON.stringify(config), { expirationTtl: 3600 });
+            } catch (kvError: any) {
+                log('warn', '[KV] Falha ao salvar configurações públicas (quota?)', { erro: kvError.message });
+            }
         }
 
         return c.json(config);
@@ -116,7 +120,11 @@ rotasConfiguracoes.post('/', autenticacaoRequerida(), verificarPermissao('config
         
         // Invalida o cache público global
         if (softhub_kv) {
-            await softhub_kv.delete('configs_publicas');
+            try {
+                await softhub_kv.delete('configs_publicas');
+            } catch (kvError: any) {
+                log('warn', '[KV] Falha ao invalidar cache global', { erro: kvError.message });
+            }
         }
         
         return c.json({ sucesso: true, mensagem: 'Configurações salvas com sucesso (Cache validado).' });
@@ -177,7 +185,11 @@ rotasConfiguracoes.patch('/:chave', autenticacaoRequerida(), verificarPermissao(
         
         // Invalida o cache público global
         if (softhub_kv) {
-            await softhub_kv.delete('configs_publicas');
+            try {
+                await softhub_kv.delete('configs_publicas');
+            } catch (kvError: any) {
+                log('warn', '[KV] Falha ao invalidar cache global no patch', { erro: kvError.message });
+            }
         }
         
         return c.json({ sucesso: true, mensagem: `Configuração ${chave} atualizada no banco e KV.` });
@@ -236,7 +248,11 @@ rotasConfiguracoes.patch('/roles/:antigo/renomear', autenticacaoRequerida('ADMIN
         });
 
         if (softhub_kv) {
-            await softhub_kv.delete('configs_publicas');
+            try {
+                await softhub_kv.delete('configs_publicas');
+            } catch (kvError: any) {
+                log('warn', '[KV] Falha ao invalidar cache global no renomear', { erro: kvError.message });
+            }
         }
         
         return c.json({ sucesso: true, mensagem: `Cargo renomeado de '${antigo}' para '${novo}' com sucesso.` });

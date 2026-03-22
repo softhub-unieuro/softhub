@@ -143,7 +143,13 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
             projetosAtivos: listaProjetos
         };
 
-        if (softhub_kv && cacheKey) await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 30 });
+        if (softhub_kv && cacheKey) {
+            try {
+                await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 30 });
+            } catch (e: any) {
+                log('warn', '[DASHBOARD-KV] Falha ao salvar cache', { erro: e.message });
+            }
+        }
         return c.json(resposta);
 
     } catch (erro: any) {

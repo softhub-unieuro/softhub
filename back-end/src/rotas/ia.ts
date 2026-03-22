@@ -34,8 +34,13 @@ rotasIA.use('*', async (c, next) => {
     await next();
 
     // Se a requisição foi bem sucedida (status 2xx), incrementa o uso
-    if (c.res.status >= 200 && c.res.status < 300) {
-        await softhub_kv?.put(chaveCota, String(usos + 1), { expirationTtl: 86400 });
+    if (c.res.status >= 200 && c.res.status < 300 && softhub_kv) {
+        try {
+            await softhub_kv.put(chaveCota, String(usos + 1), { expirationTtl: 86400 });
+        } catch (kvError: any) {
+            // Se exceder a cota de KV, apenas logamos e deixamos o usuário usar (prioriza UX)
+            // log('warn', '[IA-KV] Falha ao atualizar cota', { erro: kvError.message });
+        }
     }
 });
 

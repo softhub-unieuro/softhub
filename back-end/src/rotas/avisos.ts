@@ -44,7 +44,7 @@ rotasAvisos.get('/', autenticacaoRequerida(), verificarPermissao('avisos:visuali
         log('warn', '[AVISOS] Falha ao acessar Cache API (esperado em dev)', { erro: (e as any).message });
     }
 
-    const { DB } = c.env;
+    const { DB, softhub_kv } = c.env;
 
     try {
         // 1. Contagem total
@@ -84,6 +84,16 @@ rotasAvisos.get('/', autenticacaoRequerida(), verificarPermissao('avisos:visuali
         const respostaPaginada = formatarRespostaPaginada(formatado, total, pag);
         const resposta = c.json(respostaPaginada);
         
+        // 3. Salva no KV por 1 hora se houver resultados (Graceful failure) (PERF-003)
+        if (softhub_kv && results.length > 0) {
+            try {
+                // Usando a mesma chave de cache para consistência, mas armazenando a resposta paginada
+                await softhub_kv.put(cacheKey, JSON.stringify(respostaPaginada), { expirationTtl: 3600 });
+            } catch (kvError: any) {
+                log('warn', '[AVISOS-KV] Falha ao salvar cache (quota?)', { erro: kvError.message });
+            }
+        }
+
         // Tentativa de salvar no cache se disponível
         try {
             if (cache) {

@@ -5,6 +5,7 @@ import { Env } from '../index';
 import { autenticacaoRequerida, verificarPermissao, verificarPermissaoManual } from '../middleware/auth';
 import * as servico from '../servicos/servico-projetos';
 import * as repo from '../repositorios/repo-projetos';
+import { log } from '../utilitarios/logger';
 
 const rotasProjetos = new Hono<{ Bindings: Env; Variables: { usuario: any } }>({ strict: false });
 
@@ -56,7 +57,13 @@ rotasProjetos.get('/publicos', async (c) => {
             ORDER BY criado_em DESC
         `).all();
 
-        await softhub_kv?.put(cacheKey, JSON.stringify(results), { expirationTtl: 86400 }); // 24h (invalidado na escrita)
+        if (softhub_kv) {
+            try {
+                await softhub_kv.put(cacheKey, JSON.stringify(results), { expirationTtl: 86400 }); // 24h
+            } catch (kvError: any) {
+                log('warn', '[PROJETOS-KV] Falha ao salvar portfolio no cache', { erro: kvError.message });
+            }
+        }
 
         return c.json(results);
     } catch (e: any) {

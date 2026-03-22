@@ -34,7 +34,13 @@ export async function obterAcessoEquipeNoProjeto(DB: any, projetoId: string, usu
  * Útil para aplicar alterações de role ou permissão instantaneamente.
  */
 export async function invalidarSessaoCache(kv: any, usuarioId: string): Promise<void> {
-    if (kv) await kv.delete(`sessao:${usuarioId}`);
+    if (kv) {
+        try {
+            await kv.delete(`sessao:${usuarioId}`);
+        } catch (e: any) {
+            // Falha silenciosa no cache
+        }
+    }
 }
 
 /**
@@ -56,8 +62,12 @@ export async function prenderTrava(kv: any, entidadeTipo: string, entidadeId: st
         return false;
     }
 
-    // Cria ou renova a trava
-    await kv.put(chave, usuarioId, { expirationTtl: ttl });
+    // Cria ou renova a trava (Graceful failure: se KV falhar, permite a edicao)
+    try {
+        await kv.put(chave, usuarioId, { expirationTtl: ttl });
+    } catch (e: any) {
+        return true; 
+    }
     return true;
 }
 
@@ -69,6 +79,10 @@ export async function soltarTrava(kv: any, entidadeTipo: string, entidadeId: str
     const chave = `trava:${entidadeTipo}:${entidadeId}`;
     const atual = await kv.get(chave);
     if (atual === usuarioId) {
-        await kv.delete(chave);
+        try {
+            await kv.delete(chave);
+        } catch (e: any) {
+            // Falha silenciosa
+        }
     }
 }

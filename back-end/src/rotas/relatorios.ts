@@ -42,7 +42,13 @@ rotasRelatorios.get('/equipes', autenticacaoRequerida(), verificarPermissao('rel
             equipes: equipesResumo.results
         };
 
-        await softhub_kv?.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 900 }); // 15 min
+        if (softhub_kv) {
+            try {
+                await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 900 }); // 15 min
+            } catch (kvError: any) {
+                log('warn', '[RELATORIO-KV] Falha ao salvar cache (quota?)', { erro: kvError.message });
+            }
+        }
 
         return c.json(resposta);
     } catch (erro: any) {
@@ -132,8 +138,8 @@ rotasRelatorios.get('/frequencia/geral', autenticacaoRequerida(), verificarPermi
         if (softhub_kv) {
             try {
                 await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 900 });
-            } catch (e: any) {
-                log('warn', '[RELATORIOS] Falha no cache KV', { erro: e.message, cacheKey });
+            } catch (kvError: any) {
+                log('warn', '[RELATORIO-KV] Falha ao salvar cache consolidado', { erro: kvError.message });
             }
         }
 
@@ -187,8 +193,8 @@ rotasRelatorios.get('/frequencia/membros', autenticacaoRequerida(), verificarPer
         if (softhub_kv) {
             try {
                 await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 900 });
-            } catch (e: any) {
-                log('warn', '[RELATORIOS] Falha no cache KV', { erro: e.message, cacheKey });
+            } catch (kvError: any) {
+                log('warn', '[RELATORIO-KV] Falha ao salvar cache dashboard', { erro: kvError.message });
             }
         }
 

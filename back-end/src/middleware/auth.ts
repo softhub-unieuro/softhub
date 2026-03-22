@@ -116,7 +116,13 @@ export function autenticacaoRequerida(roleMinima?: string) {
         if (!resUsuario) {
             resUsuario = await c.env.DB.prepare('SELECT id, nome, email, role, versao_token FROM usuarios WHERE id = ?').bind(payload.id).first<any>();
             if (!resUsuario) return c.json({ erro: 'Perfil não encontrado.' }, 401);
-            if (c.env.softhub_kv) await c.env.softhub_kv.put(chaveCache, JSON.stringify(resUsuario), { expirationTtl: 3600 });
+            if (c.env.softhub_kv) {
+                try {
+                    await c.env.softhub_kv.put(chaveCache, JSON.stringify(resUsuario), { expirationTtl: 3600 });
+                } catch (kvError) {
+                    log('warn', '[AUTH-KV] Falha ao salvar sessao no cache (quota?)', { erro: (kvError as any).message });
+                }
+            }
         }
 
         // Validação de Logout Remoto (Versão do Token)

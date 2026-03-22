@@ -41,7 +41,13 @@ rotasAuth.post('/msal', kvRateLimit({ windowMs: 60 * 1000, limit: 5, keyPrefix: 
                     const row = await DB.prepare('SELECT valor FROM configuracoes_sistema WHERE chave = ?').bind(k).first() as any;
                     if (row && typeof row.valor === 'string') {
                         v = row.valor;
-                        if (softhub_kv) await softhub_kv.put(k, v!, { expirationTtl: 3600 });
+                        if (softhub_kv) {
+                            try {
+                                await softhub_kv.put(k, v!, { expirationTtl: 3600 });
+                            } catch (e: any) {
+                                log('warn', '[AUTH-KV] Falha ao salvar config no cache', { chave: k, erro: e.message });
+                            }
+                        }
                     }
                 }
                 
@@ -197,9 +203,13 @@ rotasAuth.post('/logout', async (c) => {
             const timeLeft = (payload.exp * 1000) - Date.now();
             if (timeLeft > 0) {
                 // Adiciona JTI na blacklist até o token expirar naturalmente
-                await softhub_kv.put(`revoked:${payload.jti}`, '1', {
-                    expirationTtl: Math.ceil(timeLeft / 1000)
-                });
+                try {
+                    await softhub_kv.put(`revoked:${payload.jti}`, '1', {
+                        expirationTtl: Math.ceil(timeLeft / 1000)
+                    });
+                } catch (kvError: any) {
+                    log('warn', '[AUTH-KV] Falha ao revogar JTI no cache', { jti: payload.jti, erro: kvError.message });
+                }
             }
         }
         return c.json({ sucesso: true });
@@ -227,7 +237,13 @@ rotasAuth.post('/logout-all', async (c) => {
             .run();
 
         // Invalida cache de sessão
-        if (softhub_kv) await softhub_kv.delete(`sessao:${payload.id}`);
+        if (softhub_kv) {
+            try {
+                await softhub_kv.delete(`sessao:${payload.id}`);
+            } catch (kvError: any) {
+                log('warn', '[AUTH-KV] Falha ao invalidar sessao pos-logout-all', { usuarioId: payload.id, erro: kvError.message });
+            }
+        }
 
         await registrarLog(DB, {
             usuarioId: payload.id,
@@ -260,7 +276,13 @@ rotasAuth.get('/verificar-rede', async (c) => {
             const row = await DB.prepare('SELECT valor FROM configuracoes_sistema WHERE chave = "rede_ponto"').first() as any;
             if (row?.valor) {
                 redePonto = JSON.parse(row.valor);
-                if (softhub_kv) await softhub_kv.put('rede_ponto', row.valor, { expirationTtl: 3600 });
+                if (softhub_kv) {
+                    try {
+                        await softhub_kv.put('rede_ponto', row.valor, { expirationTtl: 3600 });
+                    } catch (kvError: any) {
+                        log('warn', '[AUTH-KV] Falha ao salvar rede_ponto no cache', { erro: kvError.message });
+                    }
+                }
             }
         }
 
