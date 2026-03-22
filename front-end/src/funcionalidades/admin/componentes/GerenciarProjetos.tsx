@@ -8,7 +8,6 @@ import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
 import { DocumentosProjetoModal } from '@/funcionalidades/projetos/componentes/DocumentosProjetoModal';
 import { githubStorage } from '@/funcionalidades/projetos/servicos/github-storage';
 import { FolderKanban, Plus } from 'lucide-react';
-import { formatarDataHora } from '@/utilitarios/formatadores';
 import { usarProjetos, Projeto } from '@/funcionalidades/projetos/hooks/usarProjetos';
 import { usarEquipes } from '@/funcionalidades/admin/hooks/usarEquipes';
 import { CardProjeto } from '@/funcionalidades/admin/componentes/projetos/CardProjeto';

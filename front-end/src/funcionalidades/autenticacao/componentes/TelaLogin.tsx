@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useMsal } from '@azure/msal-react';
 import { useSearchParams, useNavigate } from 'react-router';
-import { ambiente } from '../../../configuracoes/ambiente';
 import { api } from '../../../compartilhado/servicos/api';
 import { usarAutenticacao } from '../../../contexto/ContextoAutenticacao';
 import { loginRequest } from '../../../configuracoes/msal';
 import PainelQRCode from './PainelQRCode';
 import { usarDispositivo } from '../../../compartilhado/hooks/usarDispositivo';
-import { logger } from '@/utilitarios/gerenciador-logs';
+import { logger } from '../../../utilitarios/gerenciador-logs';
 import { LadoEsquerdoInstitucional } from './LadoEsquerdoInstitucional';
 import { SecaoLoginMicrosoft } from './SecaoLoginMicrosoft';
 

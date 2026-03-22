@@ -1,7 +1,6 @@
-import { ShieldAlert, Activity, FileText, FolderKanban, Clock, Users, Key, Settings } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 import { EstadoVazio } from '@/compartilhado/componentes/EstadoVazio';
 import { Paginacao } from '@/compartilhado/componentes/Paginacao';
-import { formatarDataHora } from '@/utilitarios/formatadores';
 import { usarLogs } from '@/funcionalidades/admin/hooks/usarLogs';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
 import { Emblema } from '@/compartilhado/componentes/Emblema';

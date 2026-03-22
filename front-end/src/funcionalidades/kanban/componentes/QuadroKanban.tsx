@@ -11,7 +11,7 @@ import {
     DragEndEvent
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { FolderKanban, Search, Plus, Layers, FileText } from 'lucide-react';
+import { FolderKanban, Plus, Layers, FileText } from 'lucide-react';
 import { useSearchParams } from 'react-router';
 
 import { usarKanban } from '@/funcionalidades/kanban/hooks/usarKanban';

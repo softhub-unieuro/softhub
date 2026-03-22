@@ -23,7 +23,7 @@
       ]
     },
     "noEmit": true,
-    "types": ["vitest/globals", "jsdom"]
+    "types": ["vitest/globals"]
   },
   "include": [
     "src"

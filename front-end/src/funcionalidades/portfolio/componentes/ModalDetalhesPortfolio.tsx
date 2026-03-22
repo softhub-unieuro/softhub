@@ -4,7 +4,7 @@ import { Carregando } from '@/compartilhado/componentes/Carregando';
 import { api } from '@/compartilhado/servicos/api';
 import { Github, Figma, BookText, Users, Code2, ExternalLink, Calendar, Info } from 'lucide-react';
 import { Avatar } from '@/compartilhado/componentes/Avatar';
-import { formatarDataHora } from '@/utilitarios/formatadores';
+
 import { GITHUB_USUARIO } from '@/utilitarios/constantes';
 
 interface MembroPortfolio {
