@@ -1,3 +1,5 @@
+import { log } from '../utilitarios/logger';
+
 /**
  * Serviço de IA - Utiliza Cloudflare Workers AI (10k neurônios/dia grátis)
  * Modelos recomendados: @cf/meta/llama-3.1-8b-instruct ou @cf/mistral/mistral-7b-instruct-v0.1
@@ -60,14 +62,14 @@ async function chamarIA(ai: any, prompt: string, sistema?: string): Promise<Resp
             try {
                 const match = conteudo.match(/\{[\s\S]*\}/);
                 if (match) json = JSON.parse(match[0]);
-            } catch (e) {
-                console.warn('[AI] Falha ao parsear JSON da resposta:', e);
+            } catch (e: any) {
+                log('warn', '[AI] Falha ao parsear JSON da resposta', { erro: e.message, conteudo });
             }
         }
 
         return { conteudo, json };
     } catch (error: any) {
-        console.error('[AI] Erro ao chamar Workers AI:', error.message);
+        log('error', '[AI] Erro ao chamar Workers AI', { erro: error.message, model });
         throw new Error('Falha na comunicação com a IA.');
     }
 }

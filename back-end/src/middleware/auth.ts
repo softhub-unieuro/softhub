@@ -1,6 +1,7 @@
 import { Context, Next } from 'hono';
 import { verify } from 'hono/jwt';
 import { Env } from '../index';
+import { log } from '../utilitarios/logger';
 
 /**
  * 🛠️ POLÍTICA DE SEGURANÇA PADRÃO (FALLBACK)
@@ -67,7 +68,7 @@ async function carregarHierarquia(c: Context<HonoEnv>): Promise<string[]> {
             await softhub_kv.put('hierarquia_roles', res.valor, { expirationTtl: 3600 });
             return h;
         }
-    } catch (e) { console.error('[AUTH] Erro ao carregar hierarquia:', e); }
+    } catch (e: any) { log('error', '[AUTH] Erro ao carregar hierarquia', { erro: e.message }); }
     return HIERARQUIA_PADRAO;
 }
 
@@ -83,7 +84,7 @@ async function carregarMatrizPermissoes(c: Context<HonoEnv>): Promise<Record<str
             await softhub_kv.put('permissoes_roles', res.valor, { expirationTtl: 3600 });
             return m;
         }
-    } catch (e) { console.error('[AUTH] Erro ao carregar matriz:', e); }
+    } catch (e: any) { log('error', '[AUTH] Erro ao carregar matriz', { erro: e.message }); }
     return PERMISSOES_PADRAO;
 }
 
@@ -166,7 +167,7 @@ export function autenticacaoRequerida(roleMinima?: string) {
             const idxReq = hierarquia.indexOf(roleMinima);
             
             if (idxUser === -1 || idxReq === -1 || idxUser < idxReq) {
-                console.warn(`[AUTH] Bloqueio Hierarquia: ${resUsuario.email} (${roleEfetiva}) < ${roleMinima}`);
+                log('warn', '[AUTH] Bloqueio Hierarquia', { email: resUsuario.email, roleEfetiva, roleMinima });
                 return c.json({ erro: 'Acesso restrito a cargos superiores.' }, 403);
             }
         }
@@ -246,7 +247,7 @@ export function verificarPermissao(permissaoRequerida: string | string[]) {
 
         if (temAcesso) return await next();
 
-        console.warn(`[AUTH] Bloqueio Permissão: ${usuario.email} (${usuario.role}) tentou '${permissaoRequerida}'`);
+        log('warn', '[AUTH] Bloqueio Permissão', { email: usuario.email, role: usuario.role, permissaoRequerida });
         return c.json({ erro: 'Você não tem permissão para realizar esta ação.' }, 403);
     };
 }

@@ -1,6 +1,7 @@
 import { Hono, Context } from 'hono';
 import { Env } from '../index';
 import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
+import { log } from '../utilitarios/logger';
 
 const rotasLogs = new Hono<{ Bindings: Env, Variables: { usuario: any } }>();
 
@@ -85,7 +86,7 @@ rotasLogs.get('/', autenticacaoRequerida(), async (c: Context) => {
         });
 
     } catch (erro: any) {
-        console.error('[ERRO LOGS]', erro);
+        log('error', '[LOGS] Falha ao buscar logs', { erro: erro.message, pagina });
         return c.json({ erro: 'Falha ao buscar logs', detalhe: erro.message }, 500);
     }
 });
@@ -108,7 +109,7 @@ rotasLogs.get('/estatisticas', autenticacaoRequerida(), verificarPermissao('logs
             modulos: results || [],
         });
     } catch (erro: any) {
-        console.error('[ERRO LOGS STATS]', erro);
+        log('error', '[LOGS-STATS] Falha ao processar estatísticas de auditoria', { erro: erro.message });
         return c.json({ erro: 'Falha ao processar estatísticas de auditoria.' }, 500);
     }
 });

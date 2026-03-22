@@ -3,6 +3,7 @@ import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
 import { Env } from '../index';
 import { salvarConfiguracao } from '../servicos/servico-configuracoes';
 import { registrarLog } from '../servicos/servico-logs';
+import { log } from '../utilitarios/logger';
 
 const rotasConfiguracoes = new Hono<{ Bindings: Env }>();
 
@@ -120,7 +121,7 @@ rotasConfiguracoes.post('/', autenticacaoRequerida(), verificarPermissao('config
         
         return c.json({ sucesso: true, mensagem: 'Configurações salvas com sucesso (Cache validado).' });
     } catch (e: any) {
-        console.error('[CONFIG] Erro no batch POST /:', e);
+        log('error', '[CONFIG] Erro no batch POST /', { erro: e.message });
         return c.json({ erro: 'Falha ao salvar configurações', detalhe: e.message }, 500);
     }
 });
@@ -155,7 +156,7 @@ rotasConfiguracoes.patch('/:chave', autenticacaoRequerida(), verificarPermissao(
                 }
             }
         } catch (e: any) {
-            console.error('[CONFIG] Erro ao validar trava de governança:', e);
+            log('error', '[CONFIG] Erro ao validar trava de governança', { erro: e.message });
             return c.json({ erro: 'Falha na validação de segurança.' }, 500);
         }
     }
@@ -181,7 +182,7 @@ rotasConfiguracoes.patch('/:chave', autenticacaoRequerida(), verificarPermissao(
         
         return c.json({ sucesso: true, mensagem: `Configuração ${chave} atualizada no banco e KV.` });
     } catch (e: any) {
-        console.error(`[CONFIG] Erro ao atualizar ${chave}:`, e);
+        log('error', '[CONFIG] Erro ao atualizar configuração', { erro: e.message, chave });
         return c.json({ erro: 'Falha ao atualizar configuração', detalhe: e.message }, 500);
     }
 });

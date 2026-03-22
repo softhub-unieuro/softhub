@@ -1,11 +1,12 @@
 import { criarNotificacoes } from './servico-notificacoes';
+import { log } from '../utilitarios/logger';
 
 /**
  * Serviço de Automação de Ponto Eletrônico.
  * Executado via Cron Triggers (Scheduled Events).
  */
 export async function processarFechamentoAutomatico(DB: any, KV: any) {
-    console.log('[AUTO-PONTO] Iniciando varredura de fechamento automático...');
+    log('info', '[AUTO-PONTO] Iniciando varredura de fechamento automático');
 
     try {
         // 1. Identificar todos os usuários que bateram ENTRADA mas não SAÍDA hoje
@@ -57,8 +58,8 @@ export async function processarFechamentoAutomatico(DB: any, KV: any) {
             if (KV) await KV.delete(`presenca:${p.usuario_id}`);
         }
 
-    } catch (error) {
-        console.error('[AUTO-PONTO] Erro crítico no processamento:', error);
+    } catch (error: any) {
+        log('error', '[AUTO-PONTO] Erro crítico no processamento', { erro: error.message });
     }
 }
 
@@ -96,7 +97,7 @@ export async function enviarLembreteSaida(DB: any, KV: any) {
                 }, KV);
             }
         }
-    } catch (e) {
-        console.error('[AUTO-PONTO] Erro ao enviar lembretes:', e);
+    } catch (e: any) {
+        log('error', '[AUTO-PONTO] Erro ao enviar lembretes', { erro: e.message });
     }
 }

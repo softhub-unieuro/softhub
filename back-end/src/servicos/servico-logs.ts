@@ -1,4 +1,5 @@
 import { D1Database } from '@cloudflare/workers-types';
+import { log } from '../utilitarios/logger';
 
 /**
  * Interface para os dados de log de auditoria.
@@ -24,7 +25,7 @@ export async function registrarLog(db: D1Database, dados: LogAuditoria) {
     const timestamp = new Date().toISOString();
 
     // Log no console para depuração em tempo real (wrangler tail)
-    console.log(`[AUDITORIA] ${timestamp} | ${dados.modulo.toUpperCase()} | ${dados.acao}: ${dados.descricao}`);
+    log('info', `[AUDITORIA] ${dados.modulo.toUpperCase()} | ${dados.acao}`, { descricao: dados.descricao });
 
     try {
         await db.prepare(`
@@ -46,8 +47,8 @@ export async function registrarLog(db: D1Database, dados: LogAuditoria) {
             dados.dadosNovos ? JSON.stringify(dados.dadosNovos) : null,
             timestamp
         ).run();
-    } catch (erro) {
+    } catch (erro: any) {
         // Falha no log nunca deve travar o sistema (Regra de Resiliência)
-        console.error('[FALHA CRÍTICA AUDITORIA] Erro ao gravar no D1:', erro);
+        log('error', '[FALHA CRÍTICA AUDITORIA] Erro ao gravar no D1', { erro: erro.message });
     }
 }

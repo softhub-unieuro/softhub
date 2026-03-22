@@ -1,6 +1,7 @@
 import { Hono, Context } from 'hono';
 import { Env } from '../index';
 import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
+import { log } from '../utilitarios/logger';
 import { registrarLog } from '../servicos/servico-logs';
 import { criarNotificacoes } from '../servicos/servico-notificacoes';
 import { z } from 'zod';
@@ -24,8 +25,8 @@ rotasTarefasDetalhes.get('/:id/comentarios', autenticacaoRequerida(), verificarP
         `;
         const { results } = await DB.prepare(query).bind(tarefaId).all();
         return c.json(results);
-    } catch (erro) {
-        console.error('[ERRO DB] GET /tarefas/:id/comentarios', erro);
+    } catch (erro: any) {
+        log('error', '[TAREFAS-DET] Falha ao buscar comentários', { erro: erro.message, tarefaId });
         return c.json({ erro: 'Falha ao buscar comentários' }, 500);
     }
 });
@@ -83,8 +84,8 @@ rotasTarefasDetalhes.post('/:id/comentarios', autenticacaoRequerida(), verificar
         });
 
         return c.json({ sucesso: true, id: idComentario });
-    } catch (erro) {
-        console.error('[ERRO DB] POST /tarefas/:id/comentarios', erro);
+    } catch (erro: any) {
+        log('error', '[TAREFAS-DET] Falha ao adicionar comentário', { erro: erro.message, tarefaId });
         return c.json({ erro: 'Falha ao adicionar comentário' }, 500);
     }
 });
@@ -120,8 +121,8 @@ rotasTarefasDetalhes.patch('/comentarios/:id', autenticacaoRequerida(), verifica
         });
 
         return c.json({ sucesso: true });
-    } catch (erro) {
-        console.error('[ERRO DB] PATCH /tarefas/comentarios/:id', erro);
+    } catch (erro: any) {
+        log('error', '[TAREFAS-DET] Falha ao editar comentário', { erro: erro.message, comentarioId });
         return c.json({ erro: 'Falha ao editar comentário' }, 500);
     }
 });
@@ -149,8 +150,8 @@ rotasTarefasDetalhes.delete('/comentarios/:id', autenticacaoRequerida(), verific
         });
 
         return c.json({ sucesso: true });
-    } catch (erro) {
-        console.error('[ERRO DB] DELETE /tarefas/comentarios/:id', erro);
+    } catch (erro: any) {
+        log('error', '[TAREFAS-DET] Falha ao excluir comentário', { erro: erro.message, comentarioId });
         return c.json({ erro: 'Falha ao excluir comentário' }, 500);
     }
 });
@@ -200,8 +201,8 @@ rotasTarefasDetalhes.get('/:id/historico', autenticacaoRequerida(), verificarPer
         `;
         const { results } = await DB.prepare(query).bind(tarefaId, tarefaId).all();
         return c.json(results);
-    } catch (e) {
-        console.error('[HISTORICO]', e);
+    } catch (e: any) {
+        log('error', '[TAREFAS-DET] Falha ao buscar histórico unificado', { erro: e.message, tarefaId });
         return c.json({ erro: 'Falha ao buscar histórico unificado da tarefa' }, 500);
     }
 });
@@ -389,8 +390,8 @@ rotasTarefasDetalhes.patch('/:id/feedback',
         });
 
         return c.json({ sucesso: true });
-    } catch (e) {
-        console.error('[ERRO DB] PATCH /tarefas/:id/feedback', e);
+    } catch (e: any) {
+        log('error', '[TAREFAS-DET] Falha ao registrar feedback', { erro: e.message, tarefaId: id });
         return c.json({ erro: 'Falha ao registrar feedback' }, 500);
     }
 });

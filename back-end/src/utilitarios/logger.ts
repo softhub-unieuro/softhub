@@ -20,7 +20,6 @@ export function log(level: LogLevel, message: string, context?: Record<string, a
         timestamp: new Date().toISOString()
     };
 
-    // No Cloudflare Workers, console.log(JSON) é a melhor forma de ter logs estruturados
     console.log(JSON.stringify(entry));
 }
 

@@ -1,6 +1,7 @@
 import { Hono, Context } from 'hono';
 import { Env } from '../index';
 import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
+import { log } from '../utilitarios/logger';
 
 const rotasDashboard = new Hono<{ Bindings: Env, Variables: { usuario: any } }>();
 
@@ -56,8 +57,8 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
         if (cached) {
             try {
                 return c.json(JSON.parse(cached));
-            } catch (e) {
-                console.warn('[DASHBOARD] Cache KV inválido:', e);
+            } catch (e: any) {
+                log('warn', '[DASHBOARD] Cache KV inválido', { erro: e.message, chave: cacheKey });
             }
         }
 
@@ -126,8 +127,8 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
 
         await softhub_kv?.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 30 }); // 30s — quase instantâneo
         return c.json(resposta);
-    } catch (erro) {
-        console.error('[ERRO DB] GET /dashboard', erro);
+    } catch (erro: any) {
+        log('error', '[DASHBOARD] Falha ao buscar dashboard consolidado', { erro: erro.message, projetoId });
         return c.json({ erro: 'Falha ao buscar dashboard consolidado' }, 500);
     }
 });

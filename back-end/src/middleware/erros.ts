@@ -1,4 +1,5 @@
 import { Context } from 'hono';
+import { log } from '../utilitarios/logger';
 
 /**
  * Manipulador global de exceções.
@@ -7,7 +8,11 @@ import { Context } from 'hono';
  * @param c Contexto do Hono.
  */
 export async function lidarExcecao(erro: Error, c: Context) {
-    console.error(`[EXCEÇÃO GLOBAL] ${c.req.method} ${c.req.url} - `, erro);
+    log('error', '[EXCEÇÃO GLOBAL]', { 
+        erro: erro.message, 
+        metodo: c.req.method, 
+        url: c.req.url 
+    });
 
     // Regra: Nunca vazar stack trace!
     return c.json({

@@ -1,6 +1,7 @@
 import { Hono, Context } from 'hono';
 import { Env } from '../index';
 import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
+import { log } from '../utilitarios/logger';
 import { registrarLog } from '../servicos/servico-logs';
 import { criarNotificacoes, removerNotificacoesPorEntidade } from '../servicos/servico-notificacoes';
 import { sincronizarLiderancaUsuario } from '../servicos/servico-liderancas';
@@ -34,7 +35,7 @@ rotasEquipes.get('/equipes', autenticacaoRequerida(), verificarPermissao('equipe
 
         return c.json({ equipes: equipes.results ?? [] });
     } catch (erro: any) {
-        console.error('[ERRO] GET /api/equipes/equipes', erro);
+        log('error', '[EQUIPES] Falha ao listar equipes', { erro: erro.message });
         return c.json({ erro: 'Falha ao listar equipes.' }, 500);
     }
 });
@@ -78,7 +79,7 @@ rotasEquipes.post('/equipes', autenticacaoRequerida(), verificarPermissao('equip
 
         return c.json({ sucesso: true, id }, 201);
     } catch (erro: any) {
-        console.error('[ERRO] POST /api/equipes/equipes', erro);
+        log('error', '[EQUIPES] Falha ao criar equipe', { erro: erro.message, nome });
         return c.json({ erro: 'Falha ao criar equipe.' }, 500);
     }
 });
@@ -160,7 +161,7 @@ rotasEquipes.patch('/equipes/:id', autenticacaoRequerida(), verificarPermissao('
 
         return c.json({ sucesso: true });
     } catch (erro: any) {
-        console.error('[ERRO] PATCH /api/equipes/equipes/:id', erro);
+        log('error', '[EQUIPES] Falha ao editar equipe', { erro: erro.message, id });
         return c.json({ erro: 'Falha ao editar equipe.' }, 500);
     }
 });
@@ -197,7 +198,7 @@ rotasEquipes.delete('/equipes/:id', autenticacaoRequerida(), verificarPermissao(
 
         return c.json({ sucesso: true });
     } catch (erro: any) {
-        console.error('[ERRO] DELETE /api/equipes/equipes/:id', erro);
+        log('error', '[EQUIPES] Falha ao remover equipe', { erro: erro.message, id });
         return c.json({ erro: 'Falha ao remover equipe.' }, 500);
     }
 });

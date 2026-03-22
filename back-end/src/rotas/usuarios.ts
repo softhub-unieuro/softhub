@@ -1,6 +1,7 @@
 import { Hono, Context } from 'hono';
 import { Env } from '../index';
 import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
+import { log } from '../utilitarios/logger';
 
 const rotasUsuarios = new Hono<{ Bindings: Env; Variables: { usuario: any } }>({ strict: false });
 
@@ -50,7 +51,7 @@ rotasUsuarios.get('/', autenticacaoRequerida(), verificarPermissao('membros:gere
 
         return c.json({ membros: membrosComFlag });
     } catch (erro: any) {
-        console.error('[ERRO] GET /api/usuarios:', erro.message);
+        log('error', '[USUARIOS] Falha ao buscar membros', { erro: erro.message });
         return c.json({ erro: 'Falha ao buscar membros' }, 500);
     }
 });

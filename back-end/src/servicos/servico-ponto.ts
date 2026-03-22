@@ -2,6 +2,7 @@ import { D1Database, KVNamespace } from '@cloudflare/workers-types';
 import * as repo from '../repositorios/repo-ponto';
 import { obterConfiguracao } from './servico-configuracoes';
 import { registrarLog } from './servico-logs';
+import { log } from '../utilitarios/logger';
 
 /**
  * Valida o horário de batida do ponto conforme a jornada configurada.
@@ -95,8 +96,8 @@ export async function registrarPonto(env: { DB: D1Database, KV: KVNamespace | un
             } else {
                 await KV.delete(`presenca:${usuario.id}`);
             }
-        } catch (e) {
-            console.error('[KV ERROR] Falha ao atualizar presença:', e);
+        } catch (e: any) {
+            log('error', '[SERVICO-PONTO] Falha ao atualizar presença no KV', { erro: e.message, email: usuario.email });
         }
     }
 

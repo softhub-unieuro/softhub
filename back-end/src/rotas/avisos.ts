@@ -5,17 +5,33 @@ import { Env } from '../index';
 import { autenticacaoRequerida, verificarPermissao, verificarPermissaoManual } from '../middleware/auth';
 import { registrarLog } from '../servicos/servico-logs';
 import { criarNotificacoes, removerNotificacoesPorEntidade } from '../servicos/servico-notificacoes';
+import { log } from '../utilitarios/logger';
+
 const rotasAvisos = new Hono<{ Bindings: Env, Variables: { usuario: any } }>();
+
+/**
+ * Normaliza a chave de cache ignorando query params irrelevantes (PERF-002).
+ */
+function buildCacheKey(path: string, params: Record<string, string>, allowList: string[]): string {
+    const relevant = allowList
+        .filter(k => params[k] !== undefined)
+        .map(k => `${k}=${params[k]}`)
+        .sort()
+        .join('&');
+    return relevant ? `${path}?${relevant}` : path;
+}
 
 /**
  * Lista todos os avisos ativos (dentro do prazo de validade).
  * Utiliza cache nativo do Cloudflare para performance.
  */
 rotasAvisos.get('/', autenticacaoRequerida(), verificarPermissao('avisos:visualizar'), async (c: Context) => {
-    // Fase 1 - Cacheamento nativo
+    // Fase 1 - Cacheamento nativo com chave normalizada (PERF-002)
+    const params = Object.fromEntries(new URL(c.req.url).searchParams);
+    const cacheKey = buildCacheKey('/api/avisos', params, ['pagina', 'prioridade']);
+    
     const cache = await caches.open('avisos-cache');
-    const cacheKey = c.req.url;
-    const cachedRes = await cache.match(cacheKey);
+    const cachedRes = await cache.match(new URL(cacheKey, c.req.url).toString());
     if (cachedRes) return cachedRes;
 
     const { DB } = c.env;
@@ -52,8 +68,8 @@ rotasAvisos.get('/', autenticacaoRequerida(), verificarPermissao('avisos:visuali
         await cache.put(cacheKey, resposta.clone());
 
         return resposta;
-    } catch (erro) {
-        console.error('[ERRO DB] GET /avisos', erro);
+    } catch (erro: any) {
+        log('error', '[AVISOS] Falha ao buscar avisos', { erro: erro.message });
         return c.json({ erro: 'Falha ao buscar avisos' }, 500);
     }
 });

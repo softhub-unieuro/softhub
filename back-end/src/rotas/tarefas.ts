@@ -2,6 +2,7 @@ import { Hono, Context } from 'hono';
 import { Env } from '../index';
 import { autenticacaoRequerida, verificarPermissao, verificarPermissaoManual } from '../middleware/auth';
 import { obterAcessoEquipeNoProjeto } from '../servicos/servico-acesso';
+import { log } from '../utilitarios/logger';
 
 const rotasTarefas = new Hono<{ Bindings: Env, Variables: { usuario: any } }>({ strict: false });
 
@@ -97,7 +98,10 @@ rotasTarefas.get('/', autenticacaoRequerida(), verificarPermissao(['tarefas:visu
 
         return c.json(resposta);
     } catch (erro: any) {
-        console.error('[ERRO CRÍTICO] GET /api/tarefas:', erro.message || erro);
+        log('error', '[TAREFAS] Falha ao buscar tarefas', { 
+            erro: erro.message, 
+            projetoId 
+        });
         return c.json({ 
             erro: 'Falha ao buscar tarefas', 
             detalhe: erro.message,

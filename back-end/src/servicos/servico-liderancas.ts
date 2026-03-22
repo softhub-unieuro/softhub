@@ -1,5 +1,6 @@
 import { Env } from '../index';
 import { obterConfiguracao } from './servico-configuracoes';
+import { log } from '../utilitarios/logger';
 
 /**
  * Serviço responsável por sincronizar as roles (cargos) de acordo com a liderança das equipes.
@@ -55,11 +56,11 @@ export async function sincronizarLiderancaUsuario(env: Env, usuarioId: string) {
             // Invalida cache de sessão
             if (softhub_kv) await softhub_kv.delete(`sessao:${usuarioId}`);
             
-            console.log(`[Liderança] Sincronizado: Usuário ${usuarioId} alterado de ${roleAtual} para ${roleNova}`);
+            log('info', '[LIDERANCA] Sincronizado', { usuarioId, roleAtual, roleNova });
         }
 
-    } catch (e) {
-        console.error(`[Liderança] Falha ao sincronizar role do usuário ${usuarioId}:`, e);
+    } catch (e: any) {
+        log('error', '[LIDERANCA] Falha ao sincronizar role', { erro: e.message, usuarioId });
     }
 }
 
@@ -132,10 +133,10 @@ async function garantirExistenciaRole(env: Env, role: string) {
                 await softhub_kv.delete('hierarquia_roles');
                 await softhub_kv.delete('configs_publicas');
             }
-            console.log(`[Liderança] Auto-criado cargo: ${role} nas configurações.`);
+            log('info', '[LIDERANCA] Auto-criado cargo', { role });
         }
 
-    } catch (e) {
-        console.error(`[Liderança] Erro ao garantir existência da role ${role}:`, e);
+    } catch (e: any) {
+        log('error', '[LIDERANCA] Erro ao garantir existência da role', { erro: e.message, role });
     }
 }

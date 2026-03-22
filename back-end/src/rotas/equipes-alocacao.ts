@@ -2,6 +2,7 @@ import { Hono, Context } from 'hono';
 import { Env } from '../index';
 import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
 import { registrarLog } from '../servicos/servico-logs';
+import { log } from '../utilitarios/logger';
 import { criarNotificacoes } from '../servicos/servico-notificacoes';
 
 const rotasAlocacao = new Hono<{ Bindings: Env; Variables: { usuario: any } }>();
@@ -77,7 +78,7 @@ rotasAlocacao.patch('/membros/:id/alocar', autenticacaoRequerida(), verificarPer
 
         return c.json({ sucesso: true });
     } catch (erro: any) {
-        console.error('[ERRO] PATCH /api/equipes/membros/:id/alocar', erro);
+        log('error', '[EQUIPES-ALOC] Falha ao alocar membro', { erro: erro.message, membroId });
         return c.json({ erro: 'Falha ao alocar membro.' }, 500);
     }
 });
@@ -148,7 +149,7 @@ rotasAlocacao.post('/membros/alocar-lote', autenticacaoRequerida(), verificarPer
 
         return c.json({ sucesso: true, total: membrosIds.length });
     } catch (erro: any) {
-        console.error('[ERRO] POST /api/equipes/membros/alocar-lote', erro);
+        log('error', '[EQUIPES-ALOC] Falha ao alocar membros em lote', { erro: erro.message, total: membrosIds.length });
         return c.json({ erro: 'Falha ao alocar membros em lote.' }, 500);
     }
 });
@@ -212,7 +213,7 @@ rotasAlocacao.patch('/membros/:id/mover', autenticacaoRequerida(), verificarPerm
 
         return c.json({ sucesso: true });
     } catch (erro: any) {
-        console.error('[ERRO] PATCH /api/equipes/membros/:id/mover', erro);
+        log('error', '[EQUIPES-ALOC] Falha ao mover membro', { erro: erro.message, membroId });
         return c.json({ erro: 'Falha ao mover membro.' }, 500);
     }
 });

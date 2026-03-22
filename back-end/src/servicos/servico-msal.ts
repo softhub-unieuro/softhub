@@ -1,3 +1,5 @@
+import { log } from '../utilitarios/logger';
+
 export interface AzureAdClaims {
     oid: string;  // ID único e imutável do usuário no Azure AD
     upn?: string;  // User Principal Name (email institucional)
@@ -34,7 +36,7 @@ export function validarClaims(
     // Aceita o tenant configurado OU o tenant comum de organizações
     const tenantsAceitos = [tenantId, '9188040d-6c67-4c5b-b112-36a304b66dad']; // ID comum organizações/pessoal
     if (payload.tid !== tenantId && !tenantsAceitos.includes(payload.tid)) {
-        console.warn('[Auth] Tenant diferente detectado, mas domínio é válido:', payload.tid);
+        log('warn', '[AUTH-MSAL] Tenant diferente detectado', { tid: payload.tid, email });
     }
 
     // 3. Audience
@@ -46,7 +48,7 @@ export function validarClaims(
     // 4. Issuer (Aceita o tenant específico ou o comum v2.0)
     // A Microsoft envia issuers com IDs de tenant variáveis dependendo do tipo de conta
     if (!payload.iss.includes(tenantId) && !payload.iss.includes('9188040d-6c67-4c5b-b112-36a304b66dad') && !payload.iss.includes('v2.0')) {
-         console.warn('[Auth] Issuer não reconhecido:', payload.iss);
+         log('warn', '[AUTH-MSAL] Issuer não reconhecido', { iss: payload.iss, email });
     }
 
     // 5. Expiração

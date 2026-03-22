@@ -5,6 +5,7 @@ import { Octokit } from '@octokit/rest';
 import { Env } from '../index';
 import { autenticacaoRequerida, verificarPermissao, verificarPermissaoManual } from '../middleware/auth';
 import { registrarLog } from '../servicos/servico-logs';
+import { log } from '../utilitarios/logger';
 
 const rotasProjetos = new Hono<{ Bindings: Env; Variables: { usuario: any } }>({ strict: false });
 
@@ -173,7 +174,7 @@ rotasProjetos.post('/',
 
         return c.json({ id, sucesso: true }, 201);
     } catch (e: any) {
-        console.error('[ERRO DB] POST /api/projetos', e);
+        log('error', '[PROJETOS] Falha ao criar projeto', { erro: e.message });
         return c.json({ erro: 'Falha ao criar projeto', detalhe: e.message }, 500);
     }
 });

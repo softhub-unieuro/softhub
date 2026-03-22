@@ -1,6 +1,7 @@
 import { Hono, Context } from 'hono';
 import { Env } from '../index';
 import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
+import { log } from '../utilitarios/logger';
 
 const rotasRelatorios = new Hono<{ Bindings: Env, Variables: { usuario: any } }>();
 
@@ -44,8 +45,8 @@ rotasRelatorios.get('/equipes', autenticacaoRequerida(), verificarPermissao('rel
         await softhub_kv?.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 900 }); // 15 min
 
         return c.json(resposta);
-    } catch (erro) {
-        console.error('[ERRO DB] GET /relatorios/equipes', erro);
+    } catch (erro: any) {
+        log('error', '[RELATORIOS] Falha ao gerar relatório de equipes', { erro: erro.message });
         return c.json({ erro: 'Falha ao gerar relatório de equipes' }, 500);
     }
 });
@@ -131,14 +132,14 @@ rotasRelatorios.get('/frequencia/geral', autenticacaoRequerida(), verificarPermi
         if (softhub_kv) {
             try {
                 await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 900 });
-            } catch (e) {
-                console.warn('[KV] Ignorando falha no put de cache do relatório:', e);
+            } catch (e: any) {
+                log('warn', '[RELATORIOS] Falha no cache KV', { erro: e.message, cacheKey });
             }
         }
 
         return c.json(resposta);
-    } catch (erro) {
-        console.error('[ERRO DB] GET /relatorios/frequencia/geral', erro);
+    } catch (erro: any) {
+        log('error', '[RELATORIOS] Falha ao gerar relatório de frequência geral', { erro: erro.message });
         return c.json({ erro: 'Falha ao gerar relatório de frequência geral' }, 500);
     }
 });
@@ -186,14 +187,14 @@ rotasRelatorios.get('/frequencia/membros', autenticacaoRequerida(), verificarPer
         if (softhub_kv) {
             try {
                 await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 900 });
-            } catch (e) {
-                console.warn('[KV] Ignorando falha no put de cache do relatório:', e);
+            } catch (e: any) {
+                log('warn', '[RELATORIOS] Falha no cache KV', { erro: e.message, cacheKey });
             }
         }
 
         return c.json(resposta);
-    } catch (erro) {
-        console.error('[ERRO DB] GET /relatorios/frequencia/membros', erro);
+    } catch (erro: any) {
+        log('error', '[RELATORIOS] Falha ao gerar relatório de frequência por membro', { erro: erro.message });
         return c.json({ erro: 'Falha ao gerar relatório de frequência por membro' }, 500);
     }
 });

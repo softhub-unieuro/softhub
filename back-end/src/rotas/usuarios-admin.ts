@@ -7,6 +7,7 @@ import { registrarLog } from '../servicos/servico-logs';
 import { criarNotificacoes } from '../servicos/servico-notificacoes';
 import { obterConfiguracao } from '../servicos/servico-configuracoes';
 import { invalidarSessaoCache } from '../servicos/servico-acesso';
+import { log } from '../utilitarios/logger';
 
 const rotasAdmin = new Hono<{ Bindings: Env; Variables: { usuario: any } }>();
 
@@ -104,7 +105,7 @@ rotasAdmin.patch('/:id/role', autenticacaoRequerida(), verificarPermissao(['memb
 
         return c.json({ sucesso: true });
     } catch (erro: any) {
-        console.error('[ADMIN] Erro ao alterar role:', erro);
+        log('error', '[ADMIN] Erro ao alterar role', { erro: erro.message });
         return c.json({ erro: 'Erro ao processar alteração.' }, 400);
     }
 });

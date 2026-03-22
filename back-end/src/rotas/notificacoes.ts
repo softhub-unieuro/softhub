@@ -1,6 +1,7 @@
 import { Hono, Context } from 'hono';
 import { Env } from '../index';
 import { autenticacaoRequerida } from '../middleware/auth';
+import { log } from '../utilitarios/logger';
 
 const rotasNotificacoes = new Hono<{ Bindings: Env, Variables: { usuario: any } }>();
 
@@ -35,8 +36,8 @@ rotasNotificacoes.get('/', autenticacaoRequerida(), async (c: Context) => {
         }
 
         return c.json({ notificacoes: results });
-    } catch (erro) {
-        console.error('[ERRO DB] GET /notificacoes', erro);
+    } catch (erro: any) {
+        log('error', '[NOTIFICACOES] Falha ao buscar notificações', { erro: erro.message, usuarioId: usuarioLogado.id });
         return c.json({ erro: 'Falha ao buscar notificações' }, 500);
     }
 });
@@ -62,8 +63,8 @@ rotasNotificacoes.patch('/:id/lida', autenticacaoRequerida(), async (c: Context)
         await softhub_kv?.put(`tem_notificacao:${usuarioLogado.id}`, restantes ? 'true' : 'false', { expirationTtl: 86400 });
 
         return c.json({ sucesso: true });
-    } catch (erro) {
-        console.error('[ERRO DB] PATCH /notificacoes/:id/lida', erro);
+    } catch (erro: any) {
+        log('error', '[NOTIFICACOES] Falha ao atualizar notificação', { erro: erro.message, notificacaoId: id });
         return c.json({ erro: 'Falha ao atualizar notificação' }, 500);
     }
 });
@@ -84,8 +85,8 @@ rotasNotificacoes.delete('/limpar-todas', autenticacaoRequerida(), async (c: Con
         await softhub_kv?.put(`tem_notificacao:${usuarioLogado.id}`, 'false', { expirationTtl: 86400 });
 
         return c.json({ sucesso: true });
-    } catch (erro) {
-        console.error('[ERRO DB] DELETE /notificacoes/limpar-todas', erro);
+    } catch (erro: any) {
+        log('error', '[NOTIFICACOES] Falha ao limpar notificações', { erro: erro.message, usuarioId: usuarioLogado.id });
         return c.json({ erro: 'Falha ao limpar notificações' }, 500);
     }
 });

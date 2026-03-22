@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { verifyWithJwks, sign } from 'hono/jwt';
 import { Env } from '../index';
 import { registrarLog } from '../servicos/servico-logs';
+import { log } from '../utilitarios/logger';
 import { AzureAdClaims, getJwksUri, validarClaims } from '../servicos/servico-msal';
 
 /**
@@ -57,8 +58,8 @@ rotasAuth.post('/msal', async (c) => {
             if (typeof configs.auto_cadastro === 'boolean') {
                 autoCadastroPermitido = configs.auto_cadastro;
             }
-        } catch (e) {
-            console.error('[Auth] Falha crítica ao carregar governança:', e);
+        } catch (e: any) {
+            log('error', '[AUTH] Falha crítica ao carregar governança', { erro: e.message });
         }
 
         // 1. Validar assinatura RS256 com JWKS da Microsoft
@@ -145,7 +146,7 @@ rotasAuth.post('/msal', async (c) => {
 
         // 5. Gerar JWT Interno
         if (!JWT_SECRET) {
-            console.error('[Auth] JWT_SECRET não definido.');
+            log('error', '[AUTH] JWT_SECRET não definido');
             return c.json({ erro: 'Erro interno de configuração: JWT_SECRET ausente.' }, 500);
         }
 
@@ -172,7 +173,7 @@ rotasAuth.post('/msal', async (c) => {
         return c.json({ token: tokenLocal, usuario });
 
     } catch (e: any) {
-        console.error('[Auth] Erro crítico inesperado:', e);
+        log('error', '[AUTH] Erro crítico inesperado', { erro: e.message, ip });
         return c.json({ erro: 'Erro interno crítico: ' + (e.message || 'Erro desconhecido') }, 500);
     }
 });

@@ -2,6 +2,7 @@ import { Hono, Context } from 'hono';
 import { Env } from '../index';
 import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
 import { registrarLog } from '../servicos/servico-logs';
+import { log } from '../utilitarios/logger';
 import { removerNotificacoesPorEntidade } from '../servicos/servico-notificacoes';
 
 const rotasGrupos = new Hono<{ Bindings: Env; Variables: { usuario: any } }>();
@@ -34,7 +35,7 @@ rotasGrupos.get('/grupos', autenticacaoRequerida(), verificarPermissao('equipes:
 
         return c.json({ grupos: grupos.results ?? [] });
     } catch (erro: any) {
-        console.error('[ERRO] GET /api/equipes/grupos', erro);
+        log('error', '[EQUIPES-GRUPOS] Falha ao listar grupos', { erro: erro.message });
         return c.json({ erro: 'Falha ao listar grupos.' }, 500);
     }
 });
@@ -75,7 +76,7 @@ rotasGrupos.post('/grupos', autenticacaoRequerida(), verificarPermissao('equipes
 
         return c.json({ sucesso: true, id }, 201);
     } catch (erro: any) {
-        console.error('[ERRO] POST /api/equipes/grupos', erro);
+        log('error', '[EQUIPES-GRUPOS] Falha ao criar grupo', { erro: erro.message, nome });
         return c.json({ erro: 'Falha ao criar grupo.' }, 500);
     }
 });
@@ -123,7 +124,7 @@ rotasGrupos.patch('/grupos/:id', autenticacaoRequerida(), verificarPermissao('eq
 
         return c.json({ sucesso: true });
     } catch (erro: any) {
-        console.error('[ERRO] PATCH /api/equipes/grupos/:id', erro);
+        log('error', '[EQUIPES-GRUPOS] Falha ao editar grupo', { erro: erro.message, id });
         return c.json({ erro: 'Falha ao editar grupo.' }, 500);
     }
 });
@@ -153,7 +154,7 @@ rotasGrupos.delete('/grupos/:id', autenticacaoRequerida(), verificarPermissao('e
 
         return c.json({ sucesso: true });
     } catch (erro: any) {
-        console.error('[ERRO] DELETE /api/equipes/grupos/:id', erro);
+        log('error', '[EQUIPES-GRUPOS] Falha ao remover grupo', { erro: erro.message, id });
         return c.json({ erro: 'Falha ao remover grupo.' }, 500);
     }
 });

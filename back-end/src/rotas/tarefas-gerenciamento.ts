@@ -6,6 +6,7 @@ import { autenticacaoRequerida, verificarPermissao, verificarPermissaoManual } f
 import { registrarLog } from '../servicos/servico-logs';
 import { criarNotificacoes, removerNotificacoesPorEntidade } from '../servicos/servico-notificacoes';
 import { obterAcessoEquipeNoProjeto } from '../servicos/servico-acesso';
+import { log } from '../utilitarios/logger';
 
 const rotasGerenciamento = new Hono<{ Bindings: Env, Variables: { usuario: any } }>();
 
@@ -83,7 +84,7 @@ rotasGerenciamento.post('/',
 
         return c.json({ id, sucesso: true }, 201);
     } catch (erro: any) {
-        console.error('[ERRO] POST /api/tarefas', erro);
+        log('error', '[TAREFAS-GER] Falha ao criar tarefa', { erro: erro.message, projetoId: body.projeto_id });
         return c.json({ erro: 'Falha ao criar tarefa' }, 500);
     }
 });
@@ -138,8 +139,8 @@ rotasGerenciamento.post('/:id/responsaveis',
         }, softhub_kv);
 
         return c.json({ sucesso: true });
-    } catch (erro) {
-        console.error('[ERRO] POST /api/tarefas/:id/responsaveis', erro);
+    } catch (erro: any) {
+        log('error', '[TAREFAS-GER] Falha ao atribuir responsável', { erro: erro.message, tarefaId: id });
         return c.json({ erro: 'Falha ao atribuir responsável' }, 500);
     }
 });
@@ -179,8 +180,8 @@ rotasGerenciamento.delete('/:id', autenticacaoRequerida(), verificarPermissao('t
         });
 
         return c.json({ sucesso: true });
-    } catch (erro) {
-        console.error('[ERRO] DELETE /api/tarefas/:id', erro);
+    } catch (erro: any) {
+        log('error', '[TAREFAS-GER] Falha ao remover tarefa', { erro: erro.message, tarefaId: id });
         return c.json({ erro: 'Falha ao remover tarefa' }, 500);
     }
 });

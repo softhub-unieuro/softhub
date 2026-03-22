@@ -1,5 +1,6 @@
 import { MiddlewareHandler } from 'hono';
 import { Env } from '../index';
+import { log } from '../utilitarios/logger';
 import { obterConfiguracao } from '../servicos/servico-configuracoes';
 import { verificarPermissaoManual } from './auth';
 
@@ -34,7 +35,7 @@ export const validarRedeLocal: MiddlewareHandler<{ Bindings: Env, Variables: any
     if (permitido) {
         await next();
     } else {
-        console.warn(`[REDE] Acesso NEGADO para o IP ${ipClient}. Fora da whitelist configurada.`);
+        log('warn', '[REDE] Acesso NEGADO', { ipClient });
         return c.json({ 
             erro: 'Acesso bloqueado por restrição de rede.', 
             detalhe: 'Este dispositivo não está na lista de IPs autorizados para registro de ponto.' 

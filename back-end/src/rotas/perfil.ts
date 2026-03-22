@@ -1,6 +1,7 @@
 import { Hono, Context } from 'hono';
 import { Env } from '../index';
 import { autenticacaoRequerida } from '../middleware/auth';
+import { log } from '../utilitarios/logger';
 import { registrarLog } from '../servicos/servico-logs';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
@@ -41,7 +42,7 @@ rotasPerfil.get('/me', autenticacaoRequerida(), async (c: Context) => {
         const ultimoPonto = resUltimoPonto.results[0] as any;
 
         if (!usuario) {
-            console.error(`[PERFIL] Usuário não encontrado no banco: ${usuarioLogado.id}`);
+            log('error', '[PERFIL] Usuário não encontrado no banco', { usuarioId: usuarioLogado.id });
             return c.json({ erro: 'Perfil não mapeado no sistema (ERR_D1_NOT_FOUND).' }, 404);
         }
 
@@ -71,7 +72,7 @@ rotasPerfil.get('/me', autenticacaoRequerida(), async (c: Context) => {
             }
         });
     } catch (e: any) {
-        console.error('[PERFIL] Erro crítico ao buscar dados:', e);
+        log('error', '[PERFIL] Erro crítico ao buscar dados', { erro: e.message, usuarioId: usuarioLogado.id });
         return c.json({ erro: 'Erro interno ao carregar seus dados.' }, 500);
     }
 });
@@ -230,8 +231,8 @@ rotasPerfil.get('/:id/radar', autenticacaoRequerida(), async (c: Context) => {
         }
 
         return c.json(results);
-    } catch (e) {
-        console.error('[ERRO Radar]', e);
+    } catch (e: any) {
+        log('error', '[PERFIL] Falha ao gerar radar de competências', { erro: e.message, usuarioId: id });
         return c.json({ erro: 'Falha ao gerar radar de competências' }, 500);
     }
 });

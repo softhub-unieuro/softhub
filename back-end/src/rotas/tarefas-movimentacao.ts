@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { Env } from '../index';
 import { autenticacaoRequerida, verificarPermissao, verificarPermissaoManual } from '../middleware/auth';
+import { log } from '../utilitarios/logger';
 import { registrarLog } from '../servicos/servico-logs';
 import { criarNotificacoes } from '../servicos/servico-notificacoes';
 import { obterAcessoEquipeNoProjeto } from '../servicos/servico-acesso';
@@ -100,8 +101,8 @@ rotasMovimentacao.patch('/:id/mover',
         }
 
         return c.json({ sucesso: true });
-    } catch (erro) {
-        console.error('[ERRO] PATCH /api/tarefas/:id/mover', erro);
+    } catch (erro: any) {
+        log('error', '[TAREFAS-MOV] Falha ao mover tarefa', { erro: erro.message, tarefaId: id });
         return c.json({ erro: 'Falha ao mover tarefa' }, 500);
     }
 });

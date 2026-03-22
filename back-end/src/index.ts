@@ -42,6 +42,20 @@ export type Env = {
 
 const app = new Hono<{ Bindings: Env }>({ strict: false });
 
+import { log } from './utilitarios/logger';
+
+// ─── Middleware Global de Erros (CODE-003) ──────────────────────────────────
+app.onError((err, c) => {
+    log('error', '[APP] Erro não tratado', {
+        message: err.message,
+        stack: err.stack,
+        path: c.req.path,
+        method: c.req.method,
+        timestamp: new Date().toISOString()
+    });
+    return c.json({ erro: 'Erro interno do servidor.', detalhe: err.message }, 500);
+});
+
 
 // 1. CORS (DEVE ser o primeiro)
 app.use('*', cors({
@@ -104,8 +118,8 @@ app.use('*', async (c, next) => {
                 detalhe: 'Estamos realizando melhorias técnicas. Administradores ainda possuem acesso.' 
             }, 503);
         }
-    } catch (e) {
-        console.error('[MAINTENANCE] Falha ao verificar status:', e);
+    } catch (e: any) {
+        log('error', '[MAINTENANCE] Falha ao verificar status', { erro: e.message });
     }
 
     await next();
@@ -176,7 +190,7 @@ import { processarFechamentoAutomatico, enviarLembreteSaida } from './servicos/s
 export default {
     fetch: app.fetch,
     async scheduled(event: any, env: Env, ctx: any) {
-        console.log(`[SCHEDULED] Executando tarefa agendada: ${event.cron}`);
+        log('info', '[SCHEDULED] Executando tarefa agendada', { cron: event.cron });
         
         // Tarefa: Fechamento de Ponto às 23:59 (Brasília)
         if (event.cron === "59 23 * * *") {

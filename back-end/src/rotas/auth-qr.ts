@@ -3,6 +3,7 @@ import { sign } from 'hono/jwt';
 import { Env } from '../index';
 import { registrarLog } from '../servicos/servico-logs';
 import { autenticacaoRequerida } from '../middleware/auth';
+import { log } from '../utilitarios/logger';
 
 const rotasAuthQr = new Hono<{ Bindings: Env }>();
 
@@ -37,7 +38,7 @@ rotasAuthQr.post('/qr/gerar', async (c) => {
         await softhub_kv.put(chaveQr(sessaoId), JSON.stringify(dados), { expirationTtl: 60 });
         return c.json({ sessaoId, expiraEm });
     } catch (err: any) {
-        console.error('[QR-KV] Erro ao gerar sessão:', err);
+        log('error', '[QR-AUTH] Erro ao gerar sessão', { erro: err.message });
         return c.json({ erro: 'Erro ao gerar sessão de login.' }, 500);
     }
 });
@@ -88,7 +89,7 @@ rotasAuthQr.get('/qr/verificar/:id', async (c) => {
 
         return c.json({ status: sessao.status });
     } catch (err: any) {
-        console.error('[QR-KV] Erro ao verificar status:', err);
+        log('error', '[QR-AUTH] Erro ao verificar status', { erro: err.message, sessaoId: id });
         return c.json({ erro: 'Erro ao verificar status da sessão.' }, 500);
     }
 });
@@ -125,8 +126,10 @@ rotasAuthQr.post('/qr/autorizar', autenticacaoRequerida(), async (c) => {
     const { softhub_kv, DB, JWT_SECRET } = c.env;
     const usuario = c.get('usuario' as any) as any;
 
+    let sessaoId: string | undefined;
     try {
-        const { sessaoId } = await c.req.json();
+        const body = await c.req.json();
+        sessaoId = body.sessaoId;
         if (!sessaoId) return c.json({ erro: 'ID da sessão ausente.' }, 400);
 
         const resSessao = await softhub_kv.get(chaveQr(sessaoId));
@@ -174,7 +177,7 @@ rotasAuthQr.post('/qr/autorizar', autenticacaoRequerida(), async (c) => {
 
         return c.json({ sucesso: true });
     } catch (err: any) {
-        console.error('[QR-KV] Erro ao autenticar:', err);
+        log('error', '[QR-AUTH] Erro ao autenticar', { erro: err.message, sessaoId });
         return c.json({ erro: 'Erro ao processar autenticação QR.' }, 500);
     }
 });
