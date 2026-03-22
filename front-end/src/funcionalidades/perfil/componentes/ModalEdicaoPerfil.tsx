@@ -60,17 +60,8 @@ export const ModalEdicaoPerfil = memo(({ aberto, aoFechar }: ModalEdicaoPerfilPr
                     <div className="absolute bottom-[-20%] left-[-10%] w-[400px] h-[400px] bg-blue-50/30 rounded-full blur-[100px]" />
                 </div>
 
-                {/* BOTÕES DE AÇÃO FLUTUANTES SUPERIORES */}
-                <div className="absolute top-6 right-8 z-50 flex items-center gap-2">
-                    {!editando && (
-                        <button 
-                            onClick={() => setEditando(true)} 
-                            className="flex items-center gap-2 px-3 py-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50/50 rounded-xl transition-all group font-bold text-[10px] uppercase tracking-[0.15em]"
-                        >
-                            <Pencil size={14} className="group-hover:rotate-12 transition-transform" />
-                            Editar Perfil
-                        </button>
-                    )}
+                {/* BOTÃO DE FECHAR ISOLADO NO TOPO */}
+                <div className="absolute top-6 right-8 z-50">
                     <button 
                         onClick={aoFechar} 
                         className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50/50 rounded-xl transition-all group"
@@ -115,8 +106,17 @@ export const ModalEdicaoPerfil = memo(({ aberto, aoFechar }: ModalEdicaoPerfilPr
                                         </div>
                                     </div>
 
+                                    {/* BOTÃO EDITAR PERFIL MOVIDO PARA CÁ */}
+                                    <button 
+                                        onClick={() => setEditando(true)} 
+                                        className="w-full mt-6 flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-100 text-slate-400 hover:text-indigo-600 hover:bg-white hover:border-indigo-100 hover:shadow-sm transition-all group font-bold text-[10px] uppercase tracking-[0.2em]"
+                                    >
+                                        <Pencil size={12} className="group-hover:rotate-12 transition-transform" />
+                                        Editar Perfil
+                                    </button>
+
                                     {/* CONTATOS DISCRETOS EMBAIXO */}
-                                    <div className="mt-10 flex items-center gap-2">
+                                    <div className="mt-8 flex items-center gap-2">
                                         {[
                                             { icon: Github, href: perfil.github_url },
                                             { icon: Linkedin, href: perfil.linkedin_url },

@@ -59,8 +59,17 @@ export const PaginaDashboard = memo(() => {
         }
     }, [projetoAtivoId, projetos, setProjetoAtivoId]);
     
-    const { metricas: metricasGlobais, carregando: carregandoGeral } = usarDashboard('global');
-    const { avisos, minhasTarefas, carregando: carregandoProjeto, erro } = usarDashboard(projetoAtivoId);
+    const { 
+        metricas: metricasGlobais, 
+        carregando: carregandoGeral 
+    } = usarDashboard('global');
+
+    const { 
+        avisos, 
+        minhasTarefas, 
+        carregando: carregandoProjeto, 
+        erro 
+    } = usarDashboard(projetoAtivoId !== 'global' ? projetoAtivoId : undefined);
     
     const carregando = carregandoGeral || carregandoProjeto || carregandoProjetos;
 
@@ -71,16 +80,17 @@ export const PaginaDashboard = memo(() => {
 
     const pendentes = (metricasGlobais?.totalTarefas || 0) - (metricasGlobais?.tarefasConcluidas || 0);
 
-    if (carregando && !metricasGlobais) return (
-        <div className="p-4 space-y-12 animate-pulse">
-            <Skeleton className="h-[220px] rounded-[32px]" />
-            <Skeleton className="h-[180px] rounded-[32px]" />
-            <Skeleton className="h-[300px] rounded-[32px]" />
+    if (erro) return <div className="flex-1 p-12"><EstadoErro titulo="Erro no Dashboard" mensagem={erro} /></div>;
+    const semProjetos = !carregandoProjetos && projetos.length === 0;
+
+    // Skeletons localizados para cada seção
+    const SkeletonHeader = () => <Skeleton className="h-[220px] rounded-[32px] w-full" />;
+    const SkeletonGrid = () => (
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+            <div className="xl:col-span-8"><Skeleton className="h-[400px] rounded-[32px] w-full" /></div>
+            <div className="xl:col-span-4"><Skeleton className="h-[400px] rounded-[32px] w-full" /></div>
         </div>
     );
-
-    if (erro) return <div className="flex-1 p-12"><EstadoErro titulo="Erro no Dashboard" mensagem={erro} /></div>;
-    if (!carregandoProjetos && projetos.length === 0) return <DashboardVazio podeGerenciarProjetos={podeGerenciarProjetos} />;
 
     return (
         <div className="relative flex-1 w-full min-w-0 space-y-14 overflow-x-hidden">
@@ -195,61 +205,61 @@ export const PaginaDashboard = memo(() => {
             <ModalEdicaoPerfil aberto={modalPerfilAberto} aoFechar={() => setModalPerfilAberto(false)} />
 
             {/* ═══════════════════════════════════════════════════ */}
-            {/* ⚡ MONITOR INDIVIDUAL (FULL WIDTH)                */}
+            {/* 📊 MÉTRICAS OPERACIONAIS E GRID OPERACIONAL       */}
             {/* ═══════════════════════════════════════════════════ */}
-            <div className="space-y-6">
-                <div className="flex items-center gap-3 px-1">
-                    <div className="w-1 h-7 bg-primary rounded-full" />
-                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-foreground/70">Monitor Individual</h3>
+            {semProjetos ? (
+                <DashboardVazio podeGerenciarProjetos={podeGerenciarProjetos} />
+            ) : carregandoGeral ? (
+                <div className="space-y-12">
+                    <SkeletonHeader />
+                    <SkeletonGrid />
                 </div>
-                <ResumoPessoalDashboard />
-            </div>
-
-            {/* ═══════════════════════════════════════════════════ */}
-            {/* 📊 MÉTRICAS OPERACIONAIS (FULL WIDTH)             */}
-            {/* ═══════════════════════════════════════════════════ */}
-            <div className="space-y-6">
-                <div className="flex items-center justify-between px-1">
-                    <div className="flex items-center gap-3">
-                        <div className="w-1 h-7 bg-blue-500 rounded-full" />
-                        <h3 className="text-xs font-black uppercase tracking-[0.3em] text-foreground/70">Métricas Operacionais</h3>
-                    </div>
-                    <span className="text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest">{projetoAtivo?.nome || 'Global'}</span>
-                </div>
-                <CabecalhoDashboard 
-                    nomeUsuario={usuario?.nome || ''} 
-                    projetosAtivos={projetos} 
-                    metricas={metricasGlobais}
-                />
-            </div>
-
-            {/* ═══════════════════════════════════════════════════ */}
-            {/* 🛠️ GRID OPERACIONAL (8/4)                         */}
-            {/* ═══════════════════════════════════════════════════ */}
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 items-start">
-                
-                {/* COLUNA ESQUERDA (SPAN 8) */}
-                <div className="xl:col-span-8 space-y-12">
+            ) : (
+                <>
                     <div className="space-y-6">
-                        <div className="flex items-center gap-3 px-1">
-                            <div className="w-1 h-7 bg-rose-500/50 rounded-full" />
-                            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-foreground/70">Fila de Trabalho</h3>
+                        <div className="flex items-center justify-between px-1">
+                            <div className="flex items-center gap-3">
+                                <div className="w-1 h-7 bg-blue-500 rounded-full" />
+                                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-foreground/70">Métricas Operacionais</h3>
+                            </div>
+                            <span className="text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest">{projetoAtivo?.nome || 'Global'}</span>
                         </div>
-                        <MinhasTarefasLista minhasTarefas={minhasTarefas} />
+                        <CabecalhoDashboard 
+                            nomeUsuario={usuario?.nome || ''} 
+                            projetosAtivos={projetos} 
+                            metricas={metricasGlobais}
+                        />
                     </div>
-                </div>
 
-                {/* COLUNA DIREITA (SPAN 4) */}
-                <div className="xl:col-span-4 space-y-12">
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-3 px-1">
-                            <div className="w-1 h-7 bg-amber-500/50 rounded-full" />
-                            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-foreground/70">Briefing</h3>
+                    {carregandoProjeto ? (
+                        <SkeletonGrid />
+                    ) : (
+                        <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 items-start">
+                            {/* COLUNA ESQUERDA (SPAN 8) */}
+                            <div className="xl:col-span-8 space-y-12">
+                                <div className="space-y-6">
+                                    <div className="flex items-center gap-3 px-1">
+                                        <div className="w-1 h-7 bg-rose-500/50 rounded-full" />
+                                        <h3 className="text-xs font-black uppercase tracking-[0.3em] text-foreground/70">Fila de Trabalho</h3>
+                                    </div>
+                                    <MinhasTarefasLista minhasTarefas={minhasTarefas} />
+                                </div>
+                            </div>
+
+                            {/* COLUNA DIREITA (SPAN 4) */}
+                            <div className="xl:col-span-4 space-y-12">
+                                <div className="space-y-6">
+                                    <div className="flex items-center gap-3 px-1">
+                                        <div className="w-1 h-7 bg-amber-500/50 rounded-full" />
+                                        <h3 className="text-xs font-black uppercase tracking-[0.3em] text-foreground/70">Briefing</h3>
+                                    </div>
+                                    <ComunicadosPrioritarios avisos={avisos} />
+                                </div>
+                            </div>
                         </div>
-                        <ComunicadosPrioritarios avisos={avisos} />
-                    </div>
-                </div>
-            </div>
+                    )}
+                </>
+            )}
         </div>
     );
 });

@@ -16,6 +16,11 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
         return c.json({ erro: 'Autenticação necessária.' }, 401);
     }
 
+    // ⚡ TENTATIVA DE CACHE VELOZ
+    const cacheKey = `dashboard:${usuarioLogado.id}:${projetoId || 'global'}`;
+    const cached = await softhub_kv?.get(cacheKey).catch(() => null);
+    if (cached) return c.json(JSON.parse(cached));
+
     let todosOsProjetos: any[] = [];
     try {
         const sqlProjetos = `
@@ -60,43 +65,47 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
         });
     }
 
-    const cacheKey = `dashboard_metrics_${projetoId || 'global'}_${usuarioLogado.id}`;
-    try {
-        const cached = await softhub_kv?.get(cacheKey);
-        if (cached) return c.json(JSON.parse(cached));
-    } catch (e) {}
-
     const placeholders = projetosIdsFiltro.map(() => '?').join(',');
     
     try {
-        // Métricas
-        const countQuery = await DB.prepare(`
-            SELECT
-                COUNT(*) as total,
-                SUM(CASE WHEN t.status = 'concluido' THEN 1 ELSE 0 END) as concluidas,
-                SUM(CASE WHEN t.status != 'concluido' AND t.prioridade = 'urgente' THEN 1 ELSE 0 END) as atrasadas
-            FROM tarefas t
-            JOIN tarefas_responsaveis tr ON tr.tarefa_id = t.id
-            WHERE t.projeto_id IN (${placeholders}) AND tr.usuario_id = ?
-        `).bind(...projetosIdsFiltro, usuarioLogado.id).first() as any;
-
-        const horasHojeRaw = await DB.prepare(`
-            SELECT COUNT(*) as batidas FROM ponto_registros 
-            WHERE usuario_id = ? AND date(registrado_em, '-3 hours') = date('now', '-3 hours')
-        `).bind(usuarioLogado.id).first() as any;
-
-        const total = Number(countQuery?.total || 0);
-        const concluidas = Number(countQuery?.concluidas || 0);
-
-        const metricas = {
-            totalTarefas: total,
-            tarefasConcluidas: concluidas,
-            tarefasAtrasadas: Number(countQuery?.atrasadas || 0),
-            horasRegistradasHoje: (Number(horasHojeRaw?.batidas || 0)) * 4,
-            progressoGeral: total > 0 ? Math.round((concluidas / total) * 100) : 0
+        // 1. Métricas (Apenas se houver projetos)
+        let metricas = {
+            totalTarefas: 0,
+            tarefasConcluidas: 0,
+            tarefasAtrasadas: 0,
+            horasRegistradasHoje: 0,
+            progressoGeral: 0
         };
 
-        // Avisos
+        if (projetosIdsFiltro.length > 0) {
+            const countQuery = await DB.prepare(`
+                SELECT
+                    COUNT(*) as total,
+                    SUM(CASE WHEN t.status = 'concluido' THEN 1 ELSE 0 END) as concluidas,
+                    SUM(CASE WHEN t.status != 'concluido' AND t.prioridade = 'urgente' THEN 1 ELSE 0 END) as atrasadas
+                FROM tarefas t
+                JOIN tarefas_responsaveis tr ON tr.tarefa_id = t.id
+                WHERE t.projeto_id IN (${placeholders}) AND tr.usuario_id = ?
+            `).bind(...projetosIdsFiltro, usuarioLogado.id).first() as any;
+
+            const horasHojeRaw = await DB.prepare(`
+                SELECT COUNT(*) as batidas FROM ponto_registros 
+                WHERE usuario_id = ? AND date(registrado_em, '-3 hours') = date('now', '-3 hours')
+            `).bind(usuarioLogado.id).first() as any;
+
+            const total = Number(countQuery?.total || 0);
+            const concluidas = Number(countQuery?.concluidas || 0);
+
+            metricas = {
+                totalTarefas: total,
+                tarefasConcluidas: concluidas,
+                tarefasAtrasadas: Number(countQuery?.atrasadas || 0),
+                horasRegistradasHoje: (Number(horasHojeRaw?.batidas || 0)) * 4,
+                progressoGeral: total > 0 ? Math.round((concluidas / total) * 100) : 0
+            };
+        }
+
+        // 2. Avisos (Sempre carregados)
         const { results: avisos } = await DB.prepare(`
             SELECT a.id, a.titulo, a.conteudo, a.prioridade, a.criado_em, 
                    u.nome as autor_nome, u.foto_perfil as autor_foto
@@ -110,15 +119,19 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
             LIMIT 5
         `).all();
 
-        // Tarefas
-        const { results: minhasTarefas } = await DB.prepare(`
-            SELECT t.id, t.titulo, t.status, t.prioridade, p.nome as projeto_nome
-            FROM tarefas t
-            JOIN tarefas_responsaveis tr ON tr.tarefa_id = t.id
-            JOIN projetos p ON t.projeto_id = p.id
-            WHERE tr.usuario_id = ? AND t.status != 'concluido' AND t.projeto_id IN (${placeholders})
-            ORDER BY t.criado_em DESC LIMIT 5
-        `).bind(usuarioLogado.id, ...projetosIdsFiltro).all();
+        // 3. Tarefas (Apenas se houver projetos)
+        let minhasTarefas: any[] = [];
+        if (projetosIdsFiltro.length > 0) {
+            const resTarefas = await DB.prepare(`
+                SELECT t.id, t.titulo, t.status, t.prioridade, p.nome as projeto_nome
+                FROM tarefas t
+                JOIN tarefas_responsaveis tr ON tr.tarefa_id = t.id
+                JOIN projetos p ON t.projeto_id = p.id
+                WHERE tr.usuario_id = ? AND t.status != 'concluido' AND t.projeto_id IN (${placeholders})
+                ORDER BY t.criado_em DESC LIMIT 5
+            `).bind(usuarioLogado.id, ...projetosIdsFiltro).all();
+            minhasTarefas = resTarefas.results || [];
+        }
 
         const resposta = { 
             metricas, 
@@ -126,11 +139,11 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
                 id: a.id, titulo: a.titulo, conteudo: a.conteudo, prioridade: a.prioridade, criado_em: a.criado_em,
                 criado_por: { nome: a.autor_nome, foto: a.autor_foto }
             })), 
-            minhasTarefas: minhasTarefas || [],
+            minhasTarefas,
             projetosAtivos: listaProjetos
         };
 
-        if (softhub_kv) await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 30 });
+        if (softhub_kv && cacheKey) await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 30 });
         return c.json(resposta);
 
     } catch (erro: any) {
