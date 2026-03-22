@@ -129,7 +129,7 @@ app.route('/api/tarefas', rotasTarefasMovimentacao);
 app.route('/api/tarefas', rotasTarefasDetalhes);
 
 // Unificando todas as rotas de ponto sob o mesmo prefixo
-const pontoApp = new Hono<{ Bindings: Env }>();
+const pontoApp = new Hono<{ Bindings: Env }>({ strict: false });
 pontoApp.route('/', rotasPonto);
 pontoApp.route('/', rotasPontoJustificativas);
 pontoApp.route('/', rotasPontoJustificativasAdmin);

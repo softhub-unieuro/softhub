@@ -36,6 +36,7 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
             ORDER BY nome ASC
         `;
 
+        log('debug', '[DASHBOARD] Buscando projetos do usuário', { usuarioId: usuarioLogado.id });
         const { results: todosOsProjetos } = await DB.prepare(sqlProjetos).bind(usuarioLogado.id, usuarioLogado.id).all();
 
         const listaProjetos = todosOsProjetos as { id: string, nome: string }[];
@@ -51,6 +52,7 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
         }
 
         if (projetosIdsFiltro.length === 0) {
+            log('info', '[DASHBOARD] Usuário sem projetos ativos', { usuarioId: usuarioLogado.id });
             return c.json({
                 metricas: { totalTarefas: 0, tarefasConcluidas: 0, tarefasAtrasadas: 0, horasRegistradasHoje: 0, progressoGeral: 0 },
                 avisos: [],
@@ -72,6 +74,7 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
         const placeholders = projetosIdsFiltro.map(() => '?').join(',');
         
         // Métricas Consolidadas (FILTRADAS PELO USUÁRIO)
+        log('debug', '[DASHBOARD] Carregando métricas', { projetos: projetosIdsFiltro });
         const countQuery = await DB.prepare(`
             SELECT
                 COUNT(*) as total,
@@ -99,6 +102,7 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
         };
 
         // Avisos (Global — sem cache, sempre frescos)
+        log('debug', '[DASHBOARD] Carregando avisos');
         const { results: avisos } = await DB.prepare(`
             SELECT a.id, a.titulo, a.conteudo, a.prioridade, a.criado_em, 
                    u.nome as autor_nome, u.foto_perfil as autor_foto
@@ -113,6 +117,7 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
         `).all();
 
         // Minhas Tarefas (de todos os projetos monitorados)
+        log('debug', '[DASHBOARD] Carregando minhas tarefas');
         const { results: minhasTarefas } = await DB.prepare(`
             SELECT t.id, t.titulo, t.status, t.prioridade, p.nome as projeto_nome
             FROM tarefas t
@@ -124,16 +129,19 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
 
         const resposta = { 
             metricas, 
-            avisos: avisos.map((a: any) => ({
+            avisos: (avisos || []).map((a: any) => ({
                 id: a.id, titulo: a.titulo, conteudo: a.conteudo, prioridade: a.prioridade, criado_em: a.criado_em,
                 criado_por: { nome: a.autor_nome, foto: a.autor_foto }
             })), 
-            minhasTarefas,
+            minhasTarefas: minhasTarefas || [],
             projetosAtivos: listaProjetos // Agora retorna [{id, nome}]
         };
 
-        await softhub_kv?.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 30 }); // 30s — quase instantâneo
+        if (softhub_kv) {
+            await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 30 }); // 30s — quase instantâneo
+        }
         return c.json(resposta);
+
     } catch (erro: any) {
         log('error', '[DASHBOARD] Falha ao buscar dashboard consolidado', { 
             erro: erro.message, 
@@ -151,11 +159,5 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
         }, 500);
     }
 });
-
-
-
-
-
-
 
 export default rotasDashboard;
