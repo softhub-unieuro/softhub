@@ -7,6 +7,8 @@ import { criarNotificacoes } from '../servicos/servico-notificacoes';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { sanitizarHTML } from '../utilitarios/limpeza';
+import { extrairPaginacao, formatarRespostaPaginada } from '../utilitarios/paginacao';
+import * as RepoTarefasDet from '../repositorios/repo-tarefas-detalhes';
 
 const rotasTarefasDetalhes = new Hono<{ Bindings: Env, Variables: { usuario: any } }>();
 
@@ -14,17 +16,9 @@ const rotasTarefasDetalhes = new Hono<{ Bindings: Env, Variables: { usuario: any
 
 rotasTarefasDetalhes.get('/:id/comentarios', autenticacaoRequerida(), verificarPermissao('tarefas:visualizar_detalhes'), async (c: Context) => {
     const { DB } = c.env;
-    const tarefaId = c.req.param('id');
+    const tarefaId = c.req.param('id') as string;
     try {
-        const query = `
-            SELECT c.id, c.conteudo, c.criado_em, c.atualizado_em,
-                   u.id AS autor_id, u.nome AS autor_nome, u.foto_perfil AS autor_foto
-            FROM comentarios_tarefa c
-            JOIN usuarios u ON u.id = c.autor_id
-            WHERE c.tarefa_id = ?
-            ORDER BY c.criado_em ASC
-        `;
-        const { results } = await DB.prepare(query).bind(tarefaId).all();
+        const results = await RepoTarefasDet.buscarComentariosTarefa(DB, tarefaId);
         return c.json(results);
     } catch (erro: any) {
         log('error', '[TAREFAS-DET] Falha ao buscar comentários', { erro: erro.message, tarefaId });
@@ -164,47 +158,22 @@ rotasTarefasDetalhes.delete('/comentarios/:id', autenticacaoRequerida(), verific
 
 rotasTarefasDetalhes.get('/:id/historico', autenticacaoRequerida(), verificarPermissao('tarefas:visualizar_detalhes'), async (c: Context) => {
     const { DB } = c.env;
-    const tarefaId = c.req.param('id');
+    const tarefaId = c.req.param('id') as string;
+    const params = extrairPaginacao(c);
 
     try {
-        // Unificamos o histórico legado com os novos logs de auditoria para visualização completa
-        const query = `
-            SELECT 
-                l.id, 
-                l.entidade_id as tarefa_id, 
-                l.usuario_id, 
-                u.nome as usuario_nome, 
-                u.foto_perfil as usuario_foto,
-                l.acao as campo_alterado, 
-                l.dados_anteriores as valor_antigo, 
-                l.dados_novos as valor_novo, 
-                l.criado_em as alterado_em,
-                l.descricao
-            FROM logs l
-            JOIN usuarios u ON l.usuario_id = u.id
-            WHERE l.entidade_id = ? AND l.entidade_tipo = 'tarefas'
-            
-            UNION ALL
-            
-            SELECT 
-                h.id, 
-                h.tarefa_id, 
-                h.usuario_id, 
-                u.nome as usuario_nome, 
-                u.foto_perfil as usuario_foto,
-                h.campo_alterado, 
-                h.valor_antigo, 
-                h.valor_novo, 
-                h.alterado_em,
-                NULL as descricao
-            FROM tarefa_historico h
-            JOIN usuarios u ON h.usuario_id = u.id
-            WHERE h.tarefa_id = ?
-            
-            ORDER BY alterado_em DESC
-        `;
-        const { results } = await DB.prepare(query).bind(tarefaId, tarefaId).all();
-        return c.json(results);
+        if (!tarefaId) return c.json({ erro: 'ID da tarefa obrigatório' }, 400);
+
+        // [PERF-001] Histórico paginado para evitar lentidão em tarefas com muitas movimentações
+        const historico = await RepoTarefasDet.buscarHistoricoTarefasPaginado(
+            DB, 
+            tarefaId, 
+            params.limit, 
+            params.offset
+        );
+
+        // Para metadados de paginação, precisaríamos de um COUNT, mas simplificaremos para o fluxo atual
+        return c.json(historico);
     } catch (e: any) {
         log('error', '[TAREFAS-DET] Falha ao buscar histórico unificado', { erro: e.message, tarefaId });
         return c.json({ erro: 'Falha ao buscar histórico unificado da tarefa' }, 500);
@@ -216,9 +185,9 @@ rotasTarefasDetalhes.get('/:id/historico', autenticacaoRequerida(), verificarPer
 // Listar itens do checklist
 rotasTarefasDetalhes.get('/:id/checklist', autenticacaoRequerida(), verificarPermissao('tarefas:visualizar_detalhes'), async (c: Context) => {
     const { DB } = c.env;
-    const tarefaId = c.req.param('id');
+    const tarefaId = c.req.param('id') as string;
     try {
-        const { results } = await DB.prepare('SELECT * FROM checklist_tarefa WHERE tarefa_id = ? ORDER BY ordem ASC, criado_em ASC').bind(tarefaId).all();
+        const results = await RepoTarefasDet.buscarChecklistTarefa(DB, tarefaId);
         return c.json(results);
     } catch (e) {
         return c.json({ erro: 'Falha ao buscar checklist' }, 500);
@@ -367,7 +336,7 @@ rotasTarefasDetalhes.patch('/:id/feedback',
     const usuario = c.get('usuario') as any;
 
     try {
-        const tarefa = await DB.prepare('SELECT status, titulo FROM tarefas WHERE id = ?').bind(id).first() as any;
+        const tarefa = await RepoTarefasDet.buscarTarefaPorId(DB, id);
         if (!tarefa) return c.json({ erro: 'Tarefa não encontrada' }, 404);
 
         if (tarefa.status !== 'concluida') {
@@ -378,6 +347,24 @@ rotasTarefasDetalhes.patch('/:id/feedback',
         const ehLider = ['ADMIN', 'COORDENADOR', 'GESTOR', 'LIDER', 'SUBLIDER'].includes(usuario.role);
         if (!ehLider) {
             return c.json({ erro: 'Apenas a liderança pode avaliar o aprendizado.' }, 403);
+        }
+
+        // [SEC-001] Validação IDOR: Verificar se o líder pertence à equipe da tarefa
+        if (usuario.roleReal !== 'ADMIN' && !usuario.ehDonoSistema) {
+            if (!tarefa.equipe_id) {
+                return c.json({ erro: 'Tarefa sem equipe vinculada.' }, 400);
+            }
+
+            // Verifica se o usuário é líder ou sub-líder da equipe específica
+            const equipe = await DB.prepare('SELECT lider_id, sub_lider_id FROM equipes WHERE id = ?').bind(tarefa.equipe_id).first() as any;
+            const isLiderEquipe = equipe?.lider_id === usuario.id || equipe?.sub_lider_id === usuario.id;
+
+            // Coordenadores e Gestores têm permissão global conforme a hierarquia de cargos superiores
+            const ehCadeiaGestao = ['COORDENADOR', 'GESTOR'].includes(usuario.role);
+
+            if (!isLiderEquipe && !ehCadeiaGestao) {
+                return c.json({ erro: 'Você não tem permissão para deixar feedback em tarefas de outra equipe.' }, 403);
+            }
         }
 
         const feedbackSani = sanitizarHTML(feedback_lider);

@@ -173,6 +173,8 @@ app.get('/', (c) => c.json({
 
 import { processarFechamentoAutomatico, enviarLembreteSaida } from './servicos/servico-ponto-auto';
 
+export { app };
+
 /**
  * Ponto de Entrada da Worker (Fetch + Cron)
  */

@@ -22,7 +22,8 @@
         "src/*"
       ]
     },
-    "noEmit": true
+    "noEmit": true,
+    "types": ["vitest/globals", "jsdom"]
   },
   "include": [
     "src"

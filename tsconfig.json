@@ -1,0 +1,7 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./back-end" },
+    { "path": "./front-end" }
+  ]
+}

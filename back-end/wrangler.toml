@@ -18,4 +18,5 @@ binding = "AI"
 crons = ["45 16 * * *", "59 23 * * *", "0 3 * * 0"]
 
 [vars]
-BOOTSTRAP_ADMIN_EMAIL = "mateus099803@unieuro.com.br"
+APP_ENV = "production"
+BOOTSTRAP_ADMIN_EMAIL = "mateus099803@unieuro.com.br"

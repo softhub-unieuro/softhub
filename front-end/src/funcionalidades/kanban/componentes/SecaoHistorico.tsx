@@ -20,14 +20,22 @@ interface SecaoHistoricoProps {
 export function SecaoHistorico({ tarefaId }: SecaoHistoricoProps) {
     const [historico, setHistorico] = useState<EventoHistorico[]>([]);
     const [carregando, setCarregando] = useState(true);
+    const [pagina, setPagina] = useState(1);
+    const [temMais, setTemMais] = useState(true);
 
     useEffect(() => {
         if (!tarefaId) return;
-
-        api.get(`/tarefas/${tarefaId}/historico`)
-            .then(res => setHistorico(res.data))
+        setCarregando(true);
+        api.get(`/tarefas/${tarefaId}/historico`, { params: { page: pagina, limit: 20 } })
+            .then(res => {
+                const novos = res.data;
+                if (novos.length < 20) setTemMais(false);
+                setHistorico(prev => pagina === 1 ? novos : [...prev, ...novos]);
+            })
             .finally(() => setCarregando(false));
-    }, [tarefaId]);
+    }, [tarefaId, pagina]);
+
+    const carregarMais = () => setPagina(prev => prev + 1);
 
     const getIcone = (campo: string) => {
         switch (campo) {
@@ -73,6 +81,16 @@ export function SecaoHistorico({ tarefaId }: SecaoHistoricoProps) {
                     </div>
                 ))}
             </div>
+            
+            {temMais && (
+                <button 
+                  onClick={carregarMais} 
+                  disabled={carregando}
+                  className="mt-6 w-full py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors border border-dashed border-border rounded-lg hover:border-primary/30"
+                >
+                  {carregando ? 'Carregando...' : 'Carregar mais atividades'}
+                </button>
+            )}
         </div>
     );
 }

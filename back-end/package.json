@@ -9,7 +9,10 @@
     "db:init": "node src/db/iniciar-banco.js --remote",
     "db:init:remote": "wrangler d1 execute DB --remote --file=src/db/migrations/001_tabelas_base.sql && wrangler d1 execute DB --remote --file=src/db/migrations/002_tabelas_modulos.sql",
     "db:seed": "wrangler d1 execute DB --remote --file=src/db/seed.sql",
-    "db:explain": "wrangler d1 execute DB --remote --command"
+    "db:explain": "wrangler d1 execute DB --remote --command",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "keywords": [],
   "author": "",
@@ -26,9 +29,10 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260305.1",
     "@types/color-name": "^2.0.0",
-    "@types/node": "^25.3.3",
+    "@types/node": "^25.5.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
+    "vitest": "^3.0.7",
     "wrangler": "^4.70.0"
   }
 }
