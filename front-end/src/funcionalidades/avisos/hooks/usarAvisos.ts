@@ -25,17 +25,21 @@ export function usarAvisos() {
     const queryKey = ['avisos'];
 
     const { 
-        data: avisos = [], 
+        data, 
         isLoading: carregando, 
         error 
     } = useQuery({
         queryKey,
         queryFn: async () => {
             const res = await api.get('/api/avisos');
-            return res.data || [];
+            // Se for resposta paginada, extrair dados, senão fallback para array
+            return res.data?.dados || res.data || [];
         },
-        staleTime: 60000, // 1 minuto
+        staleTime: 60000,
     });
+
+    const avisos: Aviso[] = Array.isArray(data) ? data : (data as any)?.dados || [];
+    const meta = (data as any)?.meta || null;
 
     const erro = error ? (error as any).response?.data?.erro || 'Erro ao carregar avisos' : null;
 
@@ -47,13 +51,19 @@ export function usarAvisos() {
         },
     });
 
-    // Mutação para remover aviso (Optimistic Update)
+    // Mutação para remover aviso (Optimistic Update adaptado para paginação)
     const mutacaoRemover = useMutation({
         mutationFn: (id: string) => api.delete(`/api/avisos/${id}`),
         onMutate: async (id) => {
             await queryClient.cancelQueries({ queryKey });
-            const estadoAnterior = queryClient.getQueryData<Aviso[]>(queryKey);
-            queryClient.setQueryData<Aviso[]>(queryKey, (antigo) => antigo?.filter(a => a.id !== id));
+            const estadoAnterior = queryClient.getQueryData<any>(queryKey);
+            
+            queryClient.setQueryData<any>(queryKey, (antigo: any) => {
+                if (Array.isArray(antigo)) return antigo.filter((a: any) => a.id !== id);
+                if (antigo?.dados) return { ...antigo, dados: antigo.dados.filter((a: any) => a.id !== id) };
+                return antigo;
+            });
+
             return { estadoAnterior };
         },
         onError: (_err, _id, contexto) => {
@@ -68,6 +78,7 @@ export function usarAvisos() {
 
     return { 
         avisos, 
+        meta,
         carregando, 
         erro, 
         recarregar: () => queryClient.invalidateQueries({ queryKey }), 

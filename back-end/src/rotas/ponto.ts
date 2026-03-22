@@ -11,6 +11,56 @@ import { log } from '../utilitarios/logger';
 const rotasPonto = new Hono<{ Bindings: Env, Variables: { usuario: any } }>({ strict: false });
 
 /**
+ * Retorna todos os dados de ponto necessários para o dashboard inicial.
+ */
+rotasPonto.get('/', autenticacaoRequerida(), async (c: Context) => {
+    const usuario = c.get('usuario');
+    try {
+        const [hojeRes, historicoRes] = await Promise.all([
+            repo.buscarRegistrosHoje(c.env.DB, usuario.id),
+            repo.buscarHistoricoPonto(c.env.DB, usuario.id)
+        ]);
+        
+        return c.json({ 
+            hoje: hojeRes.results || [], 
+            historico: historicoRes.results || [] 
+        });
+    } catch (e: any) {
+        return c.json({ erro: 'Falha ao buscar dados de ponto', detalhe: e.message }, 500);
+    }
+});
+
+/**
+ * Registra uma entrada ou saída de ponto (Alias para /registrar).
+ */
+rotasPonto.post('/', 
+    autenticacaoRequerida(), 
+    validarRedeLocal, 
+    kvRateLimit({ windowMs: 15 * 1000, limit: 1, identifier: 'user', keyPrefix: 'ponto_registrar' }),
+    async (c: Context) => {
+        const { tipo } = await c.req.json();
+        const usuario = c.get('usuario');
+        const ipOrigem = c.req.header('CF-Connecting-IP') ?? '0.0.0.0';
+
+        if (!['entrada', 'saida'].includes(tipo)) {
+            return c.json({ erro: 'Tipo de registro inválido.' }, 400);
+        }
+
+        try {
+            const resultado = await servico.registrarPonto(
+                { DB: c.env.DB, KV: c.env.softhub_kv }, 
+                usuario, 
+                tipo, 
+                ipOrigem
+            );
+            return c.json(resultado);
+        } catch (e: any) {
+            return c.json({ erro: e.message }, 400);
+        }
+    }
+);
+
+/**
  * Registra uma entrada ou saída de ponto.
  * Requer estar na rede da UNIEURO e autenticação válida.
  */
