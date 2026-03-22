@@ -4,6 +4,7 @@ import { registrarLog } from './servico-logs';
 import { log } from '../utilitarios/logger';
 import { Octokit } from '@octokit/rest';
 import { verificarPermissaoManual } from '../middleware/auth';
+import { sanitizarHTML } from '../utilitarios/limpeza';
 
 /**
  * Lista projetos para o usuário logado com métricas.
@@ -27,6 +28,10 @@ export async function listarProjetos(env: Env, usuario: any, c: any) {
 export async function criarProjeto(env: Env, usuario: any, dados: any, ip: string) {
     const { DB, softhub_kv } = env;
     const id = crypto.randomUUID();
+
+    if (dados.descricao) {
+        dados.descricao = sanitizarHTML(dados.descricao);
+    }
 
     await repo.inserirProjeto(DB, id, dados);
 
@@ -142,7 +147,10 @@ export async function editarProjeto(env: Env, usuario: any, id: string, body: an
     const campos = [];
     const valores = [];
     if (body.nome !== undefined) { campos.push('nome = ?'); valores.push(body.nome); }
-    if (body.descricao !== undefined) { campos.push('descricao = ?'); valores.push(body.descricao); }
+    if (body.descricao !== undefined) { 
+        campos.push('descricao = ?'); 
+        valores.push(sanitizarHTML(body.descricao)); 
+    }
     if (body.publico !== undefined) { campos.push('publico = ?'); valores.push(body.publico ? 1 : 0); }
     if (body.github_repo !== undefined) { campos.push('github_repo = ?'); valores.push(body.github_repo); }
     if (body.documentacao_url !== undefined) { campos.push('documentacao_url = ?'); valores.push(body.documentacao_url); }

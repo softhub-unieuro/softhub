@@ -7,6 +7,7 @@ import { registrarLog } from '../servicos/servico-logs';
 import { criarNotificacoes, removerNotificacoesPorEntidade } from '../servicos/servico-notificacoes';
 import { log } from '../utilitarios/logger';
 import { extrairPaginacao, formatarRespostaPaginada } from '../utilitarios/paginacao';
+import { sanitizarHTML } from '../utilitarios/limpeza';
 
 const rotasAvisos = new Hono<{ Bindings: Env, Variables: { usuario: any } }>();
 
@@ -102,11 +103,12 @@ rotasAvisos.post('/', autenticacaoRequerida(), verificarPermissao('avisos:criar'
 
     try {
         const novoId = crypto.randomUUID();
+        const conteudoSani = sanitizarHTML(conteudo || '');
 
         await DB.prepare(`
             INSERT INTO avisos (id, titulo, conteudo, prioridade, expira_em, criado_por)
             VALUES (?, ?, ?, ?, ?, ?)
-        `).bind(novoId, titulo, conteudo, prioridade, expira_em || null, usuario.id).run();
+        `).bind(novoId, titulo, conteudoSani, prioridade, expira_em || null, usuario.id).run();
 
         // Workflow 12 - Notificações
         // Simplificado para 'todosOsUsuarios' já que backend da tabela Grupos/Equipes precisaria expansão (e schema atual de avisos não suporta)

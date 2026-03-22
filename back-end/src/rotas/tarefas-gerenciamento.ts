@@ -7,6 +7,7 @@ import { registrarLog } from '../servicos/servico-logs';
 import { criarNotificacoes, removerNotificacoesPorEntidade } from '../servicos/servico-notificacoes';
 import { obterAcessoEquipeNoProjeto } from '../servicos/servico-acesso';
 import { log } from '../utilitarios/logger';
+import { sanitizarHTML } from '../utilitarios/limpeza';
 
 const rotasGerenciamento = new Hono<{ Bindings: Env, Variables: { usuario: any } }>();
 
@@ -47,10 +48,12 @@ rotasGerenciamento.post('/',
         }
 
         const id = crypto.randomUUID();
+        const descricaoSani = body.descricao ? sanitizarHTML(body.descricao) : null;
+        
         await DB.prepare(`
             INSERT INTO tarefas (id, projeto_id, titulo, descricao, prioridade, status, modulo, pontos, equipe_id, grupo_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).bind(id, body.projeto_id, body.titulo, body.descricao || null, body.prioridade, body.status, body.modulo || null, body.pontos ?? 1, body.equipe_id || null, body.grupo_id || null).run();
+        `).bind(id, body.projeto_id, body.titulo, descricaoSani, body.prioridade, body.status, body.modulo || null, body.pontos ?? 1, body.equipe_id || null, body.grupo_id || null).run();
 
         // 🚀 Atribui responsáveis iniciais, se fornecidos
         if (body.responsaveis && body.responsaveis.length > 0) {

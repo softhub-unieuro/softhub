@@ -6,6 +6,7 @@ import { registrarLog } from '../servicos/servico-logs';
 import { criarNotificacoes } from '../servicos/servico-notificacoes';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
+import { sanitizarHTML } from '../utilitarios/limpeza';
 
 const rotasTarefasDetalhes = new Hono<{ Bindings: Env, Variables: { usuario: any } }>();
 
@@ -49,8 +50,10 @@ rotasTarefasDetalhes.post('/:id/comentarios', autenticacaoRequerida(), verificar
         if (!tarefaData) return c.json({ erro: 'Tarefa não encontrada' }, 404);
 
         const idComentario = crypto.randomUUID();
+        const conteudoSani = sanitizarHTML(conteudo.trim());
+        
         await DB.prepare(`INSERT INTO comentarios_tarefa (id, tarefa_id, autor_id, conteudo) VALUES (?, ?, ?, ?)`)
-            .bind(idComentario, tarefaId, usuario.id, conteudo.trim()).run();
+            .bind(idComentario, tarefaId, usuario.id, conteudoSani).run();
 
         // Evitando Flood: Notificando o responsável + atuais comentaristas, isentando o próprio autor
         const responsaveisReq = await DB.prepare('SELECT usuario_id FROM tarefas_responsaveis WHERE tarefa_id = ?').bind(tarefaId).all();
@@ -107,8 +110,9 @@ rotasTarefasDetalhes.patch('/comentarios/:id', autenticacaoRequerida(), verifica
             return c.json({ erro: 'Apenas o autor pode editar este comentário.' }, 403);
         }
 
+        const conteudoSani = sanitizarHTML(conteudo.trim());
         await DB.prepare('UPDATE comentarios_tarefa SET conteudo = ?, atualizado_em = ? WHERE id = ?')
-            .bind(conteudo.trim(), new Date().toISOString(), comentarioId).run();
+            .bind(conteudoSani, new Date().toISOString(), comentarioId).run();
 
         await registrarLog(DB, {
             usuarioId: usuario.id,
@@ -376,8 +380,9 @@ rotasTarefasDetalhes.patch('/:id/feedback',
             return c.json({ erro: 'Apenas a liderança pode avaliar o aprendizado.' }, 403);
         }
 
+        const feedbackSani = sanitizarHTML(feedback_lider);
         await DB.prepare('UPDATE tarefas SET feedback_lider = ?, nota_aprendizado = ? WHERE id = ?')
-            .bind(feedback_lider, nota_aprendizado, id).run();
+            .bind(feedbackSani, nota_aprendizado, id).run();
 
         await registrarLog(DB, {
             usuarioId: usuario.id,
