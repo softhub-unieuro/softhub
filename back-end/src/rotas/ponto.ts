@@ -6,6 +6,7 @@ import * as servico from '../servicos/servico-ponto';
 import * as repo from '../repositorios/repo-ponto';
 import { gerarLinhaCsv } from '../utilitarios/csv';
 import { kvRateLimit } from '../middleware/rate-limit';
+import { log } from '../utilitarios/logger';
 
 const rotasPonto = new Hono<{ Bindings: Env }>();
 
@@ -100,5 +101,59 @@ rotasPonto.get('/exportar',
         }
     }
 );
+
+/**
+ * Retorna os membros que estão atualmente com o ponto aberto.
+ */
+rotasPonto.get('/online', autenticacaoRequerida(), async (c: Context) => {
+    const { softhub_kv } = c.env;
+    if (!softhub_kv) return c.json({ online: [] });
+
+    try {
+        const { keys } = await softhub_kv.list({ prefix: 'presenca:', limit: 100 });
+        const membros = [];
+
+        for (const key of keys) {
+            const val = await softhub_kv.get(key.name);
+            if (val) {
+                try {
+                    membros.push(JSON.parse(val));
+                } catch (e) {}
+            }
+        }
+        return c.json({ online: membros });
+    } catch (e: any) {
+        log('error', '[PONTO-ONLINE] Falha ao listar membros online', { erro: e.message });
+        return c.json({ online: [] });
+    }
+});
+
+/**
+ * Heartbeat de presença para manter o usuário online no sistema.
+ */
+rotasPonto.post('/presenca', autenticacaoRequerida(), async (c: Context) => {
+    const { softhub_kv } = c.env;
+    const usuario = c.get('usuario');
+    
+    if (!softhub_kv) return c.json({ ok: true });
+
+    try {
+        const chave = `presenca:${usuario.id}`;
+        const data = await softhub_kv.get(chave);
+        
+        // Se já houver registro de presença (ponto aberto), renovamos o TTL
+        if (data) {
+            await softhub_kv.put(chave, data, { expirationTtl: 28800 }); // 8 horas
+        }
+        
+        // Heartbeat genérico (opcional, para saber quem está no app mesmo sem ponto)
+        await softhub_kv.put(`heartbeat:${usuario.id}`, 'true', { expirationTtl: 600 }); // 10 minutos
+        
+        return c.json({ ok: true });
+    } catch (e: any) {
+        // Heartbeat não deve falhar a experiência do usuário
+        return c.json({ ok: true });
+    }
+});
 
 export default rotasPonto;

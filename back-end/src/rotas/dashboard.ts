@@ -128,8 +128,16 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
         await softhub_kv?.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 30 }); // 30s — quase instantâneo
         return c.json(resposta);
     } catch (erro: any) {
-        log('error', '[DASHBOARD] Falha ao buscar dashboard consolidado', { erro: erro.message, projetoId });
-        return c.json({ erro: 'Falha ao buscar dashboard consolidado' }, 500);
+        log('error', '[DASHBOARD] Falha ao buscar dashboard consolidado', { 
+            erro: erro.message, 
+            stack: erro.stack,
+            projetoId,
+            usuarioId: usuarioLogado?.id 
+        });
+        return c.json({ 
+            erro: 'Falha ao buscar dashboard consolidado',
+            detalhe: erro.message 
+        }, 500);
     }
 });
 
