@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "wrangler dev --remote",
     "deploy": "wrangler deploy",
-    "db:init": "node src/db/iniciar-banco.js --remote",
     "db:init:remote": "wrangler d1 execute DB --remote --file=src/db/migrations/001_tabelas_base.sql && wrangler d1 execute DB --remote --file=src/db/migrations/002_tabelas_modulos.sql",
     "db:seed": "wrangler d1 execute DB --remote --file=src/db/seed.sql",
     "db:explain": "wrangler d1 execute DB --remote --command",
@@ -21,7 +20,6 @@
   "dependencies": {
     "@hono/zod-validator": "^0.7.6",
     "@octokit/rest": "^22.0.1",
-    "dotenv": "^17.3.1",
     "hono": "^4.12.5",
     "hono-rate-limiter": "^0.5.3",
     "zod": "^4.3.6"

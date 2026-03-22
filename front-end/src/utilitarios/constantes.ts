@@ -42,22 +42,17 @@ export const LABELS_ROLES = {
     COORDENADOR: 'Coordenador',
     GESTOR: 'Gestor',
     LIDER: 'Líder',
-    'LIDER-TECNICO': 'Líder Técnico',
     SUBLIDER: 'Sublíder',
-    'SUB-LIDER': 'Sub-líder',
     MEMBRO: 'Membro',
 } as const;
 
-// Variantes de cores para as roles (seguindo padrão de autoridade)
 export const VARIANTE_COR_ROLES = {
-    ADMIN: 'rose',         // Vermelho/Rosa (Poder Total)
-    COORDENADOR: 'blue',   // Azul (Estratégico)
-    GESTOR: 'blue',        // Azul (Gestão Macro)
-    LIDER: 'indigo',       // Índigo (Liderança de Grupo)
-    'LIDER-TECNICO': 'roxo', // Roxo (Especialista Técnico)
-    SUBLIDER: 'amber',     // Amarelo (Apoio à Liderança)
-    'SUB-LIDER': 'amber',  // Amarelo (Apoio à Liderança)
-    MEMBRO: 'emerald',     // Verde (Operação)
+    ADMIN: 'vermelho',
+    COORDENADOR: 'azul',
+    GESTOR: 'azul',
+    LIDER: 'roxo',
+    SUBLIDER: 'amarelo',
+    MEMBRO: 'verde',
 } as const;
 
 // Configurações do GitHub (Utilizado no Portfólio Público)
