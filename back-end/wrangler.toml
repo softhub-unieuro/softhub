@@ -1,11 +1,11 @@
-name = 'api'
-main = 'src/index.ts'
-compatibility_date = '2024-03-05'
+name = "api"
+main = "src/index.ts"
+compatibility_date = "2024-03-05"
 
 [[d1_databases]]
-binding = 'DB'
-database_name = 'softhub_db'
-database_id = '631a8b23-4a75-4e59-8b73-61af4b07d5f7'
+binding = "DB"
+database_name = "softhub_db"
+database_id = "631a8b23-4a75-4e59-8b73-61af4b07d5f7"
 
 [[kv_namespaces]]
 binding = "softhub_kv"
@@ -19,4 +19,4 @@ crons = ["45 16 * * *", "59 23 * * *", "0 3 * * 0"]
 
 [vars]
 APP_ENV = "production"
-BOOTSTRAP_ADMIN_EMAIL = "mateus099803@unieuro.com.br"
+BOOTSTRAP_ADMIN_EMAIL = "mateus099803@unieuro.com.br"
