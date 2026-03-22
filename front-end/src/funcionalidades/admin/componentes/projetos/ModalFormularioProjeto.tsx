@@ -2,7 +2,7 @@ import { memo, useEffect, useState } from 'react';
 import { useForm, SubmitHandler, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Trash2, CheckCircle2, Github, BookText, Figma, Link2, Copy, Check } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Github, BookText, Figma, Link2, Copy, Check, Users } from 'lucide-react';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
 import { Modal } from '@/compartilhado/componentes/Modal';
 import { usarIA } from '@/funcionalidades/ia/hooks/usarIA';
@@ -111,6 +111,7 @@ export const ModalFormularioProjeto = memo(({
     };
 
     return (
+        <>
         <Modal
             aberto={aberto}
             aoFechar={aoFechar}
@@ -210,8 +211,7 @@ export const ModalFormularioProjeto = memo(({
                             )}
                         </div>
                     </div>
-
-                    <div className="space-y-6">
+                    <div className="space-y-6 md:border-l md:border-border/40 md:pl-8">
                         <div className="grid grid-cols-1 gap-4">
                             <div>
                                 <label className="block text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Figma (URL)</label>
@@ -260,13 +260,16 @@ export const ModalFormularioProjeto = memo(({
                                     <h4 className="text-[11px] font-black uppercase tracking-widest text-foreground">Equipes Envolvidas</h4>
                                     <p className="text-[10px] text-muted-foreground">Quem opera este projeto</p>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => adicionarEquipe({ equipe_id: '', acesso: 'EDICAO' })}
-                                    className="h-8 px-3 bg-secondary/30 hover:bg-secondary/50 text-secondary-foreground text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all flex items-center gap-1.5"
-                                >
-                                    <Plus size={14} /> Vincular
-                                </button>
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => adicionarEquipe({ equipe_id: '', acesso: 'EDICAO' })}
+                                        className="h-8 px-2 bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all flex items-center gap-2 border border-primary/20"
+                                    >
+                                        <Link2 size={14} strokeWidth={3} />
+                                        <span>Vincular</span>
+                                    </button>
+                                </div>
                             </div>
                             
                             <div className="space-y-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
@@ -352,5 +355,6 @@ export const ModalFormularioProjeto = memo(({
                 </div>
             </form>
         </Modal>
+    </>
     );
 });

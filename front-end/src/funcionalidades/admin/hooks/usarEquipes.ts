@@ -70,7 +70,7 @@ export function usarEquipes() {
 
             return {
                 grupos: resGrupos.data.grupos ?? [],
-                equipes: resEquipes.data.equipes ?? [],
+                equipes: resEquipes.data.dados ?? resEquipes.data.equipes ?? [], // Suporta formato paginado e antigo
                 membros: membrosData,
             };
         },

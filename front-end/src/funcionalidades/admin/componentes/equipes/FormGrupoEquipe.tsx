@@ -1,5 +1,5 @@
 import { useState, memo } from 'react';
-import { Users } from 'lucide-react';
+import { Users, Plus, Trash2 } from 'lucide-react';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
 import { SeletorBuscavel } from './SeletorBuscavel';
 
@@ -16,13 +16,25 @@ export const FormGrupoEquipe = memo(({ titulo, tipo, equipes, equipeAtivaId, aoS
     const [salvando, setSalvando] = useState(false);
     const [nome, setNome] = useState('');
     const [equipeId, setEquipeId] = useState(equipeAtivaId || '');
+    const [grupos, setGrupos] = useState<string[]>([]);
+    const [novoGrupo, setNovoGrupo] = useState('');
+
+    const handleAdicionarGrupo = () => {
+        if (!novoGrupo.trim()) return;
+        setGrupos([...grupos, novoGrupo.trim()]);
+        setNovoGrupo('');
+    };
+
+    const handleRemoverGrupo = (index: number) => {
+        setGrupos(grupos.filter((_, i) => i !== index));
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSalvando(true);
         try {
             const dados = tipo === 'equipe'
-                ? { nome }
+                ? { nome, grupos }
                 : { nome, equipe_id: equipeId || null };
             await aoSalvar(dados);
         } finally {
@@ -54,6 +66,73 @@ export const FormGrupoEquipe = memo(({ titulo, tipo, equipes, equipeAtivaId, aoS
                         placeholderVazio="Selecione a equipe de comando..."
                         icone={Users}
                     />
+                )}
+
+                {tipo === 'equipe' && (
+                    <div className="space-y-4 pt-6 border-t border-border/40">
+                        <div className="flex items-center justify-between px-1">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground">Estrutura Interna</span>
+                                <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-tight">Crie os grupos de trabalho desta equipe</span>
+                            </div>
+                            <div className="h-7 px-3 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center">
+                                <span className="text-[10px] font-black text-primary">{grupos.length} {grupos.length === 1 ? 'GRUPO' : 'GRUPOS'}</span>
+                            </div>
+                        </div>
+
+                        <div className="relative group p-1.5 bg-muted/20 border border-border/40 rounded-2xl flex items-center gap-2 focus-within:ring-2 focus-within:ring-primary/10 focus-within:border-primary transition-all">
+                            <div className="w-8 h-8 rounded-xl bg-background flex items-center justify-center text-muted-foreground group-focus-within:text-primary transition-colors">
+                                <Plus size={16} strokeWidth={3} />
+                            </div>
+                            <input
+                                type="text"
+                                value={novoGrupo}
+                                onChange={e => setNovoGrupo(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAdicionarGrupo())}
+                                placeholder="Nome do novo grupo..."
+                                className="flex-1 bg-transparent border-none text-[11px] font-bold outline-none placeholder:text-muted-foreground/40"
+                            />
+                            {novoGrupo.trim() && (
+                                <button
+                                    type="button"
+                                    onClick={handleAdicionarGrupo}
+                                    className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-[9px] font-black uppercase tracking-widest animate-in fade-in slide-in-from-right-2"
+                                >
+                                    Adicionar
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1 pb-2">
+                            {grupos.length === 0 ? (
+                                <div className="py-8 border-2 border-dashed border-border/40 rounded-3xl flex flex-col items-center justify-center gap-3 opacity-30">
+                                    <Users size={32} strokeWidth={1} />
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em]">Sem grupos definidos</p>
+                                </div>
+                            ) : (
+                                grupos.map((g, idx) => (
+                                    <div 
+                                        key={idx} 
+                                        className="group/item flex items-center justify-between p-3 bg-white/50 border border-border/80 rounded-2xl hover:bg-white hover:shadow-lg hover:shadow-slate-100 hover:border-primary/20 transition-all duration-300 animate-in slide-in-from-bottom-2"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center group-hover/item:bg-primary/5 group-hover/item:text-primary transition-colors">
+                                                <span className="text-[10px] font-black">{idx + 1}</span>
+                                            </div>
+                                            <span className="text-[11px] font-black text-slate-700 uppercase tracking-tight">{g}</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoverGrupo(idx)}
+                                            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground/30 hover:text-rose-500 hover:bg-rose-500/10 transition-all opacity-0 group-hover/item:opacity-100"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
                 )}
             </div>
 

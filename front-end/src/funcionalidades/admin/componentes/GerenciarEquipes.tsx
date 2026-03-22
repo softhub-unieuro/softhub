@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, memo } from 'react';
-import { LayoutGrid, Users, Plus, Trash2 } from 'lucide-react';
+import { LayoutGrid, Users, Plus, Trash2, Search } from 'lucide-react';
 
 import { usarEquipes } from '@/funcionalidades/admin/hooks/usarEquipes';
 import type { Grupo, Equipe } from '@/funcionalidades/admin/hooks/usarEquipes';
@@ -156,6 +156,16 @@ export const GerenciarEquipes = memo(() => {
                 icone={LayoutGrid}
             >
                 <div className="flex items-center gap-3">
+                    <div className="relative group/search max-w-xs">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within/search:text-primary transition-colors" size={14} />
+                        <input
+                            placeholder="Buscar equipe..."
+                            value={buscaEquipe}
+                            onChange={e => setBuscaEquipe(e.target.value)}
+                            className="h-11 w-full bg-background border border-border rounded-2xl pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/30 font-medium"
+                        />
+                    </div>
+
                     {/* Botão Voltar para Mobile quando há equipe selecionada */}
                     <button
                         onClick={() => setIdEquipeAtiva(null)}
@@ -188,13 +198,14 @@ export const GerenciarEquipes = memo(() => {
                         {/* Sidebar de Equipes */}
                         <div className={`w-full lg:w-80 shrink-0 ${idEquipeAtiva ? 'hidden lg:flex' : 'flex'}`}>
                             <SidebarEquipes
-                                equipes={equipesAtivas}
+                                equipes={equipesFiltradas}
                                 idEquipeAtiva={idEquipeAtiva}
                                 aoSelecionar={setIdEquipeAtiva}
                                 podeEditar={podeEditarEquipe}
                                 aoExcluir={(e) => setConfirmacaoExclusao({ id: e.id, nome: e.nome, tipo: 'equipe' })}
                                 podeCriar={podeCriarEquipe}
                                 aoCriar={() => setModalOrg({ aberto: true, tipo: 'equipe' })}
+                                termoBusca={buscaEquipe}
                             />
                         </div>
 

@@ -40,14 +40,18 @@ rotasAuthQr.post('/qr/gerar', async (c) => {
     };
 
     try {
-        // Salva no KV com TTL de 60 segundos (mínimo exigido pelo Cloudflare KV)
-        await softhub_kv.put(chaveQr(sessaoId), JSON.stringify(dados), { expirationTtl: 60 });
+        // Aumentado para 120s para evitar erros de limite mínimo de 60s do Cloudflare KV (time skew)
+        await softhub_kv.put(chaveQr(sessaoId), JSON.stringify(dados), { expirationTtl: 120 });
         return c.json({ sessaoId, expiraEm });
     } catch (err: any) {
-        log('error', '[QR-AUTH] Erro ao gerar sessão', { erro: err.message, stack: err.stack });
+        log('error', '[QR-AUTH] Erro ao gerar sessão no KV', { 
+            erro: err?.message || err, 
+            sessaoId,
+            stack: err?.stack 
+        });
         return c.json({ 
-            erro: 'Erro ao gerar sessão de login.', 
-            detalhe: err.message 
+            erro: 'Erro técnico ao criar sessão de login QR.', 
+            detalhe: err?.message || 'Falha ao persistir no cache.' 
         }, 500);
     }
 });
@@ -87,7 +91,7 @@ rotasAuthQr.get('/qr/verificar/:id', async (c) => {
 
             // Consome a sessão no KV para não permitir reuso
             sessao.status = 'consumido';
-            await softhub_kv.put(chaveQr(id), JSON.stringify(sessao), { expirationTtl: 60 });
+            await softhub_kv.put(chaveQr(id), JSON.stringify(sessao), { expirationTtl: 120 });
 
             return c.json({
                 status: 'autorizado',
@@ -122,7 +126,7 @@ rotasAuthQr.post('/qr/identificar', autenticacaoRequerida(), async (c) => {
         sessao.status = 'identificado';
         sessao.usuario_id = usuario.id;
         
-        await softhub_kv.put(chaveQr(sessaoId), JSON.stringify(sessao), { expirationTtl: 60 });
+        await softhub_kv.put(chaveQr(sessaoId), JSON.stringify(sessao), { expirationTtl: 120 });
 
         return c.json({ sucesso: true });
     } catch (err: any) {
@@ -174,7 +178,7 @@ rotasAuthQr.post('/qr/autorizar', autenticacaoRequerida(), async (c) => {
         sessao.usuario_id = usuario.id;
         sessao.token_acesso = tokenDesktop;
 
-        await softhub_kv.put(chaveQr(sessaoId), JSON.stringify(sessao), { expirationTtl: 60 });
+        await softhub_kv.put(chaveQr(sessaoId), JSON.stringify(sessao), { expirationTtl: 120 });
 
         await registrarLog(DB, {
             usuarioId: usuario.id,

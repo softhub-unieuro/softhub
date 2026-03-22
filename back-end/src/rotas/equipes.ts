@@ -49,10 +49,10 @@ rotasEquipes.post('/', autenticacaoRequerida(), verificarPermissao('equipes:cria
     const { DB } = c.env;
     const usuarioLogado = c.get('usuario') as any;
 
-    let nome: string, descricao: string | null, lider_id: string | null, sub_lider_id: string | null;
+    let nome: string, descricao: string | null, lider_id: string | null, sub_lider_id: string | null, grupos: string[] | null;
     try {
         const json = await c.req.json();
-        ({ nome, descricao = null, lider_id = null, sub_lider_id = null } = json);
+        ({ nome, descricao = null, lider_id = null, sub_lider_id = null, grupos = null } = json);
     } catch (e: any) {
         return c.json({ erro: 'Corpo da requisição inválido.', detalhe: e.message }, 400);
     }
@@ -61,19 +61,34 @@ rotasEquipes.post('/', autenticacaoRequerida(), verificarPermissao('equipes:cria
 
     try {
         const id = crypto.randomUUID();
-        await DB.prepare(
-            'INSERT INTO equipes (id, nome, descricao, lider_id, sub_lider_id) VALUES (?, ?, ?, ?, ?)'
-        ).bind(id, nome.trim(), descricao, lider_id, sub_lider_id).run();
+        
+        const commands = [
+            DB.prepare('INSERT INTO equipes (id, nome, descricao, lider_id, sub_lider_id) VALUES (?, ?, ?, ?, ?)')
+              .bind(id, nome.trim(), descricao, lider_id, sub_lider_id)
+        ];
+
+        if (grupos && Array.isArray(grupos)) {
+            grupos.forEach(grupoNome => {
+                if (grupoNome.trim()) {
+                    commands.push(
+                        DB.prepare('INSERT INTO grupos (id, nome, equipe_id) VALUES (?, ?, ?)')
+                          .bind(crypto.randomUUID(), grupoNome.trim(), id)
+                    );
+                }
+            });
+        }
+
+        await DB.batch(commands);
 
         await registrarLog(DB, {
             usuarioId: usuarioLogado.id,
             acao: 'EQUIPE_CRIADA',
             modulo: 'equipes',
-            descricao: `Equipe "${nome}" criada`,
+            descricao: `Equipe "${nome}" criada ${grupos?.length ? `com ${grupos.length} grupos` : ''}`,
             ip: c.req.header('CF-Connecting-IP') ?? '',
             entidadeTipo: 'equipes',
             entidadeId: id,
-            dadosNovos: { nome, descricao, lider_id, sub_lider_id },
+            dadosNovos: { nome, descricao, lider_id, sub_lider_id, gruposCount: grupos?.length || 0 },
         });
 
         // Sincronizar roles de liderança (Regra: Auto-cargo ao designar Líder/Sublíder)

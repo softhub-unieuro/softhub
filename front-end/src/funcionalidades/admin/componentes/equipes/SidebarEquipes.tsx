@@ -1,6 +1,6 @@
-import { memo } from 'react';
-import { Users, Trash2 } from 'lucide-react';
+import { Search, Users, Trash2, Plus } from 'lucide-react';
 import { EstadoVazio } from '@/compartilhado/componentes/EstadoVazio';
+import { useState, useMemo, memo } from 'react';
 
 interface SidebarEquipesProps {
     equipes: any[];
@@ -10,6 +10,7 @@ interface SidebarEquipesProps {
     aoExcluir: (e: any) => void;
     podeCriar: boolean;
     aoCriar: () => void;
+    termoBusca?: string;
 }
 
 export const SidebarEquipes = memo(({
@@ -19,11 +20,12 @@ export const SidebarEquipes = memo(({
     podeEditar,
     aoExcluir,
     podeCriar,
-    aoCriar
+    aoCriar,
+    termoBusca = ''
 }: SidebarEquipesProps) => {
     return (
-        <aside className="w-full lg:w-80 flex flex-col shrink-0">
-            <div className="bg-card border border-border rounded-2xl shadow-sm flex flex-col h-full overflow-hidden">
+        <aside className="w-full lg:w-80 flex flex-col shrink-0 h-full">
+            <div className="bg-card border border-border rounded-3xl shadow-sm flex flex-col h-full overflow-hidden">
                 <div className="p-5 border-b border-border bg-muted/10 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <div className="p-2 bg-primary/10 rounded-lg text-primary shadow-sm shadow-primary/5">
@@ -33,7 +35,6 @@ export const SidebarEquipes = memo(({
                     </div>
                     <span className="text-[9px] font-black text-muted-foreground/60">{equipes.length}</span>
                 </div>
-
                 <div className="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar">
                     {equipes.map((e, index) => (
                         <div
@@ -70,10 +71,10 @@ export const SidebarEquipes = memo(({
                     ))}
 
                     {equipes.length === 0 && (
-                        <div className="flex-1 flex flex-col items-center justify-center">
+                        <div className="py-12 flex flex-col items-center justify-center">
                             <EstadoVazio 
-                                titulo="Sem Equipes"
-                                descricao="Nenhuma equipe foi criada ainda."
+                                titulo={termoBusca ? "Nenhum resultado" : "Sem Equipes"}
+                                descricao={termoBusca ? `Não encontramos equipes com "${termoBusca}"` : "Nenhuma equipe foi criada ainda."}
                                 compacto={true}
                                 acao={podeCriar ? {
                                     rotulo: "Criar Equipe",

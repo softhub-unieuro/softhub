@@ -1,8 +1,11 @@
 import { useState, useMemo, memo } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Users } from 'lucide-react';
 import { Modal } from '@/compartilhado/componentes/Modal';
 import { Avatar } from '@/compartilhado/componentes/Avatar';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
+import { FormGrupoEquipe } from '../equipes/FormGrupoEquipe';
+import { usarEquipes } from '@/funcionalidades/admin/hooks/usarEquipes';
+import { usarToast } from '@/compartilhado/hooks/usarToast';
 
 interface ModalAlocacaoDiretaProps {
     aberto: boolean;
@@ -18,6 +21,10 @@ export const ModalAlocacaoDireta = memo(({ aberto, aoFechar, membro, grupos, equ
     const [equipe_id, setEquipeId] = useState('');
     const [grupo_id, setGrupoId] = useState('');
     const [salvando, setSalvando] = useState(false);
+    const [modalEquipeAberto, setModalEquipeAberto] = useState(false);
+
+    const { criarEquipe } = usarEquipes();
+    const { exibirToast } = usarToast();
 
     const gruposFiltrados = useMemo(() =>
         grupos.filter((g: any) => g.equipe_id === equipe_id),
@@ -36,7 +43,22 @@ export const ModalAlocacaoDireta = memo(({ aberto, aoFechar, membro, grupos, equ
         }
     };
 
+    const handleCriarNovaEquipe = async (dados: any) => {
+        try {
+            const res = await criarEquipe(dados);
+            const novoId = (res as any).data?.id;
+            if (novoId) {
+                setEquipeId(novoId);
+                exibirToast('Equipe criada! Agora crie um grupo para ela.');
+            }
+            setModalEquipeAberto(false);
+        } catch (e: any) {
+            exibirToast(e.response?.data?.erro || 'Erro ao criar equipe.', 'erro');
+        }
+    };
+
     return (
+        <>
         <Modal aberto={aberto} aoFechar={aoFechar} titulo="Alocação Rápida" largura="sm">
             <div className="space-y-6">
                 {membro && (
@@ -50,7 +72,15 @@ export const ModalAlocacaoDireta = memo(({ aberto, aoFechar, membro, grupos, equ
                 )}
 
                 <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block ml-1">Equipe Destino</label>
+                    <div className="flex justify-between items-center mb-1">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Equipe Destino</label>
+                        <button
+                            onClick={() => setModalEquipeAberto(true)}
+                            className="text-[9px] font-black uppercase tracking-wider text-primary hover:opacity-70 flex items-center gap-1 transition-all"
+                        >
+                            <Plus size={10} strokeWidth={4} /> Criar Nova
+                        </button>
+                    </div>
                     <select
                         value={equipe_id}
                         onChange={e => setEquipeId(e.target.value)}
@@ -90,5 +120,21 @@ export const ModalAlocacaoDireta = memo(({ aberto, aoFechar, membro, grupos, equ
                 </div>
             </div>
         </Modal>
+
+        {/* Modal para Criação de Equipe Durante Alocação */}
+        <Modal
+            aberto={modalEquipeAberto}
+            aoFechar={() => setModalEquipeAberto(false)}
+            titulo="Nova Equipe"
+            largura="sm"
+        >
+            <FormGrupoEquipe
+                titulo="Equipe"
+                tipo="equipe"
+                aoSalvar={handleCriarNovaEquipe}
+                aoFechar={() => setModalEquipeAberto(false)}
+            />
+        </Modal>
+    </>
     );
 });
