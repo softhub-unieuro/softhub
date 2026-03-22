@@ -9,7 +9,7 @@ const rotasTarefas = new Hono<{ Bindings: Env, Variables: { usuario: any } }>({ 
  * Lista as tarefas de um projeto específico, com suporte a filtros.
  * Filtros suportados: busca (texto), prioridade, responsavelId, modulo.
  */
-rotasTarefas.get('/', autenticacaoRequerida(), verificarPermissao(['tarefas:visualizar_kanban', 'tarefas:visualizar_backlog', 'tarefas:visualizar_detalhes']), async (c: Context) => {
+rotasTarefas.get('/', autenticacaoRequerida(), verificarPermissao(['tarefas:visualizar', 'tarefas:visualizar_kanban', 'tarefas:visualizar_backlog', 'tarefas:visualizar_detalhes']), async (c: Context) => {
     const { DB } = c.env;
     const projetoId = c.req.query('projetoId');
     const usuario = c.get('usuario');

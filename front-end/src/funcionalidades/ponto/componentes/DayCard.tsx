@@ -81,30 +81,28 @@ export const DayCard = memo(({ dia, registros, hoje }: DayCardProps) => {
                                 )}
                                 
                                 {/* Dynamic Node */}
-                                <div className={`
-                                    w-4 h-4 rounded-full border-2 bg-white z-10 shrink-0 transition-all duration-300
-                                    ${reg.tipo === 'entrada' 
-                                        ? 'border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.2)] group-hover/item:shadow-[0_0_15px_rgba(16,185,129,0.4)]' 
-                                        : 'border-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.2)] group-hover/item:shadow-[0_0_15px_rgba(244,63,94,0.4)]'}
-                                `} />
+                                {reg.ip_origem === 'SISTEMA-AUTOMATICO' ? (
+                                    <div 
+                                        title="Ponto encerrado automaticamente pelo sistema"
+                                        className="z-10 shrink-0 bg-white rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(244,63,94,0.2)] group-hover/item:shadow-[0_0_15px_rgba(244,63,94,0.4)]"
+                                    >
+                                        <Bot size={16} className="text-rose-500" strokeWidth={2.5} />
+                                    </div>
+                                ) : (
+                                    <div className={`
+                                        w-4 h-4 rounded-full border-2 bg-white z-10 shrink-0 transition-all duration-300
+                                        ${reg.tipo === 'entrada' 
+                                            ? 'border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.2)] group-hover/item:shadow-[0_0_15px_rgba(16,185,129,0.4)]' 
+                                            : 'border-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.2)] group-hover/item:shadow-[0_0_15px_rgba(244,63,94,0.4)]'}
+                                    `} />
+                                )}
 
                                 <div className="flex flex-col justify-center">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm font-black text-slate-800 tabular-nums leading-none">
-                                            {format(new Date(reg.registrado_em), 'HH:mm')}
-                                        </span>
-                                        {reg.ip_origem === 'SISTEMA-AUTOMATICO' && (
-                                            <div 
-                                                title="Ponto encerrado automaticamente pelo sistema"
-                                                className="flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] bg-slate-100 border border-slate-200"
-                                            >
-                                                <Bot size={8} className="text-slate-500 shrink-0" />
-                                                <span className="text-[7px] font-black uppercase tracking-widest text-slate-500">Auto</span>
-                                            </div>
-                                        )}
-                                    </div>
+                                    <span className="text-sm font-black text-slate-800 tabular-nums leading-none">
+                                        {format(new Date(reg.registrado_em), 'HH:mm')}
+                                    </span>
                                     <span className={`text-[8px] font-black uppercase tracking-[0.15em] mt-1 ${reg.tipo === 'entrada' ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                        {reg.tipo}
+                                        {reg.tipo} {reg.ip_origem === 'SISTEMA-AUTOMATICO' && '(AUTO)'}
                                     </span>
                                 </div>
                             </div>
