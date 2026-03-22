@@ -22,6 +22,12 @@ const chaveQr = (id: string) => `qr_sessao:${id}`;
 // ── QR Code: Gerar Sessão (KV) ─────────────────────────────────────────────────────
 rotasAuthQr.post('/qr/gerar', async (c) => {
     const { softhub_kv } = c.env;
+    
+    if (!softhub_kv) {
+        log('error', '[QR-AUTH] Erro crítico: Binding softhub_kv não encontrado no ambiente.');
+        return c.json({ erro: 'O servidor de cache (KV) não está configurado corretamente.' }, 500);
+    }
+
     const sessaoId = crypto.randomUUID();
     const agora = new Date();
     const expiraEm = new Date(agora.getTime() + 1000 * 60).toISOString(); // 60 segundos (mínimo KV)
@@ -38,8 +44,11 @@ rotasAuthQr.post('/qr/gerar', async (c) => {
         await softhub_kv.put(chaveQr(sessaoId), JSON.stringify(dados), { expirationTtl: 60 });
         return c.json({ sessaoId, expiraEm });
     } catch (err: any) {
-        log('error', '[QR-AUTH] Erro ao gerar sessão', { erro: err.message });
-        return c.json({ erro: 'Erro ao gerar sessão de login.' }, 500);
+        log('error', '[QR-AUTH] Erro ao gerar sessão', { erro: err.message, stack: err.stack });
+        return c.json({ 
+            erro: 'Erro ao gerar sessão de login.', 
+            detalhe: err.message 
+        }, 500);
     }
 });
 
