@@ -32,18 +32,28 @@ rotasAvisos.get('/', autenticacaoRequerida(), verificarPermissao('avisos:visuali
     const params = Object.fromEntries(new URL(c.req.url).searchParams);
     const cacheKey = buildCacheKey('/api/avisos', params, ['page', 'limit', 'prioridade']);
     
-    const cache = await caches.open('avisos-cache');
-    const cachedRes = await cache.match(new URL(cacheKey, c.req.url).toString());
-    if (cachedRes) return cachedRes;
+    // 1. Tentar Cache (apenas em produção ou se disponível)
+    let cache: any;
+    try {
+        cache = (globalThis as any).caches?.open('avisos-cache');
+        if (cache) {
+            const cachedRes = await (await cache).match(new URL(cacheKey, c.req.url).toString());
+            if (cachedRes) return cachedRes;
+        }
+    } catch (e) {
+        log('warn', '[AVISOS] Falha ao acessar Cache API (esperado em dev)', { erro: (e as any).message });
+    }
 
     const { DB } = c.env;
 
     try {
-        // 1. Contagem total para metadados
-        const totalReq = await DB.prepare(`
+        // 1. Contagem total
+        const totalRaw = await DB.prepare(`
             SELECT COUNT(*) as total FROM avisos 
-            WHERE (expira_em IS NULL OR datetime(expira_em) >= datetime('now')) AND arquivado = 0
-        `).first() as { total: number };
+            WHERE (expira_em IS NULL OR expira_em >= datetime('now')) AND arquivado = 0
+        `).first() as any;
+        
+        const total = totalRaw?.total || 0;
 
         // 2. Busca paginada
         const { results } = await DB.prepare(`
@@ -51,13 +61,13 @@ rotasAvisos.get('/', autenticacaoRequerida(), verificarPermissao('avisos:visuali
                    u.id as criador_id, u.nome as criador_nome, u.foto_perfil as criador_foto
             FROM avisos a
             JOIN usuarios u ON a.criado_por = u.id
-            WHERE (a.expira_em IS NULL OR datetime(a.expira_em) >= datetime('now')) 
+            WHERE (a.expira_em IS NULL OR a.expira_em >= datetime('now')) 
             AND a.arquivado = 0
             ORDER BY a.criado_em DESC
             LIMIT ? OFFSET ?
         `).bind(pag.limit, pag.offset).all();
 
-        const formatado = results.map((r: any) => ({
+        const formatado = (results || []).map((r: any) => ({
             id: r.id,
             titulo: r.titulo,
             conteudo: r.conteudo,
@@ -71,16 +81,22 @@ rotasAvisos.get('/', autenticacaoRequerida(), verificarPermissao('avisos:visuali
             }
         }));
 
-        const respostaPaginada = formatarRespostaPaginada(formatado, totalReq.total, pag);
+        const respostaPaginada = formatarRespostaPaginada(formatado, total, pag);
         const resposta = c.json(respostaPaginada);
         
-        resposta.headers.set('Cache-Control', 's-maxage=600, no-cache');
-        await cache.put(cacheKey, resposta.clone());
+        // Tentativa de salvar no cache se disponível
+        try {
+            if (cache) {
+                const resClone = resposta.clone();
+                resClone.headers.set('Cache-Control', 's-maxage=600');
+                await (await cache).put(new URL(cacheKey, c.req.url).toString(), resClone);
+            }
+        } catch (e) {}
 
         return resposta;
     } catch (erro: any) {
-        log('error', '[AVISOS] Falha ao buscar avisos', { erro: erro.message });
-        return c.json({ erro: 'Falha ao buscar avisos' }, 500);
+        log('error', '[AVISOS] Falha crítica ao buscar avisos', { erro: erro.message, stack: erro.stack });
+        return c.json({ erro: 'Falha ao buscar avisos', detalhe: erro.message }, 500);
     }
 });
 
