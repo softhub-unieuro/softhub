@@ -141,7 +141,7 @@ app.route('/api/logs', rotasLogs);
 app.route('/api/configuracoes', rotasConfiguracoes);
 app.route('/api/relatorios', rotasRelatorios);
 app.route('/api/equipes', rotasEquipes);
-app.route('/api/equipes', rotasEquipesGrupos);
+app.route('/api/grupos', rotasEquipesGrupos);
 app.route('/api/equipes', rotasEquipesAlocacao);
 app.route('/api/notificacoes', rotasNotificacoes);
 app.route('/api/ia', rotasIA);

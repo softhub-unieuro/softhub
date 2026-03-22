@@ -11,7 +11,7 @@ const rotasGrupos = new Hono<{ Bindings: Env; Variables: { usuario: any } }>();
  * Lista todos os grupos cadastrados.
  * Inclui informações da equipe vinculada e totais de membros.
  */
-rotasGrupos.get('/grupos', autenticacaoRequerida(), verificarPermissao('equipes:visualizar'), async (c: Context) => {
+rotasGrupos.get('/', autenticacaoRequerida(), verificarPermissao('equipes:visualizar'), async (c: Context) => {
     const { DB } = c.env;
 
     try {
@@ -35,23 +35,21 @@ rotasGrupos.get('/grupos', autenticacaoRequerida(), verificarPermissao('equipes:
 
         return c.json({ grupos: grupos.results ?? [] });
     } catch (erro: any) {
-        log('error', '[EQUIPES-GRUPOS] Falha ao listar grupos', { erro: erro.message });
+        log('error', '[EQUIPES-GRUPOS] Falha ao listar grupos', { erro: erro.message, stack: erro.stack });
         return c.json({ erro: 'Falha ao listar grupos.' }, 500);
     }
 });
 
-/**
- * Cria um novo grupo vinculado a uma equipe.
- */
-rotasGrupos.post('/grupos', autenticacaoRequerida(), verificarPermissao('equipes:criar_grupo'), async (c: Context) => {
+rotasGrupos.post('/', autenticacaoRequerida(), verificarPermissao('equipes:criar_grupo'), async (c: Context) => {
     const { DB } = c.env;
     const usuarioLogado = c.get('usuario') as any;
 
     let nome: string, descricao: string | null, equipe_id: string | null;
     try {
-        ({ nome, descricao = null, equipe_id = null } = await c.req.json());
-    } catch {
-        return c.json({ erro: 'Corpo da requisição inválido.' }, 400);
+        const json = await c.req.json();
+        ({ nome, descricao = null, equipe_id = null } = json);
+    } catch (e: any) {
+        return c.json({ erro: 'Corpo da requisição inválido.', detalhe: e.message }, 400);
     }
 
     if (!nome?.trim()) return c.json({ erro: 'O nome do grupo é obrigatório.' }, 400);
@@ -76,15 +74,12 @@ rotasGrupos.post('/grupos', autenticacaoRequerida(), verificarPermissao('equipes
 
         return c.json({ sucesso: true, id }, 201);
     } catch (erro: any) {
-        log('error', '[EQUIPES-GRUPOS] Falha ao criar grupo', { erro: erro.message, nome });
-        return c.json({ erro: 'Falha ao criar grupo.' }, 500);
+        log('error', '[EQUIPES-GRUPOS] Falha ao criar grupo', { erro: erro.message, nome, stack: erro.stack });
+        return c.json({ erro: 'Falha ao criar grupo.', detalhe: erro.message }, 500);
     }
 });
 
-/**
- * Edita dados básicos de um grupo.
- */
-rotasGrupos.patch('/grupos/:id', autenticacaoRequerida(), verificarPermissao('equipes:editar_grupo'), async (c: Context) => {
+rotasGrupos.patch('/:id', autenticacaoRequerida(), verificarPermissao('equipes:editar_grupo'), async (c: Context) => {
     const { DB } = c.env;
     const usuarioLogado = c.get('usuario') as any;
     const id = c.req.param('id');
@@ -124,15 +119,12 @@ rotasGrupos.patch('/grupos/:id', autenticacaoRequerida(), verificarPermissao('eq
 
         return c.json({ sucesso: true });
     } catch (erro: any) {
-        log('error', '[EQUIPES-GRUPOS] Falha ao editar grupo', { erro: erro.message, id });
-        return c.json({ erro: 'Falha ao editar grupo.' }, 500);
+        log('error', '[EQUIPES-GRUPOS] Falha ao editar grupo', { erro: erro.message, id, stack: erro.stack });
+        return c.json({ erro: 'Falha ao editar grupo.', detalhe: erro.message }, 500);
     }
 });
 
-/**
- * Remove um grupo permanentemente (Hard Delete).
- */
-rotasGrupos.delete('/grupos/:id', autenticacaoRequerida(), verificarPermissao('equipes:editar_grupo'), async (c: Context) => {
+rotasGrupos.delete('/:id', autenticacaoRequerida(), verificarPermissao('equipes:editar_grupo'), async (c: Context) => {
     const { DB } = c.env;
     const usuarioLogado = c.get('usuario') as any;
     const id = c.req.param('id');
@@ -154,8 +146,8 @@ rotasGrupos.delete('/grupos/:id', autenticacaoRequerida(), verificarPermissao('e
 
         return c.json({ sucesso: true });
     } catch (erro: any) {
-        log('error', '[EQUIPES-GRUPOS] Falha ao remover grupo', { erro: erro.message, id });
-        return c.json({ erro: 'Falha ao remover grupo.' }, 500);
+        log('error', '[EQUIPES-GRUPOS] Falha ao remover grupo', { erro: erro.message, id, stack: erro.stack });
+        return c.json({ erro: 'Falha ao remover grupo.', detalhe: erro.message }, 500);
     }
 });
 

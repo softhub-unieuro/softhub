@@ -13,7 +13,7 @@ const rotasEquipes = new Hono<{ Bindings: Env; Variables: { usuario: any } }>();
  * Lista todas as equipes cadastradas.
  * Inclui líderes e total de membros por equipe.
  */
-rotasEquipes.get('/equipes', autenticacaoRequerida(), verificarPermissao('equipes:visualizar'), async (c: Context) => {
+rotasEquipes.get('/', autenticacaoRequerida(), verificarPermissao('equipes:visualizar'), async (c: Context) => {
     const { DB } = c.env;
     const pag = extrairPaginacao(c);
 
@@ -40,23 +40,21 @@ rotasEquipes.get('/equipes', autenticacaoRequerida(), verificarPermissao('equipe
 
         return c.json(formatarRespostaPaginada(equipes.results ?? [], totalReq.total, pag));
     } catch (erro: any) {
-        log('error', '[EQUIPES] Falha ao listar equipes', { erro: erro.message });
+        log('error', '[EQUIPES] Falha ao listar equipes', { erro: erro.message, stack: erro.stack });
         return c.json({ erro: 'Falha ao listar equipes.' }, 500);
     }
 });
 
-/**
- * Cria uma nova equipe organizacional.
- */
-rotasEquipes.post('/equipes', autenticacaoRequerida(), verificarPermissao('equipes:criar_equipe'), async (c: Context) => {
+rotasEquipes.post('/', autenticacaoRequerida(), verificarPermissao('equipes:criar_equipe'), async (c: Context) => {
     const { DB } = c.env;
     const usuarioLogado = c.get('usuario') as any;
 
     let nome: string, descricao: string | null, lider_id: string | null, sub_lider_id: string | null;
     try {
-        ({ nome, descricao = null, lider_id = null, sub_lider_id = null } = await c.req.json());
-    } catch {
-        return c.json({ erro: 'Corpo da requisição inválido.' }, 400);
+        const json = await c.req.json();
+        ({ nome, descricao = null, lider_id = null, sub_lider_id = null } = json);
+    } catch (e: any) {
+        return c.json({ erro: 'Corpo da requisição inválido.', detalhe: e.message }, 400);
     }
 
     if (!nome?.trim()) return c.json({ erro: 'O nome da equipe é obrigatório.' }, 400);
@@ -84,15 +82,15 @@ rotasEquipes.post('/equipes', autenticacaoRequerida(), verificarPermissao('equip
 
         return c.json({ sucesso: true, id }, 201);
     } catch (erro: any) {
-        log('error', '[EQUIPES] Falha ao criar equipe', { erro: erro.message, nome });
-        return c.json({ erro: 'Falha ao criar equipe.' }, 500);
+        log('error', '[EQUIPES] Falha ao criar equipe', { erro: erro.message, nome, stack: erro.stack });
+        return c.json({ erro: 'Falha ao criar equipe.', detalhe: erro.message }, 500);
     }
 });
 
 /**
  * Edita dados da equipe e atualiza líderes.
  */
-rotasEquipes.patch('/equipes/:id', autenticacaoRequerida(), verificarPermissao('equipes:editar_equipe'), async (c: Context) => {
+rotasEquipes.patch('/:id', autenticacaoRequerida(), verificarPermissao('equipes:editar_equipe'), async (c: Context) => {
     const { DB, softhub_kv } = c.env;
     const usuarioLogado = c.get('usuario') as any;
     const id = c.req.param('id');
@@ -166,15 +164,12 @@ rotasEquipes.patch('/equipes/:id', autenticacaoRequerida(), verificarPermissao('
 
         return c.json({ sucesso: true });
     } catch (erro: any) {
-        log('error', '[EQUIPES] Falha ao editar equipe', { erro: erro.message, id });
-        return c.json({ erro: 'Falha ao editar equipe.' }, 500);
+        log('error', '[EQUIPES] Falha ao editar equipe', { erro: erro.message, id, stack: erro.stack });
+        return c.json({ erro: 'Falha ao editar equipe.', detalhe: erro.message }, 500);
     }
 });
 
-/**
- * Remove uma equipe (Hard Delete).
- */
-rotasEquipes.delete('/equipes/:id', autenticacaoRequerida(), verificarPermissao('equipes:editar_equipe'), async (c: Context) => {
+rotasEquipes.delete('/:id', autenticacaoRequerida(), verificarPermissao('equipes:editar_equipe'), async (c: Context) => {
     const { DB } = c.env;
     const usuarioLogado = c.get('usuario') as any;
     const id = c.req.param('id');
@@ -203,8 +198,8 @@ rotasEquipes.delete('/equipes/:id', autenticacaoRequerida(), verificarPermissao(
 
         return c.json({ sucesso: true });
     } catch (erro: any) {
-        log('error', '[EQUIPES] Falha ao remover equipe', { erro: erro.message, id });
-        return c.json({ erro: 'Falha ao remover equipe.' }, 500);
+        log('error', '[EQUIPES] Falha ao remover equipe', { erro: erro.message, id, stack: erro.stack });
+        return c.json({ erro: 'Falha ao remover equipe.', detalhe: erro.message }, 500);
     }
 });
 

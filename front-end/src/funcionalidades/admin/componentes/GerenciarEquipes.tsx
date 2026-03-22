@@ -4,6 +4,7 @@ import { LayoutGrid, Users, Plus, Trash2 } from 'lucide-react';
 import { usarEquipes } from '@/funcionalidades/admin/hooks/usarEquipes';
 import type { Grupo, Equipe } from '@/funcionalidades/admin/hooks/usarEquipes';
 import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
+import { usarToast } from '@/contexto/ContextoToast';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
 import { Modal } from '@/compartilhado/componentes/Modal';
 import { ConfirmacaoExclusao } from '@/compartilhado/componentes/ConfirmacaoExclusao';
@@ -25,6 +26,7 @@ export const GerenciarEquipes = memo(() => {
         alocarMembro, alocarMembroLote, moverMembro
     } = usarEquipes();
 
+    const { exibirToast } = usarToast();
     const podeCriarEquipe = usarPermissaoAcesso('equipes:criar_equipe');
     const podeEditarEquipe = usarPermissaoAcesso('equipes:editar_equipe');
 
@@ -60,16 +62,20 @@ export const GerenciarEquipes = memo(() => {
         try {
             if (modalOrg.tipo === 'grupo') {
                 await criarGrupo(dados);
+                exibirToast('Grupo criado com sucesso');
             } else {
                 await criarEquipe(dados);
+                exibirToast('Equipe criada com sucesso');
             }
             setModalOrg(null);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Erro ao salvar:", error);
+            const msg = error.response?.data?.erro || error.message || 'Erro ao salvar alterações';
+            exibirToast(msg, 'erro');
         } finally {
             setDesativando(false);
         }
-    }, [modalOrg, criarGrupo, criarEquipe]);
+    }, [modalOrg, criarGrupo, criarEquipe, exibirToast]);
 
     const handleConfirmarExclusao = useCallback(async () => {
         if (!confirmacaoExclusao) return;
@@ -77,20 +83,24 @@ export const GerenciarEquipes = memo(() => {
         try {
             if (confirmacaoExclusao.tipo === 'grupo') {
                 await desativarGrupo(confirmacaoExclusao.id);
+                exibirToast('Grupo arquivado com sucesso');
             } else {
                 await desativarEquipe(confirmacaoExclusao.id);
+                exibirToast('Equipe arquivada com sucesso');
                 // Se era a equipe ativa, limpa para forçar re-seleção ou tela vazia
                 if (idEquipeAtiva === confirmacaoExclusao.id) {
                     setIdEquipeAtiva(null);
                 }
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Erro ao desativar:", error);
+            const msg = error.response?.data?.erro || error.message || 'Erro ao remover item';
+            exibirToast(msg, 'erro');
         } finally {
             setDesativando(false);
             setConfirmacaoExclusao(null);
         }
-    }, [confirmacaoExclusao, desativarGrupo, desativarEquipe, idEquipeAtiva]);
+    }, [confirmacaoExclusao, desativarGrupo, desativarEquipe, idEquipeAtiva, exibirToast]);
 
     const handleDefinirLider = useCallback(async (membroId: string) => {
         if (!modalLider || !idEquipeAtiva || !equipeAtiva) return;

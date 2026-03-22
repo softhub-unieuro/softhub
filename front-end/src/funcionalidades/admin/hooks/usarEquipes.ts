@@ -53,8 +53,8 @@ export function usarEquipes() {
         enabled: podeAcessar,
         queryFn: async () => {
             const [resGrupos, resEquipes] = await Promise.all([
-                api.get('/api/equipes/grupos'),
-                api.get('/api/equipes/equipes')
+                api.get('/api/grupos'),
+                api.get('/api/equipes')
             ]);
             
             let membrosData = [];
@@ -85,32 +85,32 @@ export function usarEquipes() {
 
     // Mutações
     const mutacaoCriarGrupo = useMutation({
-        mutationFn: (dados: any) => api.post('/api/equipes/grupos', dados),
+        mutationFn: (dados: any) => api.post('/api/grupos', dados),
         onSuccess: invalidarCache
     });
 
     const mutacaoEditarGrupo = useMutation({
-        mutationFn: ({ id, dados }: { id: string, dados: any }) => api.patch(`/api/equipes/grupos/${id}`, dados),
+        mutationFn: ({ id, dados }: { id: string, dados: any }) => api.patch(`/api/grupos/${id}`, dados),
         onSuccess: invalidarCache
     });
 
     const mutacaoDesativarGrupo = useMutation({
-        mutationFn: (id: string) => api.delete(`/api/equipes/grupos/${id}`),
+        mutationFn: (id: string) => api.delete(`/api/grupos/${id}`),
         onSuccess: invalidarCache
     });
 
     const mutacaoCriarEquipe = useMutation({
-        mutationFn: (dados: any) => api.post('/api/equipes/equipes', dados),
+        mutationFn: (dados: any) => api.post('/api/equipes', dados),
         onSuccess: invalidarCache
     });
 
     const mutacaoEditarEquipe = useMutation({
-        mutationFn: ({ id, dados }: { id: string, dados: any }) => api.patch(`/api/equipes/equipes/${id}`, dados),
+        mutationFn: ({ id, dados }: { id: string, dados: any }) => api.patch(`/api/equipes/${id}`, dados),
         onSuccess: invalidarCache
     });
 
     const mutacaoDesativarEquipe = useMutation({
-        mutationFn: (id: string) => api.delete(`/api/equipes/equipes/${id}`),
+        mutationFn: (id: string) => api.delete(`/api/equipes/${id}`),
         onSuccess: invalidarCache
     });
 
