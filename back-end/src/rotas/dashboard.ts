@@ -11,9 +11,14 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
     const projetoId = c.req.query('projetoId');
     const usuarioLogado = c.get('usuario') as any;
 
+    if (!usuarioLogado || !usuarioLogado.id) {
+        log('error', '[DASHBOARD] Usuário não encontrado no contexto', { path: c.req.path });
+        return c.json({ erro: 'Autenticação necessária.' }, 401);
+    }
+
     try {
         // 1. Buscar TODOS os projetos que o usuário participa (via equipe)
-        const { results: todosOsProjetos } = await DB.prepare(`
+        const sqlProjetos = `
             SELECT DISTINCT p.id, p.nome 
             FROM projetos p
             JOIN projetos_equipes pe ON pe.projeto_id = p.id
@@ -29,7 +34,9 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
             WHERE tr.usuario_id = ?
 
             ORDER BY nome ASC
-        `).bind(usuarioLogado.id, usuarioLogado.id).all();
+        `;
+
+        const { results: todosOsProjetos } = await DB.prepare(sqlProjetos).bind(usuarioLogado.id, usuarioLogado.id).all();
 
         const listaProjetos = todosOsProjetos as { id: string, nome: string }[];
 
@@ -132,11 +139,15 @@ rotasDashboard.get('/', autenticacaoRequerida(), verificarPermissao('dashboard:v
             erro: erro.message, 
             stack: erro.stack,
             projetoId,
-            usuarioId: usuarioLogado?.id 
+            usuarioId: usuarioLogado?.id,
+            timestamp: new Date().toISOString()
         });
+
+        // Tenta retornar um estado mínimo antes de explodir com 500
         return c.json({ 
             erro: 'Falha ao buscar dashboard consolidado',
-            detalhe: erro.message 
+            detalhe: erro.message,
+            acao: 'Verifique se as tabelas e colunas do banco D1 estão sincronizadas com o schema.sql'
         }, 500);
     }
 });

@@ -127,9 +127,14 @@ app.route('/api/tarefas', rotasTarefas);
 app.route('/api/tarefas', rotasTarefasGerenciamento);
 app.route('/api/tarefas', rotasTarefasMovimentacao);
 app.route('/api/tarefas', rotasTarefasDetalhes);
-app.route('/api/ponto', rotasPonto);
-app.route('/api/ponto', rotasPontoJustificativas);
-app.route('/api/ponto', rotasPontoJustificativasAdmin);
+
+// Unificando todas as rotas de ponto sob o mesmo prefixo
+const pontoApp = new Hono<{ Bindings: Env }>();
+pontoApp.route('/', rotasPonto);
+pontoApp.route('/', rotasPontoJustificativas);
+pontoApp.route('/', rotasPontoJustificativasAdmin);
+app.route('/api/ponto', pontoApp);
+
 app.route('/api/avisos', rotasAvisos);
 app.route('/api/dashboard', rotasDashboard);
 app.route('/api/logs', rotasLogs);

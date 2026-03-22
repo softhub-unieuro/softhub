@@ -8,7 +8,7 @@ import { gerarLinhaCsv } from '../utilitarios/csv';
 import { kvRateLimit } from '../middleware/rate-limit';
 import { log } from '../utilitarios/logger';
 
-const rotasPonto = new Hono<{ Bindings: Env }>();
+const rotasPonto = new Hono<{ Bindings: Env, Variables: { usuario: any } }>({ strict: false });
 
 /**
  * Registra uma entrada ou saída de ponto.
