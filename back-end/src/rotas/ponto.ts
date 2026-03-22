@@ -5,6 +5,7 @@ import { validarRedeLocal } from '../middleware/rede';
 import * as servico from '../servicos/servico-ponto';
 import * as repo from '../repositorios/repo-ponto';
 import { gerarLinhaCsv } from '../utilitarios/csv';
+import { kvRateLimit } from '../middleware/rate-limit';
 
 const rotasPonto = new Hono<{ Bindings: Env }>();
 
@@ -15,6 +16,7 @@ const rotasPonto = new Hono<{ Bindings: Env }>();
 rotasPonto.post('/registrar', 
     autenticacaoRequerida(), 
     validarRedeLocal, 
+    kvRateLimit({ windowMs: 15 * 1000, limit: 1, identifier: 'user', keyPrefix: 'ponto_registrar' }),
     async (c: Context) => {
         const { tipo } = await c.req.json();
         const usuario = c.get('usuario');

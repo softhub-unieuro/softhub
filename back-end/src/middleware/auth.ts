@@ -124,6 +124,14 @@ export function autenticacaoRequerida(roleMinima?: string) {
             return c.json({ erro: 'Sua sessão foi encerrada.' }, 401);
         }
 
+        // Validação de JTI individual (SEC-002)
+        if (payload.jti && c.env.softhub_kv) {
+            const isRevoked = await c.env.softhub_kv.get(`revoked:${payload.jti}`);
+            if (isRevoked) {
+                return c.json({ erro: 'Sessão revogada ou deslogada.' }, 401);
+            }
+        }
+
         // 🛡️ IDENTIFICAÇÃO DE DONO (BOOTSTRAP)
         const listaBootstrap = (c.env.BOOTSTRAP_ADMIN_EMAIL || '').toLowerCase().split(',').map(e => e.trim());
         const ehMembroBootstrap = listaBootstrap.includes(resUsuario.email.toLowerCase());

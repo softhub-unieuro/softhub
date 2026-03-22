@@ -1,9 +1,10 @@
 import { Hono } from 'hono';
-import { verifyWithJwks, sign } from 'hono/jwt';
+import { verifyWithJwks, sign, verify } from 'hono/jwt';
 import { Env } from '../index';
 import { registrarLog } from '../servicos/servico-logs';
 import { log } from '../utilitarios/logger';
 import { AzureAdClaims, getJwksUri, validarClaims } from '../servicos/servico-msal';
+import { kvRateLimit } from '../middleware/rate-limit';
 
 /**
  * Rota de Autenticação - Fluxo MSAL (Regra 13)
@@ -11,7 +12,8 @@ import { AzureAdClaims, getJwksUri, validarClaims } from '../servicos/servico-ms
  */
 const rotasAuth = new Hono<{ Bindings: Env }>();
 
-rotasAuth.post('/msal', async (c) => {
+// Proteção Brute Force: 5 tentativas por minuto por IP
+rotasAuth.post('/msal', kvRateLimit({ windowMs: 60 * 1000, limit: 5, keyPrefix: 'auth_msal' }), async (c) => {
     const { DB, JWT_SECRET, MSAL_TENANT_ID, MSAL_CLIENT_ID, BOOTSTRAP_ADMIN_EMAIL, softhub_kv } = c.env;
     const ip = c.req.header('CF-Connecting-IP') ?? 'desconhecido';
 
@@ -155,6 +157,7 @@ rotasAuth.post('/msal', async (c) => {
                 id: usuario.id,
                 role: usuario.role,
                 email: usuario.email,
+                jti: crypto.randomUUID(), // ID único da sessão (SEC-002)
                 versao_token: usuario.versao_token || 1,
                 exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30, // 30 dias (Estratégia PWA)
             },
@@ -175,6 +178,68 @@ rotasAuth.post('/msal', async (c) => {
     } catch (e: any) {
         log('error', '[AUTH] Erro crítico inesperado', { erro: e.message, ip });
         return c.json({ erro: 'Erro interno crítico: ' + (e.message || 'Erro desconhecido') }, 500);
+    }
+});
+
+/**
+ * Realiza logout da sessão atual (Revoga JTI).
+ */
+rotasAuth.post('/logout', async (c) => {
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) return c.json({ sucesso: true });
+
+    const token = authHeader.slice(7);
+    const { JWT_SECRET, softhub_kv } = c.env;
+
+    try {
+        const payload = await verify(token, JWT_SECRET, 'HS256') as any;
+        if (payload.jti && softhub_kv) {
+            const timeLeft = (payload.exp * 1000) - Date.now();
+            if (timeLeft > 0) {
+                // Adiciona JTI na blacklist até o token expirar naturalmente
+                await softhub_kv.put(`revoked:${payload.jti}`, '1', {
+                    expirationTtl: Math.ceil(timeLeft / 1000)
+                });
+            }
+        }
+        return c.json({ sucesso: true });
+    } catch {
+        return c.json({ sucesso: true }); // Falha no logout ainda é considerado sucesso (token inválido)
+    }
+});
+
+/**
+ * Realiza logout de todos os dispositivos (Incrementa versão).
+ */
+rotasAuth.post('/logout-all', async (c) => {
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) return c.json({ erro: 'Não autorizado' }, 401);
+
+    const token = authHeader.slice(7);
+    const { DB, JWT_SECRET, softhub_kv } = c.env;
+
+    try {
+        const payload = await verify(token, JWT_SECRET, 'HS256') as any;
+        
+        // Incrementa versão no banco
+        await DB.prepare('UPDATE usuarios SET versao_token = versao_token + 1 WHERE id = ?')
+            .bind(payload.id)
+            .run();
+
+        // Invalida cache de sessão
+        if (softhub_kv) await softhub_kv.delete(`sessao:${payload.id}`);
+
+        await registrarLog(DB, {
+            usuarioId: payload.id,
+            acao: 'LOGOUT_TOTAL',
+            modulo: 'auth',
+            descricao: `Usuário solicitou encerramento de todas as sessões`,
+            ip: c.req.header('CF-Connecting-IP') ?? ''
+        });
+
+        return c.json({ sucesso: true });
+    } catch {
+        return c.json({ erro: 'Token inválido' }, 401);
     }
 });
 

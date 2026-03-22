@@ -6,6 +6,7 @@ import { autenticacaoRequerida, verificarPermissao, verificarPermissaoManual } f
 import { registrarLog } from '../servicos/servico-logs';
 import { criarNotificacoes, removerNotificacoesPorEntidade } from '../servicos/servico-notificacoes';
 import { log } from '../utilitarios/logger';
+import { extrairPaginacao, formatarRespostaPaginada } from '../utilitarios/paginacao';
 
 const rotasAvisos = new Hono<{ Bindings: Env, Variables: { usuario: any } }>();
 
@@ -26,9 +27,9 @@ function buildCacheKey(path: string, params: Record<string, string>, allowList: 
  * Utiliza cache nativo do Cloudflare para performance.
  */
 rotasAvisos.get('/', autenticacaoRequerida(), verificarPermissao('avisos:visualizar'), async (c: Context) => {
-    // Fase 1 - Cacheamento nativo com chave normalizada (PERF-002)
+    const pag = extrairPaginacao(c);
     const params = Object.fromEntries(new URL(c.req.url).searchParams);
-    const cacheKey = buildCacheKey('/api/avisos', params, ['pagina', 'prioridade']);
+    const cacheKey = buildCacheKey('/api/avisos', params, ['page', 'limit', 'prioridade']);
     
     const cache = await caches.open('avisos-cache');
     const cachedRes = await cache.match(new URL(cacheKey, c.req.url).toString());
@@ -37,17 +38,24 @@ rotasAvisos.get('/', autenticacaoRequerida(), verificarPermissao('avisos:visuali
     const { DB } = c.env;
 
     try {
-        const { results } = await DB.prepare(`
-      SELECT a.id, a.titulo, a.conteudo, a.prioridade, a.criado_em, a.expira_em,
-             u.id as criador_id, u.nome as criador_nome, u.foto_perfil as criador_foto
-      FROM avisos a
-      JOIN usuarios u ON a.criado_por = u.id
-      WHERE (a.expira_em IS NULL OR datetime(a.expira_em) >= datetime('now')) 
-      AND a.arquivado = 0
-      ORDER BY a.criado_em DESC
-    `).all();
+        // 1. Contagem total para metadados
+        const totalReq = await DB.prepare(`
+            SELECT COUNT(*) as total FROM avisos 
+            WHERE (expira_em IS NULL OR datetime(expira_em) >= datetime('now')) AND arquivado = 0
+        `).first() as { total: number };
 
-        // Map para o formato esperado pelo frontend
+        // 2. Busca paginada
+        const { results } = await DB.prepare(`
+            SELECT a.id, a.titulo, a.conteudo, a.prioridade, a.criado_em, a.expira_em,
+                   u.id as criador_id, u.nome as criador_nome, u.foto_perfil as criador_foto
+            FROM avisos a
+            JOIN usuarios u ON a.criado_por = u.id
+            WHERE (a.expira_em IS NULL OR datetime(a.expira_em) >= datetime('now')) 
+            AND a.arquivado = 0
+            ORDER BY a.criado_em DESC
+            LIMIT ? OFFSET ?
+        `).bind(pag.limit, pag.offset).all();
+
         const formatado = results.map((r: any) => ({
             id: r.id,
             titulo: r.titulo,
@@ -62,8 +70,9 @@ rotasAvisos.get('/', autenticacaoRequerida(), verificarPermissao('avisos:visuali
             }
         }));
 
-        const resposta = c.json(formatado);
-        // s-maxage: 10 min na borda do Cloudflare, no-cache: navegador deve validar sempre
+        const respostaPaginada = formatarRespostaPaginada(formatado, totalReq.total, pag);
+        const resposta = c.json(respostaPaginada);
+        
         resposta.headers.set('Cache-Control', 's-maxage=600, no-cache');
         await cache.put(cacheKey, resposta.clone());
 

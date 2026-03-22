@@ -27,6 +27,7 @@ import rotasNotificacoes from './rotas/notificacoes';
 import rotasIA from './rotas/ia';
 import rotasPerfil from './rotas/perfil';
 import { lidarExcecao } from './middleware/erros';
+import { kvRateLimit } from './middleware/rate-limit';
 
 export type Env = {
     DB: D1Database;
@@ -70,20 +71,8 @@ app.use('*', cors({
     credentials: true,
 }));
 
-// 2. Rate Limiter Global
-let _limiteGlobal: any = null;
-app.use("*", (c, next) => {
-    if (!_limiteGlobal) {
-        _limiteGlobal = rateLimiter({
-            windowMs: 60 * 1000, 
-            limit: 300, 
-            standardHeaders: "draft-6",
-            keyGenerator: (c) => c.req.header("cf-connecting-ip") ?? "",
-            message: { erro: "Muitas requisições. O sistema identificou spam." }
-        });
-    }
-    return _limiteGlobal(c, next);
-});
+// 2. Rate Limiter Global (KV - SEC-003)
+app.use("*", kvRateLimit({ windowMs: 60 * 1000, limit: 120, keyPrefix: 'global' }));
 
 // 3. Modo de Manutenção (Regra de Governança)
 app.use('*', async (c, next) => {

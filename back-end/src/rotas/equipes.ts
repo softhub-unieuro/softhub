@@ -5,6 +5,7 @@ import { log } from '../utilitarios/logger';
 import { registrarLog } from '../servicos/servico-logs';
 import { criarNotificacoes, removerNotificacoesPorEntidade } from '../servicos/servico-notificacoes';
 import { sincronizarLiderancaUsuario } from '../servicos/servico-liderancas';
+import { extrairPaginacao, formatarRespostaPaginada } from '../utilitarios/paginacao';
 
 const rotasEquipes = new Hono<{ Bindings: Env; Variables: { usuario: any } }>();
 
@@ -14,8 +15,11 @@ const rotasEquipes = new Hono<{ Bindings: Env; Variables: { usuario: any } }>();
  */
 rotasEquipes.get('/equipes', autenticacaoRequerida(), verificarPermissao('equipes:visualizar'), async (c: Context) => {
     const { DB } = c.env;
+    const pag = extrairPaginacao(c);
 
     try {
+        const totalReq = await DB.prepare('SELECT COUNT(*) as total FROM equipes WHERE arquivado = 0').first() as { total: number };
+
         const equipes = await DB.prepare(`
             SELECT
                 e.id, e.nome, e.descricao, e.criado_em,
@@ -31,9 +35,10 @@ rotasEquipes.get('/equipes', autenticacaoRequerida(), verificarPermissao('equipe
             WHERE e.arquivado = 0
             GROUP BY e.id
             ORDER BY e.nome ASC
-        `).all();
+            LIMIT ? OFFSET ?
+        `).bind(pag.limit, pag.offset).all();
 
-        return c.json({ equipes: equipes.results ?? [] });
+        return c.json(formatarRespostaPaginada(equipes.results ?? [], totalReq.total, pag));
     } catch (erro: any) {
         log('error', '[EQUIPES] Falha ao listar equipes', { erro: erro.message });
         return c.json({ erro: 'Falha ao listar equipes.' }, 500);
