@@ -1,5 +1,6 @@
 import { memo } from 'react';
-import { Square, CheckSquare, ChevronDown, Trash2, Eye, LayoutGrid, ShieldCheck, Lock, Activity, TrendingUp } from 'lucide-react';
+import { useNavigate } from 'react-router';
+import { Square, CheckSquare, ChevronDown, Trash2, Eye, LayoutGrid, ShieldCheck, Lock, Activity, TrendingUp, Clock } from 'lucide-react';
 import { Avatar } from '@/compartilhado/componentes/Avatar';
 import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
@@ -29,6 +30,7 @@ interface LinhaMembroProps {
 }
 
 export const LinhaMembro = memo(({ membro, salvando, selecionado, onToggleSelect, onAlterarRole, onRemover, onVerPerfil, onAlocar, rolesDisponiveis }: LinhaMembroProps) => {
+    const navigate = useNavigate();
     const { usuario, setRoleVisualizacao, ehDonoReal } = usarAutenticacao();
     const ehOMesmoUsuario = (usuario as any)?.id === membro.id;
     const podeAlterarRole = usarPermissaoAcesso('membros:alterar_role');
@@ -144,6 +146,14 @@ export const LinhaMembro = memo(({ membro, salvando, selecionado, onToggleSelect
 
             <td className="px-5 py-3.5 text-right">
                 <div className="flex items-center justify-end gap-0.5">
+                    <button
+                        onClick={() => navigate(`/app/admin/gestao-de-pontos?usuarioId=${membro.id}&aba=historico`)}
+                        className="p-1.5 rounded-lg text-muted-foreground/20 hover:text-indigo-500 hover:bg-indigo-500/5 transition-all opacity-0 group-hover:opacity-100"
+                        title="Auditoria de Ponto"
+                    >
+                        <Clock size={15} />
+                    </button>
+
                     <button
                         onClick={() => onVerPerfil(membro.id)}
                         className="p-1.5 rounded-lg text-muted-foreground/20 hover:text-primary hover:bg-primary/5 transition-all opacity-0 group-hover:opacity-100"

@@ -39,7 +39,7 @@ const MuralAvisos = lazy(() => import('../funcionalidades/avisos/componentes/Mur
 // Páginas de Administração
 const PainelLogs = lazy(() => import('../funcionalidades/admin/componentes/PainelLogs'));
 const GerenciarMembros = lazy(() => import('../funcionalidades/admin/componentes/GerenciarMembros'));
-const PainelJustificativas = lazy(() => import('../funcionalidades/admin/componentes/PainelJustificativas'));
+const PainelPontoEletronico = lazy(() => import('../funcionalidades/admin/componentes/PainelPontoEletronico'));
 const PaginaRelatorios = lazy(() => import('../funcionalidades/admin/componentes/PaginaRelatorios'));
 const GerenciarEquipes = lazy(() => import('../funcionalidades/admin/componentes/GerenciarEquipes'));
 const GerenciarProjetos = lazy(() => import('../funcionalidades/admin/componentes/GerenciarProjetos'));
@@ -133,7 +133,7 @@ export const rotas = createBrowserRouter([
             // Rotas de Admin
             { path: '/app/admin/logs', element: <RotaProtegida permissaoRequerida="logs:visualizar"><LayoutPrincipal><PainelLogs /></LayoutPrincipal></RotaProtegida> },
             { path: '/app/admin/membros', element: <RotaProtegida permissaoRequerida="membros:gerenciar"><LayoutPrincipal><GerenciarMembros /></LayoutPrincipal></RotaProtegida> },
-            { path: '/app/admin/justificativas', element: <RotaProtegida permissaoRequerida="ponto:aprovar_justificativa"><LayoutPrincipal><PainelJustificativas /></LayoutPrincipal></RotaProtegida> },
+            { path: '/app/admin/gestao-de-pontos', element: <RotaProtegida permissaoRequerida="ponto:gestao_painel"><LayoutPrincipal><PainelPontoEletronico /></LayoutPrincipal></RotaProtegida> },
             { path: '/app/admin/relatorios', element: <RotaProtegida permissaoRequerida="relatorios:visualizar"><LayoutPrincipal><PaginaRelatorios /></LayoutPrincipal></RotaProtegida> },
             { path: '/app/admin/equipes', element: <RotaProtegida permissaoRequerida="equipes:visualizar"><LayoutPrincipal><GerenciarEquipes /></LayoutPrincipal></RotaProtegida> },
             { path: '/app/admin/projetos', element: <RotaProtegida permissaoRequerida="projetos:visualizar"><LayoutPrincipal><GerenciarProjetos /></LayoutPrincipal></RotaProtegida> },

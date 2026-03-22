@@ -31,7 +31,7 @@ export function BarraLateral({ aoNavegar, aoAbrirScanner }: BarraLateralProps) {
     const podeVerBacklog = usarPermissaoAcesso('tarefas:visualizar_backlog');
     const podeVerPonto = usarPermissaoAcesso('ponto:visualizar');
     const podeVerAvisos = usarPermissaoAcesso('avisos:visualizar');
-    const podeVerJustificativas = usarPermissaoAcesso('ponto:aprovar_justificativa');
+    const podeVerGestaoPonto = usarPermissaoAcesso('ponto:gestao_painel');
     const podeVerMembrosAdmin = usarPermissaoAcesso('membros:gerenciar');
     const podeVerRelatorios = usarPermissaoAcesso('relatorios:visualizar');
     const podeVerLogs = usarPermissaoAcesso('logs:visualizar');
@@ -55,15 +55,16 @@ export function BarraLateral({ aoNavegar, aoAbrirScanner }: BarraLateralProps) {
                 links: [
                     { label: 'Projeto', path: '/app/projeto', icon: Layers, visivel: podeVerProjetoDetalhes },
                     { label: 'Kanban', path: '/app/kanban', icon: FolderKanban, visivel: podeVerKanban },
-                    { label: 'Minha Presença', path: '/app/ponto', icon: Clock, visivel: podeVerPonto || podeVerJustificativas },
+                    { label: 'Minha Presença', path: '/app/ponto', icon: Clock, visivel: podeVerPonto || podeVerGestaoPonto },
                 ],
             },
             {
                 label: 'Administração',
                 links: [
                     { label: 'Membros', path: '/app/admin/membros', icon: Users, visivel: podeVerMembrosAdmin },
-                    { label: 'Equipes', path: '/app/admin/equipes', icon: LayoutGrid, visivel: podeVerEquipes },
+                    { label: 'Gestão de Ponto', path: '/app/admin/gestao-de-pontos', icon: ClipboardList, visivel: podeVerGestaoPonto },
                     { label: 'Projetos', path: '/app/admin/projetos', icon: FolderKanban, visivel: podeVerProjetosAdmin },
+                    { label: 'Equipes', path: '/app/admin/equipes', icon: LayoutGrid, visivel: podeVerEquipes },
                     { label: 'Relatórios', path: '/app/admin/relatorios', icon: FileText, visivel: podeVerRelatorios },
                     { label: 'Logs', path: '/app/admin/logs', icon: Database, visivel: podeVerLogs },
                     { label: 'Configurações', path: '/app/admin/configuracoes', icon: Settings, visivel: podeVerConfiguracoes },
@@ -74,7 +75,7 @@ export function BarraLateral({ aoNavegar, aoAbrirScanner }: BarraLateralProps) {
         return todosGrupos
             .map(g => ({ ...g, links: g.links.filter(l => l.visivel) }))
             .filter(g => g.links.length > 0);
-    }, [podeVerDashboard, podeVerBacklog, podeVerAvisos, podeVerProjetoDetalhes, podeVerKanban, podeVerPonto, podeVerJustificativas, podeVerMembrosAdmin, podeVerEquipes, podeVerProjetosAdmin, podeVerRelatorios, podeVerLogs, podeVerConfiguracoes]);
+    }, [podeVerDashboard, podeVerBacklog, podeVerAvisos, podeVerProjetoDetalhes, podeVerKanban, podeVerPonto, podeVerGestaoPonto, podeVerMembrosAdmin, podeVerEquipes, podeVerProjetosAdmin, podeVerRelatorios, podeVerLogs, podeVerConfiguracoes]);
 
     return (
         <aside className="w-full h-full flex flex-col relative overflow-hidden animar-entrada bg-sidebar border-r border-sidebar-border/30">
