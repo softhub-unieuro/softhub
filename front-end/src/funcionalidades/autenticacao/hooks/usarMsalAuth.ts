@@ -66,13 +66,13 @@ export function usarMsalAuth() {
                 idToken: tokenResponse.idToken
             });
 
-            const { usuario, token, refreshToken } = response.data;
+            const data = response.data;
 
             // Armazena tokens da sessão SoftHub
-            if (refreshToken) localStorage.setItem('softhub_refresh_token', refreshToken);
-            localStorage.setItem('token_acesso', token);
-
-            entrar(usuario, token);
+            if (data.refreshToken) localStorage.setItem('softhub_refresh_token', data.refreshToken);
+            localStorage.setItem('softhub_token', data.token);
+            
+            entrar(data.usuario, data.token);
             navigate('/app/dashboard', { replace: true });
 
             return { sucesso: true };

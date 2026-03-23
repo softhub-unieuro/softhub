@@ -1,51 +1,61 @@
--- ============================================
--- RESET + CREATE: Fábrica de Software
--- Ordem correta respeitando foreign keys
--- ============================================
+-- ============================================================================
+-- SCHEMA DEFINITIVO — SOFTHUB (FÁBRICA DE SOFTWARE)
+-- Data: 2026-03-23
+-- Compatibilidade: SQLite / Cloudflare D1
+-- ============================================================================
 
--- Drop na ordem inversa das dependências
-DROP TABLE IF EXISTS configuracoes_sistema;
-DROP TABLE IF EXISTS tarefa_historico;
-DROP TABLE IF EXISTS logs;
-DROP TABLE IF EXISTS notificacoes;
-DROP TABLE IF EXISTS avisos;
-DROP TABLE IF EXISTS checklist_tarefa;
-DROP TABLE IF EXISTS comentarios_tarefa;
-DROP TABLE IF EXISTS justificativas_ponto;
-DROP TABLE IF EXISTS ponto_registros;
-DROP TABLE IF EXISTS tarefas_responsaveis;
-DROP TABLE IF EXISTS tarefas;
-DROP TABLE IF EXISTS projetos_equipes;
-DROP TABLE IF EXISTS projetos;
-DROP TABLE IF EXISTS usuarios;
-DROP TABLE IF EXISTS usuarios_organizacao;
-DROP TABLE IF EXISTS grupos;
-DROP TABLE IF EXISTS equipes;
+-- REGRAS:
+-- 1. IDs são sempre UUID (TEXT)
+-- 2. Datas são ISO8601 (TEXT)
+-- 3. Booleanos são 0 ou 1 (INTEGER)
+-- 4. Sem Soft Delete real (Usamos a coluna 'arquivado' para UI)
 
--- ============================================
--- CRIAÇÃO DAS TABELAS
--- ============================================
+-- ============================================================================
+-- 1. NÚCLEO DE IDENTIDADE (MSAL AZURE AD)
+-- ============================================================================
 
--- 1. Pessoas e Perfis
 CREATE TABLE IF NOT EXISTS usuarios (
     id TEXT NOT NULL PRIMARY KEY,
+    azure_oid TEXT UNIQUE,               -- ID único da Microsoft (obrigatório para login MSAL)
     nome TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE,
-    role TEXT NOT NULL DEFAULT 'MEMBRO',
+    email TEXT NOT NULL UNIQUE,          -- Deve ser @unieuro.edu.br ou @unieuro.com.br
+    role TEXT NOT NULL DEFAULT 'MEMBRO', -- ADMIN, COORDENADOR, GESTOR, LIDER, SUBLIDER, MEMBRO
     foto_perfil TEXT,
     foto_banner TEXT,
     bio TEXT,
     github_url TEXT,
     linkedin_url TEXT,
     website_url TEXT,
-    versao_token INTEGER NOT NULL DEFAULT 1,
-    arquivado INTEGER NOT NULL DEFAULT 0,
+    versao_token INTEGER NOT NULL DEFAULT 1, -- Incrementar para invalidar todos os JWTs do usuário
+    arquivado INTEGER NOT NULL DEFAULT 0,    -- 1 = desativado
     criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 
+CREATE INDEX IF NOT EXISTS idx_usuarios_azure_oid ON usuarios(azure_oid);
 CREATE INDEX IF NOT EXISTS idx_usuarios_email ON usuarios(email);
 
--- 2. Estrutura Organizacional
+-- ============================================================================
+-- 2. GESTÃO DE SESSÕES E DISPOSITIVOS (JWT + REFRESH TOKEN ROTATION)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS usuarios_sessoes (
+    id TEXT NOT NULL PRIMARY KEY,
+    usuario_id TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    refresh_token_hash TEXT NOT NULL,      -- Hash SHA-256 do Refresh Token
+    ip_endereco TEXT,
+    user_agent TEXT,
+    device_info TEXT,                     -- Ex: "PC (Chrome)", "iPhone (QR Login)"
+    expira_em TEXT NOT NULL,
+    criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessoes_usuario ON usuarios_sessoes(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_sessoes_refresh ON usuarios_sessoes(refresh_token_hash);
+
+-- ============================================================================
+-- 3. ESTRUTURA ORGANIZACIONAL (EQUIPES E GRUPOS)
+-- ============================================================================
+
 CREATE TABLE IF NOT EXISTS equipes (
     id TEXT NOT NULL PRIMARY KEY,
     nome TEXT NOT NULL,
@@ -65,6 +75,7 @@ CREATE TABLE IF NOT EXISTS grupos (
     criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 
+-- Tabela de junção Membro <-> Equipe/Grupo
 CREATE TABLE IF NOT EXISTS usuarios_organizacao (
     id TEXT NOT NULL PRIMARY KEY,
     usuario_id TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -74,16 +85,15 @@ CREATE TABLE IF NOT EXISTS usuarios_organizacao (
     UNIQUE(usuario_id, equipe_id, grupo_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_usuarios_org_usuario ON usuarios_organizacao(usuario_id);
-CREATE INDEX IF NOT EXISTS idx_usuarios_org_equipe ON usuarios_organizacao(equipe_id);
-CREATE INDEX IF NOT EXISTS idx_usuarios_org_grupo ON usuarios_organizacao(grupo_id);
+-- ============================================================================
+-- 4. GESTÃO DE PROJETOS E PORTFÓLIO
+-- ============================================================================
 
--- 3. Gestão de Projetos e Tarefas
 CREATE TABLE IF NOT EXISTS projetos (
     id TEXT NOT NULL PRIMARY KEY,
     nome TEXT NOT NULL,
     descricao TEXT,
-    publico INTEGER NOT NULL DEFAULT 0,
+    publico INTEGER NOT NULL DEFAULT 0, -- Se aparece no showcase externo (sem login)
     github_repo TEXT,
     documentacao_url TEXT,
     figma_url TEXT,
@@ -92,37 +102,7 @@ CREATE TABLE IF NOT EXISTS projetos (
     criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 
-CREATE TABLE IF NOT EXISTS tarefas (
-    id TEXT NOT NULL PRIMARY KEY,
-    projeto_id TEXT NOT NULL REFERENCES projetos(id) ON DELETE CASCADE,
-    titulo TEXT NOT NULL,
-    descricao TEXT,
-    status TEXT NOT NULL DEFAULT 'backlog',
-    prioridade TEXT NOT NULL DEFAULT 'media',
-    pontos INTEGER DEFAULT 1,
-    modulo TEXT,
-    equipe_id TEXT REFERENCES equipes(id) ON DELETE SET NULL,
-    grupo_id TEXT REFERENCES grupos(id) ON DELETE SET NULL,
-    feedback_lider TEXT,
-    nota_aprendizado INTEGER DEFAULT 0,
-    data_conclusao TEXT,
-    arquivado INTEGER NOT NULL DEFAULT 0,
-    criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
-    atualizado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
-);
-
-CREATE INDEX IF NOT EXISTS idx_tarefas_projeto ON tarefas(projeto_id);
-CREATE INDEX IF NOT EXISTS idx_tarefas_status ON tarefas(projeto_id, status);
-CREATE INDEX IF NOT EXISTS idx_tarefas_modulo ON tarefas(modulo);
-CREATE INDEX IF NOT EXISTS idx_tarefas_equipe ON tarefas(equipe_id);
-CREATE INDEX IF NOT EXISTS idx_tarefas_grupo ON tarefas(grupo_id);
-
-CREATE TABLE IF NOT EXISTS tarefas_responsaveis (
-    tarefa_id TEXT NOT NULL REFERENCES tarefas(id) ON DELETE CASCADE,
-    usuario_id TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    PRIMARY KEY (tarefa_id, usuario_id)
-);
-
+-- Vinculação de Equipes a Projetos (Permissões de acesso ao projeto)
 CREATE TABLE IF NOT EXISTS projetos_equipes (
     projeto_id TEXT NOT NULL REFERENCES projetos(id) ON DELETE CASCADE,
     equipe_id TEXT NOT NULL REFERENCES equipes(id) ON DELETE CASCADE,
@@ -130,33 +110,38 @@ CREATE TABLE IF NOT EXISTS projetos_equipes (
     PRIMARY KEY (projeto_id, equipe_id)
 );
 
--- 4. Ponto Eletrônico
-CREATE TABLE IF NOT EXISTS ponto_registros (
+-- ============================================================================
+-- 5. KANBAN E TAREFAS (FLUXO CONTÍNUO)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS tarefas (
     id TEXT NOT NULL PRIMARY KEY,
-    usuario_id TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    tipo TEXT NOT NULL,
-    registrado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
-    ip_origem TEXT NOT NULL
+    projeto_id TEXT NOT NULL REFERENCES projetos(id) ON DELETE CASCADE,
+    titulo TEXT NOT NULL,
+    descricao TEXT,
+    status TEXT NOT NULL DEFAULT 'backlog', -- backlog, fazenda, teste, concluido
+    prioridade TEXT NOT NULL DEFAULT 'media', -- baixa, media, alta, urgente
+    pontos INTEGER DEFAULT 1,
+    modulo TEXT,                             -- Organização por módulo dentro do projeto
+    equipe_id TEXT REFERENCES equipes(id) ON DELETE SET NULL,
+    grupo_id TEXT REFERENCES grupos(id) ON DELETE SET NULL,
+    feedback_lider TEXT,                     -- Avaliação qualitativa do líder
+    nota_aprendizado INTEGER DEFAULT 0,      -- 1 a 5 (para retrospectivas)
+    data_conclusao TEXT,
+    arquivado INTEGER NOT NULL DEFAULT 0,
+    criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+    atualizado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_ponto_usuario ON ponto_registros(usuario_id, registrado_em DESC);
+CREATE INDEX IF NOT EXISTS idx_tarefas_projeto_status ON tarefas(projeto_id, status);
 
-CREATE TABLE IF NOT EXISTS justificativas_ponto (
-    id TEXT NOT NULL PRIMARY KEY,
+-- Responsaveis (Múltiplos usuários por tarefa)
+CREATE TABLE IF NOT EXISTS tarefas_responsaveis (
+    tarefa_id TEXT NOT NULL REFERENCES tarefas(id) ON DELETE CASCADE,
     usuario_id TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    data TEXT NOT NULL,
-    tipo TEXT NOT NULL,
-    motivo TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'pendente',
-    motivo_rejeicao TEXT,
-    avaliado_por TEXT REFERENCES usuarios(id),
-    avaliado_em TEXT,
-    criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+    PRIMARY KEY (tarefa_id, usuario_id)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_justificativa_unica ON justificativas_ponto(usuario_id, data);
-
--- 5. Colaboração
 CREATE TABLE IF NOT EXISTS comentarios_tarefa (
     id TEXT NOT NULL PRIMARY KEY,
     tarefa_id TEXT NOT NULL REFERENCES tarefas(id) ON DELETE CASCADE,
@@ -175,12 +160,42 @@ CREATE TABLE IF NOT EXISTS checklist_tarefa (
     criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 
--- 6. Comunicação
+-- ============================================================================
+-- 6. PONTO ELETRÔNICO (SÓ NA REDE UNIEURO)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS ponto_registros (
+    id TEXT NOT NULL PRIMARY KEY,
+    usuario_id TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    tipo TEXT NOT NULL, -- 'ENTRADA', 'SAIDA'
+    registrado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+    ip_origem TEXT NOT NULL -- Validado no backend contra a rede da UNIEURO
+);
+
+CREATE TABLE IF NOT EXISTS justificativas_ponto (
+    id TEXT NOT NULL PRIMARY KEY,
+    usuario_id TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    data TEXT NOT NULL,       -- Data da falta
+    tipo TEXT NOT NULL,       -- 'EQUIPAMENTO', 'SAUDE', 'OUTROS'
+    motivo TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pendente', -- pendente, aprovado, rejeitado
+    motivo_rejeicao TEXT,
+    avaliado_por TEXT REFERENCES usuarios(id),
+    avaliado_em TEXT,
+    criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_justificativa_unica ON justificativas_ponto(usuario_id, data);
+
+-- ============================================================================
+-- 7. COMUNICAÇÃO E NOTIFICAÇÕES
+-- ============================================================================
+
 CREATE TABLE IF NOT EXISTS avisos (
     id TEXT NOT NULL PRIMARY KEY,
     titulo TEXT NOT NULL,
     conteudo TEXT NOT NULL,
-    prioridade TEXT NOT NULL DEFAULT 'info',
+    prioridade TEXT NOT NULL DEFAULT 'info', -- info, aviso, urgente
     criado_por TEXT NOT NULL REFERENCES usuarios(id),
     expira_em TEXT,
     arquivado INTEGER NOT NULL DEFAULT 0,
@@ -195,52 +210,58 @@ CREATE TABLE IF NOT EXISTS notificacoes (
     mensagem TEXT NOT NULL,
     lida INTEGER NOT NULL DEFAULT 0,
     link_acao TEXT,
-    entidade_id TEXT,
+    entidade_id TEXT, -- ID do projeto/tarefa/aviso relacionado
     criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 
--- 7. Logs e Histórico
+-- ============================================================================
+-- 8. AUDITORIA E LOGS GLOBAIS
+-- ============================================================================
+
 CREATE TABLE IF NOT EXISTS logs (
     id TEXT NOT NULL PRIMARY KEY,
     usuario_id TEXT REFERENCES usuarios(id) ON DELETE SET NULL,
-    acao TEXT NOT NULL,
-    modulo TEXT NOT NULL,
+    acao TEXT NOT NULL,      -- Ex: LOGIN_MSAL, CRIOU_TAREFA, JUSTIFICOU_PONTO
+    modulo TEXT NOT NULL,    -- Ex: auth, tarefas, ponto
     descricao TEXT NOT NULL,
     ip TEXT,
-    entidade_tipo TEXT,
+    entidade_tipo TEXT,      -- Ex: tarefas
     entidade_id TEXT,
-    dados_anteriores TEXT,
-    dados_novos TEXT,
+    dados_anteriores TEXT,   -- JSON stringified
+    dados_novos TEXT,        -- JSON stringified
     criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_logs_criado_em ON logs(criado_em DESC);
-CREATE INDEX IF NOT EXISTS idx_logs_modulo ON logs(modulo);
-CREATE INDEX IF NOT EXISTS idx_logs_acao ON logs(acao);
-CREATE INDEX IF NOT EXISTS idx_logs_usuario_id ON logs(usuario_id);
-CREATE INDEX IF NOT EXISTS idx_logs_entidade ON logs(entidade_tipo, entidade_id);
-
+-- Histórico específico de campos de tarefa (Timeline)
 CREATE TABLE IF NOT EXISTS tarefa_historico (
     id TEXT NOT NULL PRIMARY KEY,
     tarefa_id TEXT NOT NULL REFERENCES tarefas(id) ON DELETE CASCADE,
     usuario_id TEXT NOT NULL REFERENCES usuarios(id),
-    campo_alterado TEXT NOT NULL,
+    campo_alterado TEXT NOT NULL, -- status, prioridade, checklist...
     valor_antigo TEXT,
     valor_novo TEXT,
     alterado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 
--- 8. Configurações e Auxiliares
+-- ============================================================================
+-- 9. CONFIGURAÇÕES DINÂMICAS DO SISTEMA
+-- ============================================================================
+
 CREATE TABLE IF NOT EXISTS configuracoes_sistema (
     id TEXT NOT NULL PRIMARY KEY,
     chave TEXT NOT NULL UNIQUE,
-    valor TEXT NOT NULL
+    valor TEXT NOT NULL -- Geralmente JSON stringified
 );
 
--- 9. Seed Inicial
+-- ============================================================================
+-- 10. SEED DE CONFIGURAÇÃO BASE (Obrigatório para o sistema bootar)
+-- ============================================================================
+
+-- Projeto de Backlog Geral (Exigido pelo sistema)
 INSERT OR IGNORE INTO projetos (id, nome, descricao) 
 VALUES ('d62657e4-230b-4680-a292-06b291d2f62b', 'Projeto Principal', 'Fábrica de Software - Backlog Geral');
 
+-- Matriz de Permissões e Roles Padrão
 INSERT OR IGNORE INTO configuracoes_sistema (id, chave, valor) VALUES
 ('9f8e7d6c-5b4a-3f2e-1d0c-9b8a7d6c5b4a', 'permissoes_roles', '{
     "ADMIN": {"*": true},
@@ -249,98 +270,44 @@ INSERT OR IGNORE INTO configuracoes_sistema (id, chave, valor) VALUES
         "tarefas:*": true,
         "ponto:*": true,
         "membros:gerenciar": true,
-        "membros:promover_ate_lider": true,
         "membros:visualizar_perfil_detalhado": true,
-        "projetos:visualizar": true,
-        "projetos:criar": true,
-        "projetos:editar": true,
-        "projetos:publicar_portfolio": true,
+        "projetos:*": true,
         "equipes:visualizar": true,
         "relatorios:visualizar": true,
-        "relatorios:imprimir": true,
         "avisos:visualizar": true,
-        "logs:visualizar": true,
-        "configuracoes:visualizar": true,
-        "ia:consultar": true
+        "logs:visualizar": true
     },
     "GESTOR": {
         "dashboard:visualizar": true,
         "tarefas:*": true,
         "ponto:visualizar": true,
         "ponto:aprovar_justificativa": true,
-        "ponto:exportar": true,
         "membros:gerenciar": true,
-        "membros:visualizar_perfil_detalhado": true,
         "projetos:visualizar": true,
-        "projetos:editar": true,
         "equipes:visualizar": true,
         "relatorios:visualizar": true,
-        "relatorios:imprimir": true,
-        "avisos:visualizar": true,
-        "logs:visualizar": true,
-        "ia:consultar": true
+        "avisos:visualizar": true
     },
     "LIDER": {
         "dashboard:visualizar": true,
-        "tarefas:visualizar_kanban": true,
-        "tarefas:visualizar_backlog": true,
-        "tarefas:visualizar_detalhes": true,
-        "tarefas:visualizar_historico": true,
-        "tarefas:criar": true,
-        "tarefas:editar": true,
-        "tarefas:mover": true,
-        "tarefas:checklist_marcar": true,
-        "tarefas:checklist_gerenciar": true,
+        "tarefas:*": true,
         "ponto:visualizar": true,
         "ponto:aprovar_justificativa": true,
         "equipes:visualizar": true,
-        "equipes:editar_equipe": true,
-        "equipes:alocar_membro": true,
-        "avisos:visualizar": true,
-        "avisos:criar": true,
-        "projetos:visualizar": true,
-        "projetos:gerenciar_links": true,
-        "ia:consultar": true,
-        "sistema:notificacoes": true
-    },
-    "SUBLIDER": {
-        "dashboard:visualizar": true,
-        "tarefas:visualizar_kanban": true,
-        "tarefas:visualizar_backlog": true,
-        "tarefas:visualizar_detalhes": true,
-        "tarefas:mover": true,
-        "tarefas:checklist_marcar": true,
-        "tarefas:checklist_gerenciar": true,
-        "ponto:visualizar": true,
-        "ponto:aprovar_justificativa": true,
-        "equipes:visualizar": true,
-        "avisos:visualizar": true,
-        "avisos:criar": true,
-        "ia:consultar": true
+        "avisos:criar": true
     },
     "MEMBRO": {
         "dashboard:visualizar": true,
-        "tarefas:visualizar_kanban": true,
-        "tarefas:visualizar_backlog": true,
-        "tarefas:visualizar_detalhes": true,
-        "projetos:visualizar_detalhes": true,
+        "tarefas:visualizar": true,
+        "tarefas:mover": true,
         "tarefas:comentar": true,
-        "tarefas:checklist_marcar": true,
         "ponto:registrar": true,
         "ponto:visualizar": true,
         "ponto:justificar": true,
-        "avisos:visualizar": true,
-        "ia:consultar": true
-    },
-    "TODOS": {
-        "avisos:visualizar": true,
-        "ia:consultar": true,
-        "tarefas:checklist_marcar": true
+        "avisos:visualizar": true
     }
 }'),
-('b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e', 'dominios_autorizados', '["unieuro.com.br", "unieuro.edu.br"]'),
-('c3d4e5f6-a7b8-4c9d-d0e1-2f3a4b5c6d7e', 'auto_cadastro', 'false'),
 ('d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a', 'hierarquia_roles', '["ADMIN", "COORDENADOR", "GESTOR", "LIDER", "SUBLIDER", "MEMBRO"]'),
+('b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e', 'dominios_autorizados', '["unieuro.com.br", "unieuro.edu.br"]'),
 ('e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b', 'hora_inicio_ponto', '"13:00"'),
-('f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c', 'hora_fim_ponto', '"17:00"'),
-('a7b8c9d0-e1f2-4a3b-b4c5-d6e7f8a9b0c1', 'modo_manutencao', 'false');
+('f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c', 'hora_fim_ponto', '"17:00"');

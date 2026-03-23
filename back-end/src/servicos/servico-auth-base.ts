@@ -15,9 +15,15 @@ export interface UserSession {
 export async function createSessionForUser(
     c: any, // Hono Context Bindings
     usuario: any,
-    deviceInfo?: string
+    deviceInfo?: string,
+    sessaoAnteriorId?: string
 ): Promise<UserSession> {
     const { DB, JWT_SECRET, softhub_kv } = c.env as Env;
+    
+    // 0. Rotar Sessão (Checklist SEG-012)
+    if (sessaoAnteriorId) {
+        await DB.prepare('DELETE FROM usuarios_sessoes WHERE id = ?').bind(sessaoAnteriorId).run();
+    }
     
     // 1. Gerar JTI (ID Único da Sessão) para o Access Token
     const jti = crypto.randomUUID();

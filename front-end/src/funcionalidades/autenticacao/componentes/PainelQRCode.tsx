@@ -60,7 +60,7 @@ export default function PainelQRCode() {
                     
                     if (data.usuario && data.token) {
                         if (data.refreshToken) localStorage.setItem('softhub_refresh_token', data.refreshToken);
-                        localStorage.setItem('token_acesso', data.token);
+                        localStorage.setItem('softhub_token', data.token);
                         
                         entrar(data.usuario, data.token);
                         navigate('/app/dashboard', { replace: true });

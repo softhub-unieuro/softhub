@@ -156,4 +156,65 @@ rotasAuth.get('/verificar-rede', async (c) => {
     }
 });
 
-export default rotasAuth;
+/**
+ * Endpoint de Refresh Token Rotation (Checklist Part 3 - SEG-012)
+ * Troca um refresh token válido por um novo par de tokens (Access + Refresh).
+ */
+rotasAuth.post('/refresh', kvRateLimit({ windowMs: 60 * 1000, limit: 10, keyPrefix: 'auth_refresh' }), async (c) => {
+    const { refreshToken, usuarioId } = await c.req.json();
+    const { DB, softhub_kv, JWT_SECRET } = c.env as Env;
+
+    if (!refreshToken || !usuarioId) return c.json({ erro: 'Tokens ausentes' }, 400);
+
+    try {
+        // 1. Hash do token recebido para busca
+        const msgUint8 = new TextEncoder().encode(refreshToken);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const refreshHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+        // 2. Buscar sessão no banco
+        const sessao = await DB.prepare(
+            'SELECT id, expira_em FROM usuarios_sessoes WHERE usuario_id = ? AND refresh_token_hash = ?'
+        ).bind(usuarioId, refreshHash).first<any>();
+
+        if (!sessao) {
+            log('warn', '[AUTH-REFRESH] Tentativa de refresh com token inexistente ou já usado (Possível Replay Attack)', { usuarioId });
+            return c.json({ erro: 'Sessão inválida ou expirada.' }, 401);
+        }
+
+        // 3. Verificar expiração
+        if (new Date(sessao.expira_em).getTime() < Date.now()) {
+            await DB.prepare('DELETE FROM usuarios_sessoes WHERE id = ?').bind(sessao.id).run();
+            return c.json({ erro: 'Sessão expirada.' }, 401);
+        }
+
+        // 4. Buscar dados atuais do usuário para emitir novo token com claims atualizadas
+        const usuario = await DB.prepare('SELECT id, nome, email, role, versao_token, foto_perfil FROM usuarios WHERE id = ?')
+            .bind(usuarioId)
+            .first<any>();
+
+        if (!usuario || usuario.arquivado) return c.json({ erro: 'Usuário não encontrado ou inativo.' }, 401);
+
+        // 5. Gerar NOVA sessão e DELETAR a antiga (Rotação de Refresh Token)
+        const novaSessao = await createSessionForUser(c, usuario, 'Token Refresh', sessao.id);
+
+        return c.json({
+            token: novaSessao.accessToken,
+            refreshToken: novaSessao.refreshToken,
+            usuario: {
+                id: usuario.id,
+                nome: usuario.nome,
+                email: usuario.email,
+                role: usuario.role,
+                foto_perfil: usuario.foto_perfil
+            }
+        });
+
+    } catch (e: any) {
+        log('error', '[AUTH-REFRESH] Erro interno no refresh', { erro: e.message });
+        return c.json({ erro: 'Falha ao renovar sessão.' }, 500);
+    }
+});
+
+export default rotasAuth;
