@@ -7,6 +7,7 @@ import PainelQRCode from './PainelQRCode';
 import { usarDispositivo } from '../../../compartilhado/hooks/usarDispositivo';
 import { LadoEsquerdoInstitucional } from './LadoEsquerdoInstitucional';
 import { SecaoLoginMicrosoft } from './SecaoLoginMicrosoft';
+import { usarToast } from '@/compartilhado/hooks/usarToast';
 
 /**
  * Tela de login consolidada - MSAL Only (Auditoria Part 1).
@@ -16,10 +17,32 @@ let travaAuthGlobal = false;
 export default function TelaLogin() {
     const { accounts, inProgress, loginComMicrosoft, processarLoginNoBackend, estaAutenticado } = usarMsalAuth();
     const { isMobile } = usarDispositivo();
+    const { exibirToast } = usarToast();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
     const [configPublica, setConfigPublica] = useState<any>(null);
+    const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+    // Ouvir evento de instalação PWA (Auditoria Checklist Part 3)
+    useEffect(() => {
+        const handler = (e: Event) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+        };
+        window.addEventListener('beforeinstallprompt', handler);
+        return () => window.removeEventListener('beforeinstallprompt', handler);
+    }, []);
+
+    const handleInstallClick = async () => {
+        if (!deferredPrompt) {
+            exibirToast('O navegador está otimizando o App para instalação. Tente novamente em alguns segundos.', 'sucesso');
+            return;
+        }
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') setDeferredPrompt(null);
+    };
 
     // Carregar configurações de governança
     useEffect(() => {
@@ -70,6 +93,8 @@ export default function TelaLogin() {
                                 carregando={inProgress !== 'none'}
                                 handleLogin={loginComMicrosoft}
                                 isMobile={isMobile}
+                                deferredPrompt={deferredPrompt}
+                                handleInstallClick={handleInstallClick}
                             />
 
                         </div>

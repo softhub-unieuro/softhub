@@ -71,21 +71,45 @@ export const SecaoLoginMicrosoft = memo(({
                         </span>
                     </div>
 
-                    {isMobile && deferredPrompt && (
-                        <div className="pt-8 border-t border-border/10">
+                    {isMobile && (
+                        <div className="pt-10 border-t border-slate-100/50">
+                            <div className="mb-4">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Experiência Mobile</span>
+                            </div>
                             <button
                                 onClick={handleInstallClick}
-                                className="w-full flex items-center justify-center h-14 bg-accent/5 hover:bg-accent/10 rounded-2xl transition-all active:scale-[0.98] group"
+                                className={`w-full flex items-center justify-center h-16 rounded-2xl transition-all active:scale-[0.95] group relative overflow-hidden ${
+                                    deferredPrompt 
+                                    ? 'bg-blue-600 shadow-lg shadow-blue-200 text-white' 
+                                    : 'bg-slate-50 border border-slate-100 text-slate-400 cursor-default'
+                                }`}
                             >
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-primary/10 rounded-2xl text-primary opacity-60 group-hover:opacity-100 transition-opacity">
-                                        <Download size={18} />
+                                <div className="flex items-center gap-3 z-10">
+                                    <div className={`p-2.5 rounded-xl transition-all ${
+                                        deferredPrompt ? 'bg-white/20' : 'bg-slate-200/50'
+                                    }`}>
+                                        <Download size={18} className={deferredPrompt ? 'animate-bounce' : ''} />
                                     </div>
-                                    <span className="text-[11px] font-black uppercase tracking-[0.15em] text-muted-foreground">Instalar Aplicativo</span>
+                                    <div className="text-left flex flex-col">
+                                        <span className={`text-[11px] font-black uppercase tracking-widest leading-none ${
+                                            deferredPrompt ? 'text-white' : 'text-slate-500'
+                                        }`}>
+                                            {deferredPrompt ? 'Instalar App' : 'App Disponível'}
+                                        </span>
+                                        <span className={`text-[9px] mt-1 font-bold ${
+                                            deferredPrompt ? 'text-white/70' : 'text-slate-400'
+                                        }`}>
+                                            {deferredPrompt ? 'Pronto para uso offline' : 'PWA Otimizado para SoftHub'}
+                                        </span>
+                                    </div>
                                 </div>
+                                {deferredPrompt && (
+                                    <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20 animate-pulse" />
+                                )}
                             </button>
                         </div>
                     )}
+
                 </div>
             </div>
         </div>
