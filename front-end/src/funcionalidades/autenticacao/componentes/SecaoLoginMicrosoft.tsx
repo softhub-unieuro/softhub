@@ -8,8 +8,8 @@ interface SecaoLoginMicrosoftProps {
     carregando: boolean;
     handleLogin: () => void;
     isMobile: boolean;
-    deferredPrompt: any;
-    handleInstallClick: () => void;
+    deferredPrompt?: any;
+    handleInstallClick?: () => void;
 }
 
 export const SecaoLoginMicrosoft = memo(({

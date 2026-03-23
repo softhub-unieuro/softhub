@@ -20,8 +20,8 @@ export interface IConfiguracoesUX {
 }
 
 interface ContextoAutenticacaoContrato {
-    usuario: Usuario | null; 
-    usuarioEfetivo: Usuario | null; 
+    usuario: Usuario | null;
+    usuarioEfetivo: Usuario | null;
     token: string | null;
     estaAutenticado: boolean;
     carregando: boolean;
@@ -44,11 +44,8 @@ const CHAVE_PROJETO = 'softhub_projeto_ativo';
 const CHAVE_CONFIGS = 'softhub_configs_ux';
 const CHAVE_PREVIEW_ROLE = 'softhub_preview_role';
 
-// 🛡️ LISTA DE SEGURANÇA (BOOTSTRAP) - Espelha a configuração do servidor
-const EMAILS_BOOTSTRAP = [
-    'mateus099803@unieuro.com.br',
-    'mateus222533@unieuro.com.br'
-];
+// 🛡️ A flag de bootstrap admin agora vem diretamente do Backend no login e sync.
+// Não é mais necessário listar e-mails sensíveis no código do frontend.
 
 /**
  * Hook central de autenticação e governança.
@@ -56,10 +53,10 @@ const EMAILS_BOOTSTRAP = [
 export function usarAutenticacao() {
     const ctx = useContext(ContextoAutenticacao);
     if (!ctx) throw new Error('usarAutenticacao deve ser usado dentro de ProvedorAutenticacao');
-    
+
     // Calcula ehDonoReal em tempo real para segurança total na UI
-    const ehDonoReal = ctx.usuarioEfetivo?.role === 'ADMIN' && 
-                      EMAILS_BOOTSTRAP.includes(ctx.usuarioEfetivo?.email?.toLowerCase() || '');
+    const ehDonoReal = ctx.usuarioEfetivo?.role === 'ADMIN' &&
+        ctx.usuarioEfetivo?.ehDonoReal === true;
 
     return {
         ...ctx,
@@ -155,7 +152,7 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
             // Remove lixos de exclusão e garante os novos
             let hierarquiaFinal = (novasConfigs.hierarquia_roles || []).filter(r => r === 'ADMIN' || chavesMatrix.includes(r));
             const faltantes = chavesMatrix.filter(k => k !== 'TODOS' && !hierarquiaFinal.includes(k));
-            
+
             // Injeta faltantes antes do ADMIN para manter a premissa de ADMIN no topo (reverse)
             const indexAdmin = hierarquiaFinal.indexOf('ADMIN');
             if (indexAdmin !== -1) hierarquiaFinal.splice(indexAdmin, 0, ...faltantes);
@@ -181,13 +178,19 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
         }
     }, [token, buscarConfiguracoesPublicas, sincronizarPerfil]);
 
-    const entrar = useCallback((novoUsuario: Usuario, novoToken: string) => {
+    const entrar = useCallback((novoUsuario: any, novoToken: string) => {
         logger.sucesso('Sessão', `Usuário conectado: ${novoUsuario?.email}`);
-        setUsuarioOriginal(novoUsuario);
+
+        const formatado: Usuario = {
+            ...novoUsuario,
+            ehDonoReal: novoUsuario.is_bootstrap === true
+        };
+
+        setUsuarioOriginal(formatado);
         setToken(novoToken);
         localStorage.setItem(CHAVE_TOKEN, novoToken);
-        localStorage.setItem(CHAVE_USUARIO, JSON.stringify(novoUsuario));
-        
+        localStorage.setItem(CHAVE_USUARIO, JSON.stringify(formatado));
+
         // Dispara sincronização imediata para verificar override de Bootstrap
         sincronizarPerfil();
     }, [sincronizarPerfil]);
@@ -209,7 +212,7 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
 
     return (
         <ContextoAutenticacao.Provider value={{
-            usuario: usuarioOriginal, 
+            usuario: usuarioOriginal,
             usuarioEfetivo,
             token,
             estaAutenticado: !!token && !!usuarioOriginal,
@@ -219,10 +222,10 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
             roleVisualizacao,
             setProjetoAtivoId,
             setRoleVisualizacao: setRoleVisualizacaoProtegido,
-            entrar, salir: sair, // Alinhado com a interface (sair)
+            entrar,
+            sair, // Unificado
             sincronizarPerfil,
             atualizarUsuarioLocalmente,
-            sair // Alias importante
         } as any}>
             {children}
         </ContextoAutenticacao.Provider>

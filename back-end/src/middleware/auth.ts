@@ -125,8 +125,14 @@ export function autenticacaoRequerida(roleMinima?: string) {
             }
         }
 
-        // Validação de Logout Remoto (Versão do Token)
-        if (payload.versao_token !== undefined && resUsuario.versao_token !== payload.versao_token) {
+        // Validação de Logout Remoto (Versão do Token) (SEC-004)
+        if (payload.versao_token === undefined) {
+             log('warn', '[AUTH] Token sem versão rejeitado', { email: resUsuario.email });
+             return c.json({ erro: 'Token inválido ou obsoleto.' }, 401);
+        }
+
+        if (resUsuario.versao_token !== payload.versao_token) {
+            log('info', '[AUTH] Sessão encerrada por nova versão', { email: resUsuario.email });
             return c.json({ erro: 'Sua sessão foi encerrada.' }, 401);
         }
 

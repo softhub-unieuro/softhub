@@ -17,6 +17,7 @@ import rotasDashboard from './rotas/dashboard';
 import rotasLogs from './rotas/logs';
 import rotasAuth from './rotas/auth';
 import rotasAuthQr from './rotas/auth-qr';
+import rotasSessoes from './rotas/auth-sessions';
 
 import rotasConfiguracoes from './rotas/configuracoes';
 import rotasRelatorios from './rotas/relatorios';
@@ -120,6 +121,7 @@ app.onError(lidarExcecao);
 // ─── Rotas ────────────────────────────────────────────────────────────────────
 app.route('/api/auth', rotasAuth);
 app.route('/api/auth', rotasAuthQr);
+app.route('/api/auth', rotasSessoes);
 app.route('/api/usuarios', rotasUsuarios);
 app.route('/api/usuarios', rotasUsuariosAdmin);
 app.route('/api/projetos', rotasProjetos);

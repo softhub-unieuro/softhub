@@ -44,6 +44,7 @@ const PaginaRelatorios = lazy(() => import('../funcionalidades/admin/componentes
 const GerenciarEquipes = lazy(() => import('../funcionalidades/admin/componentes/GerenciarEquipes'));
 const GerenciarProjetos = lazy(() => import('../funcionalidades/admin/componentes/GerenciarProjetos'));
 const PaginaConfiguracoes = lazy(() => import('../funcionalidades/admin/componentes/PaginaConfiguracoes'));
+const ConfirmacaoLoginQR = lazy(() => import('../funcionalidades/autenticacao/componentes/ConfirmacaoLoginQR'));
 
 /**
  * Layout raiz — renderizado em TODAS as rotas.
@@ -118,6 +119,7 @@ export const rotas = createBrowserRouter([
         element: <LayoutRaiz />,
         children: [
             { path: '/login', element: <TelaLogin /> },
+            { path: '/auth/qr/:token', element: <ConfirmacaoLoginQR /> },
             { path: '/', element: <RotaInicial /> },
             { path: '/portfolio', element: <Navigate to="/" replace /> },
             {

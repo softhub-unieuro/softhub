@@ -1,197 +1,168 @@
 import { Hono } from 'hono';
-import { sign } from 'hono/jwt';
 import { Env } from '../index';
 import { registrarLog } from '../servicos/servico-logs';
 import { autenticacaoRequerida } from '../middleware/auth';
 import { log } from '../utilitarios/logger';
+import { QrAuthService } from '../servicos/qr-auth.service';
 
+/**
+ * Rota de Autenticação via QR Code (Auditoria Part 2).
+ * Permite transferência de sessão segura entre dispositivos.
+ */
 const rotasAuthQr = new Hono<{ Bindings: Env }>();
 
-// Interface para os dados no KV
-interface SessaoQrKV {
-    status: 'pendente' | 'identificado' | 'autorizado' | 'consumido' | 'expirado';
-    usuario_id?: string;
-    token_acesso?: string;
-    ip_origem: string;
-    user_agent: string;
-    criado_em: string;
-}
-
-const chaveQr = (id: string) => `qr_sessao:${id}`;
-
-// ── QR Code: Gerar Sessão (KV) ─────────────────────────────────────────────────────
+// ── 1. Gerar Novo QR (Público, Rate Limited) ───────────────────────────────────────────
 rotasAuthQr.post('/qr/gerar', async (c) => {
-    const { softhub_kv } = c.env;
-    
-    if (!softhub_kv) {
-        log('error', '[QR-AUTH] Erro crítico: Binding softhub_kv não encontrado no ambiente.');
-        return c.json({ erro: 'O servidor de cache (KV) não está configurado corretamente.' }, 500);
-    }
-
-    const sessaoId = crypto.randomUUID();
-    const agora = new Date();
-    const expiraEm = new Date(agora.getTime() + 1000 * 60).toISOString(); // 60 segundos (mínimo KV)
-
-    const dados: SessaoQrKV = {
-        status: 'pendente',
-        ip_origem: c.req.header('CF-Connecting-IP') ?? 'desconhecido',
-        user_agent: c.req.header('User-Agent') ?? 'desconhecido',
-        criado_em: agora.toISOString()
-    };
-
     try {
-        // Aumentado para 120s para evitar erros de limite mínimo de 60s do Cloudflare KV (time skew)
-        await softhub_kv.put(chaveQr(sessaoId), JSON.stringify(dados), { expirationTtl: 120 });
-        return c.json({ sessaoId, expiraEm });
+        const { token, expiresAt } = await QrAuthService.generateQrToken(c);
+        return c.json({ sessaoId: token, expiraEm: expiresAt });
     } catch (err: any) {
-        log('error', '[QR-AUTH] Erro ao gerar sessão no KV', { 
-            erro: err?.message || err, 
-            sessaoId,
-            stack: err?.stack 
-        });
-        return c.json({ 
-            erro: 'Erro técnico ao criar sessão de login QR.', 
-            detalhe: err?.message || 'Falha ao persistir no cache.' 
-        }, 500);
+        log('error', '[QR-AUTH] Falha ao gerar token', { erro: err?.message });
+        return c.json({ erro: 'Não foi possível gerar o código de acesso.' }, 500);
     }
 });
 
-// ── QR Code: Verificar Status (KV + D1 para dados do usuário) ─────────────────────────────────────────────────
-rotasAuthQr.get('/qr/verificar/:id', async (c) => {
-    const { softhub_kv, DB } = c.env;
-    const id = c.req.param('id');
+// ── 2. Fluxo SSE: Monitoramento de Status (Checklist Part 2) ───────────────────────────
+rotasAuthQr.get('/qr/stream/:token', async (c) => {
+    const token = c.req.param('token');
+    const { DB } = c.env;
 
-    try {
-        const resSessao = await softhub_kv.get(chaveQr(id));
-        if (!resSessao) {
-            return c.json({ status: 'expirado' });
-        }
+    const stream = new ReadableStream({
+        async start(controller) {
+            const encoder = new TextEncoder();
+            const enviar = (dados: any) => {
+                try {
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(dados)}\n\n`));
+                } catch { /* Ignora se stream fechado */ }
+            };
 
-        const sessao = JSON.parse(resSessao) as SessaoQrKV;
+            let encerrar = false;
+            let ultimaStatus = '';
 
-        if (sessao.status === 'identificado' && sessao.usuario_id) {
-            const usuario = await DB.prepare(
-                'SELECT id, nome, email, role, foto_perfil FROM usuarios WHERE id = ?'
-            )
-                .bind(sessao.usuario_id)
-                .first();
+            // Heartbeat para manter conexão viva (Audit Checklist)
+            const heartbeat = setInterval(() => {
+                if (!encerrar) controller.enqueue(encoder.encode(': heartbeat\n\n'));
+            }, 30000);
 
-            return c.json({
-                status: 'identificado',
-                usuario
+            const interval = setInterval(async () => {
+                if (encerrar) {
+                    clearInterval(interval);
+                    clearInterval(heartbeat);
+                    return;
+                }
+
+                try {
+                    const sessao = await QrAuthService.getQrTokenStatus(c, token);
+                    
+                    if (!sessao) {
+                        enviar({ status: 'expired' });
+                        encerrar = true;
+                        controller.close();
+                        return;
+                    }
+
+                    if (sessao.status !== ultimaStatus) {
+                        ultimaStatus = sessao.status;
+                        
+                        if (sessao.status === 'confirmed') {
+                            const usuario = await DB.prepare('SELECT id, nome, email, role, foto_perfil FROM usuarios WHERE id = ?').bind(sessao.user_id).first();
+                            
+                            enviar({ 
+                                status: 'confirmed', 
+                                token: sessao.jwt_token, 
+                                refreshToken: sessao.refresh_token,
+                                usuario 
+                            });
+                            
+                            await QrAuthService.markAsUsed(c, token);
+                            encerrar = true;
+                            controller.close();
+                        } else if (sessao.status === 'scanned') {
+                            const usuario = await DB.prepare('SELECT id, nome, email, role, foto_perfil FROM usuarios WHERE id = ?').bind(sessao.user_id).first();
+                            enviar({ status: 'scanned', usuario });
+                        } else {
+                            enviar({ status: sessao.status });
+                        }
+                    }
+                } catch (e) {
+                    encerrar = true;
+                    clearInterval(interval);
+                    clearInterval(heartbeat);
+                    try { controller.error(e); } catch {}
+                }
+            }, 1000);
+
+            c.req.raw.signal.addEventListener('abort', () => {
+                encerrar = true;
+                clearInterval(interval);
+                clearInterval(heartbeat);
             });
         }
+    });
 
-        if (sessao.status === 'autorizado' && sessao.usuario_id) {
-            const usuario = await DB.prepare(
-                'SELECT id, nome, email, role, foto_perfil FROM usuarios WHERE id = ?'
-            )
-                .bind(sessao.usuario_id)
-                .first();
-
-            // Consome a sessão no KV para não permitir reuso
-            sessao.status = 'consumido';
-            await softhub_kv.put(chaveQr(id), JSON.stringify(sessao), { expirationTtl: 120 });
-
-            return c.json({
-                status: 'autorizado',
-                token: sessao.token_acesso,
-                usuario
-            });
+    return new Response(stream, {
+        headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'Access-Control-Allow-Origin': '*'
         }
-
-        return c.json({ status: sessao.status });
-    } catch (err: any) {
-        log('error', '[QR-AUTH] Erro ao verificar status', { erro: err.message, sessaoId: id });
-        return c.json({ erro: 'Erro ao verificar status da sessão.' }, 500);
-    }
+    });
 });
 
-// ── QR Code: Identificar (KV) ───────────────────────────────
+// ── 3. Confirmar Scanneamento (Mobile Logado) ─────────────────────────────────────────
 rotasAuthQr.post('/qr/identificar', autenticacaoRequerida(), async (c) => {
+    // Esta rota é opcional para feedback visual no Dispositivo A (PC) avisando que o celular leu.
     const { softhub_kv } = c.env;
+    const { sessaoId } = await c.req.json();
     const usuario = c.get('usuario' as any) as any;
 
     try {
-        const { sessaoId } = await c.req.json();
-        if (!sessaoId) return c.json({ erro: 'ID da sessão ausente.' }, 400);
+        const tokenHash = await (async (t) => {
+             const msgUint8 = new TextEncoder().encode(t);
+             const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+             const hashArray = Array.from(new Uint8Array(hashBuffer));
+             return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        })(sessaoId);
 
-        const resSessao = await softhub_kv.get(chaveQr(sessaoId));
-        if (!resSessao) return c.json({ erro: 'Sessão expirada ou não encontrada.' }, 404);
+        const res = await softhub_kv.get(`qr_token:${tokenHash}`);
+        if (!res) return c.json({ erro: 'QR Code expirado.' }, 404);
 
-        const sessao = JSON.parse(resSessao) as SessaoQrKV;
-        if (sessao.status !== 'pendente') return c.json({ erro: 'Sessão não está mais disponível.' }, 400);
-
-        // Atualiza para identificado
-        sessao.status = 'identificado';
-        sessao.usuario_id = usuario.id;
-        
-        await softhub_kv.put(chaveQr(sessaoId), JSON.stringify(sessao), { expirationTtl: 120 });
-
+        const dados = JSON.parse(res);
+        if (dados.status === 'pending') {
+            dados.status = 'scanned';
+            dados.user_id = usuario.id;
+            await softhub_kv.put(`qr_token:${tokenHash}`, JSON.stringify(dados), { expirationTtl: 120 });
+        }
         return c.json({ sucesso: true });
-    } catch (err: any) {
-        return c.json({ erro: 'Erro ao identificar.' }, 500);
+    } catch {
+        return c.json({ erro: 'Falha na identificação.' }, 500);
     }
 });
 
-// ── QR Code: Autorizar (KV + D1 para versão do token) ────────────────────────────────
+// ── 4. Autorizar Login (Mobile Logado) ────────────────────────────────────────────────
 rotasAuthQr.post('/qr/autorizar', autenticacaoRequerida(), async (c) => {
-    const { softhub_kv, DB, JWT_SECRET } = c.env;
+    const { DB } = c.env;
+    const { sessaoId } = await c.req.json();
     const usuario = c.get('usuario' as any) as any;
 
-    let sessaoId: string | undefined;
     try {
-        const body = await c.req.json();
-        sessaoId = body.sessaoId;
-        if (!sessaoId) return c.json({ erro: 'ID da sessão ausente.' }, 400);
-
-        const resSessao = await softhub_kv.get(chaveQr(sessaoId));
-        if (!resSessao) return c.json({ erro: 'Sessão expirada ou não encontrada.' }, 404);
-
-        const sessao = JSON.parse(resSessao) as SessaoQrKV;
+        const sucesso = await QrAuthService.confirmQrLogin(c, sessaoId, usuario);
         
-        if (sessao.status !== 'pendente' && sessao.status !== 'identificado') {
-            return c.json({ erro: 'Sessão inválida.' }, 400);
+        if (sucesso) {
+            await registrarLog(DB, {
+                usuarioId: usuario.id,
+                acao: 'LOGIN_QR_CONFIRMADO',
+                modulo: 'auth',
+                descricao: `Sessão via QR Code autorizada e transmitida com sucesso`,
+                ip: c.req.header('CF-Connecting-IP') ?? 'unknown'
+            });
+            return c.json({ sucesso: true });
         }
-
-        // Incrementa a versão do token no D1
-        const resVersaoRaw = await DB.prepare(
-            'UPDATE usuarios SET versao_token = versao_token + 1 WHERE id = ? RETURNING versao_token'
-        ).bind(usuario.id).first();
-        const resVersao = resVersaoRaw as any;
-        const novaVersao = resVersao?.versao_token || 1;
-
-        // Gera novo token
-        const tokenDesktop = await sign(
-            {
-                id: usuario.id,
-                role: usuario.role,
-                email: usuario.email,
-                versao_token: novaVersao,
-                exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30, // 30 dias (Igual experiência mobile)
-            },
-            JWT_SECRET,
-        );
-
-        // Atualiza KV para autorizado
-        sessao.status = 'autorizado';
-        sessao.usuario_id = usuario.id;
-        sessao.token_acesso = tokenDesktop;
-
-        await softhub_kv.put(chaveQr(sessaoId), JSON.stringify(sessao), { expirationTtl: 120 });
-
-        await registrarLog(DB, {
-            usuarioId: usuario.id,
-            acao: 'LOGIN_QR_AUTORIZADO',
-            modulo: 'auth',
-            descricao: `Login via QR Code autorizado pelo celular para o ID: ${sessaoId}`,
-            ip: c.req.header('CF-Connecting-IP') ?? ''
-        });
-
-        return c.json({ sucesso: true });
+        
+        return c.json({ erro: 'Não foi possível confirmar o login. O QR Code pode ter expirado.' }, 400);
     } catch (err: any) {
-        log('error', '[QR-AUTH] Erro ao autenticar', { erro: err.message, sessaoId });
-        return c.json({ erro: 'Erro ao processar autenticação QR.' }, 500);
+        return c.json({ erro: 'Erro interno ao processar autorização.' }, 500);
     }
 });
 

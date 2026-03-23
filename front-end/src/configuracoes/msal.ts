@@ -10,7 +10,7 @@ const configuracaoMsal: Configuration = {
         postLogoutRedirectUri: `${window.location.origin}/login`,
     },
     cache: {
-        cacheLocation: 'localStorage',
+        cacheLocation: 'sessionStorage',
     },
     system: {
         loggerOptions: {

@@ -1,20 +1,21 @@
 import { Hono } from 'hono';
-import { verifyWithJwks, sign, verify } from 'hono/jwt';
+import { verify, sign } from 'hono/jwt';
 import { Env } from '../index';
 import { registrarLog } from '../servicos/servico-logs';
 import { log } from '../utilitarios/logger';
-import { AzureAdClaims, getJwksUri, validarClaims } from '../servicos/servico-msal';
+import { MsalAuthService } from '../servicos/msal-auth.service';
 import { kvRateLimit } from '../middleware/rate-limit';
+import { createSessionForUser } from '../servicos/servico-auth-base';
 
 /**
- * Rota de Autenticação - Fluxo MSAL (Regra 13)
- * Integração com Azure AD da Unieuro
+ * Rota de Autenticação - Fluxo MSAL Exclusivo (Auditoria Part 1)
+ * Não existe login por email/senha neste sistema.
  */
 const rotasAuth = new Hono<{ Bindings: Env }>();
 
 // Proteção Brute Force: 5 tentativas por minuto por IP
 rotasAuth.post('/msal', kvRateLimit({ windowMs: 60 * 1000, limit: 5, keyPrefix: 'auth_msal' }), async (c) => {
-    const { DB, JWT_SECRET, MSAL_TENANT_ID, MSAL_CLIENT_ID, BOOTSTRAP_ADMIN_EMAIL, softhub_kv } = c.env;
+    const { MSAL_TENANT_ID, MSAL_CLIENT_ID, DB } = c.env;
     const ip = c.req.header('CF-Connecting-IP') ?? 'desconhecido';
 
     try {
@@ -25,165 +26,44 @@ rotasAuth.post('/msal', kvRateLimit({ windowMs: 60 * 1000, limit: 5, keyPrefix: 
             return c.json({ erro: 'idToken ausente.' }, 400);
         }
 
-        // 0. Buscar Governança (Domínios e Auto-cadastro) - PRIORIDADE PARA CONFIG DO BANCO
-        let dominiosAutorizados: string[] = ['unieuro.com.br']; // Fallback mínimo de segurança
-        let autoCadastroPermitido = false;
-
-        try {
-            const keys = ['dominios_autorizados', 'auto_cadastro'];
-            const configs: Record<string, any> = {};
-
-            for (const k of keys) {
-                const cached = await softhub_kv?.get(k);
-                let v: string | null = cached || null;
-
-                if (!v) {
-                    const row = await DB.prepare('SELECT valor FROM configuracoes_sistema WHERE chave = ?').bind(k).first() as any;
-                    if (row && typeof row.valor === 'string') {
-                        v = row.valor;
-                        if (softhub_kv) {
-                            try {
-                                await softhub_kv.put(k, v!, { expirationTtl: 3600 });
-                            } catch (e: any) {
-                                log('warn', '[AUTH-KV] Falha ao salvar config no cache', { chave: k, erro: e.message });
-                            }
-                        }
-                    }
-                }
-                
-                if (v) {
-                    try {
-                        configs[k] = JSON.parse(v);
-                    } catch {
-                        configs[k] = v;
-                    }
-                }
-            }
-
-            if (Array.isArray(configs.dominios_autorizados) && configs.dominios_autorizados.length > 0) {
-                dominiosAutorizados = configs.dominios_autorizados;
-            }
-            if (typeof configs.auto_cadastro === 'boolean') {
-                autoCadastroPermitido = configs.auto_cadastro;
-            }
-        } catch (e: any) {
-            log('error', '[AUTH] Falha crítica ao carregar governança', { erro: e.message });
+        if (!MSAL_TENANT_ID || !MSAL_CLIENT_ID) {
+            log('error', '[AUTH-MSAL] MSAL Tenant ou Client ID não configurado');
+            return c.json({ erro: 'Configuração do servidor de autenticação incompleta.' }, 500);
         }
 
-        // 1. Validar assinatura RS256 com JWKS da Microsoft
-        let payload: AzureAdClaims;
-        try {
-            if (!MSAL_TENANT_ID) throw new Error('MSAL_TENANT_ID não configurado no ambiente.');
-
-            try {
-                const rawPayload = await verifyWithJwks(idToken, {
-                    jwks_uri: getJwksUri(MSAL_TENANT_ID),
-                    allowedAlgorithms: ['RS256']
-                });
-                payload = rawPayload as unknown as AzureAdClaims;
-            } catch (e: any) {
-                const rawPayload = await verifyWithJwks(idToken, {
-                    jwks_uri: getJwksUri('common'),
-                    allowedAlgorithms: ['RS256']
-                });
-                payload = rawPayload as unknown as AzureAdClaims;
-            }
-        } catch (e: any) {
-            return c.json({ erro: 'Assinatura do Token inválida.', detalhe: e.message }, 401);
-        }
-
-        // 2. Validar claims de negócio
-        const email = (payload.upn || payload.preferred_username || '').toLowerCase();
+        // 1. Validar assinatura e claims do token Microsoft (JWKS Check)
+        const payload = await MsalAuthService.validateMsalIdToken(idToken, MSAL_TENANT_ID, MSAL_CLIENT_ID);
         
-        // Verificação de Bootstrap (Regra 13 - Admin via env) - DEVE vir antes da validação de domínio para permitir recuperação
-        const listaBootstrap = (BOOTSTRAP_ADMIN_EMAIL || '').toLowerCase().split(',').map(e => e.trim());
-        const isBootstrapAdmin = email && listaBootstrap.includes(email);
-
-        const erroValidacao = validarClaims(payload, MSAL_TENANT_ID, MSAL_CLIENT_ID, dominiosAutorizados);
+        // 2. Convergência de Usuário (Lookup por OID - Auditoria Checklist)
+        const usuario = await MsalAuthService.findOrCreateUserFromMsal(c, payload);
         
-        // Se houver erro de validação (como domínio inválido), só bloqueamos se NÃO for um admin de bootstrap
-        if (erroValidacao && !isBootstrapAdmin) {
-            return c.json({ erro: 'Rejeitado por segurança.', detalhe: erroValidacao }, 403);
-        }
-
-        // 3. Extrair dados
-        const nome = payload.name || email;
-
-        // 4. Verificação de DB
-        const resUsuario = await DB
-            .prepare('SELECT id, nome, email, role, versao_token FROM usuarios WHERE email = ?')
-            .bind(email)
-            .first();
-        let usuario = resUsuario as any;
-
-        let isNew = false;
-
-        if (!usuario) {
-            if (isBootstrapAdmin || autoCadastroPermitido) {
-                // Novo usuário via bootstrap é ADMIN, via auto-cadastro é MEMBRO
-                const roleFinal = isBootstrapAdmin ? 'ADMIN' : 'MEMBRO';
-                const novoId = crypto.randomUUID();
-                
-                await DB.prepare('INSERT INTO usuarios (id, nome, email, role, versao_token) VALUES (?, ?, ?, ?, 1)')
-                    .bind(novoId, nome, email, roleFinal)
-                    .run();
-
-                usuario = { id: novoId, nome, email, role: roleFinal, versao_token: 1 };
-                isNew = true;
-            } else {
-                return c.json({
-                    erro: 'Acesso negado: cadastro não autorizado.',
-                    detalhe: `O auto-cadastro está desativado e o e-mail ${email} não está pré-autorizado.`
-                }, 403);
-            }
-        } else {
-            // Se já existe mas está na lista de bootstrap, garante que seja ADMIN
-            if (isBootstrapAdmin && usuario.role !== 'ADMIN') {
-                await DB.prepare('UPDATE usuarios SET role = "ADMIN", nome = ? WHERE id = ?')
-                    .bind(nome, usuario.id)
-                    .run();
-                usuario.role = 'ADMIN';
-                usuario.nome = nome;
-            } else {
-                await DB.prepare('UPDATE usuarios SET nome = ? WHERE id = ?').bind(nome, usuario.id).run();
-                usuario.nome = nome;
-            }
-        }
-
-
-
-        // 5. Gerar JWT Interno
-        if (!JWT_SECRET) {
-            log('error', '[AUTH] JWT_SECRET não definido');
-            return c.json({ erro: 'Erro interno de configuração: JWT_SECRET ausente.' }, 500);
-        }
-
-        const tokenLocal = await sign(
-            {
-                id: usuario.id,
-                role: usuario.role,
-                email: usuario.email,
-                jti: crypto.randomUUID(), // ID único da sessão (SEC-002)
-                versao_token: usuario.versao_token || 1,
-                exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30, // 30 dias (Estratégia PWA)
-            },
-            JWT_SECRET
-        );
+        // 3. Gerar Sessão Interna Própria (JWT Independente da Microsoft)
+        const sessao = await createSessionForUser(c, usuario, 'Login Microsoft');
 
         await registrarLog(DB, {
             usuarioId: usuario.id,
-            acao: isNew ? 'CADASTRO_MSAL' : 'LOGIN_MSAL',
+            acao: usuario.isNew ? 'CADASTRO_MSAL' : 'LOGIN_MSAL',
             modulo: 'auth',
-            descricao: `Login realizado via Microsoft: ${email}`,
+            descricao: `Login via Microsoft: ${usuario.email}`,
             ip,
-            dadosNovos: { email, role: usuario.role, novo_usuario: isNew }
+            dadosNovos: { oid: usuario.azure_oid, role: usuario.role }
         });
 
-        return c.json({ token: tokenLocal, usuario });
+        return c.json({ 
+            token: sessao.accessToken, 
+            refreshToken: sessao.refreshToken,
+            usuario: {
+                id: usuario.id,
+                nome: usuario.nome,
+                email: usuario.email,
+                role: usuario.role,
+                foto_perfil: usuario.foto_perfil
+            }
+        });
 
     } catch (e: any) {
-        log('error', '[AUTH] Erro crítico inesperado', { erro: e.message, ip });
-        return c.json({ erro: 'Erro interno crítico: ' + (e.message || 'Erro desconhecido') }, 500);
+        log('error', '[AUTH-MSAL] Erro na autenticação Microsoft', { erro: e.message, ip });
+        return c.json({ erro: 'Autenticação falhou.', detalhe: e.message }, 401);
     }
 });
 
@@ -203,18 +83,14 @@ rotasAuth.post('/logout', async (c) => {
             const timeLeft = (payload.exp * 1000) - Date.now();
             if (timeLeft > 0) {
                 // Adiciona JTI na blacklist até o token expirar naturalmente
-                try {
-                    await softhub_kv.put(`revoked:${payload.jti}`, '1', {
-                        expirationTtl: Math.ceil(timeLeft / 1000)
-                    });
-                } catch (kvError: any) {
-                    log('warn', '[AUTH-KV] Falha ao revogar JTI no cache', { jti: payload.jti, erro: kvError.message });
-                }
+                await softhub_kv.put(`revoked:${payload.jti}`, '1', {
+                    expirationTtl: Math.ceil(timeLeft / 1000)
+                });
             }
         }
         return c.json({ sucesso: true });
     } catch {
-        return c.json({ sucesso: true }); // Falha no logout ainda é considerado sucesso (token inválido)
+        return c.json({ sucesso: true });
     }
 });
 
@@ -231,26 +107,20 @@ rotasAuth.post('/logout-all', async (c) => {
     try {
         const payload = await verify(token, JWT_SECRET, 'HS256') as any;
         
-        // Incrementa versão no banco
         await DB.prepare('UPDATE usuarios SET versao_token = versao_token + 1 WHERE id = ?')
             .bind(payload.id)
             .run();
 
-        // Invalida cache de sessão
         if (softhub_kv) {
-            try {
-                await softhub_kv.delete(`sessao:${payload.id}`);
-            } catch (kvError: any) {
-                log('warn', '[AUTH-KV] Falha ao invalidar sessao pos-logout-all', { usuarioId: payload.id, erro: kvError.message });
-            }
+            await softhub_kv.delete(`sessao:${payload.id}`);
         }
 
         await registrarLog(DB, {
             usuarioId: payload.id,
             acao: 'LOGOUT_TOTAL',
             modulo: 'auth',
-            descricao: `Usuário solicitou encerramento de todas as sessões`,
-            ip: c.req.header('CF-Connecting-IP') ?? ''
+            descricao: `Encerramento global de sessões`,
+            ip: c.req.header('CF-Connecting-IP') ?? 'unknown'
         });
 
         return c.json({ sucesso: true });
@@ -260,7 +130,7 @@ rotasAuth.post('/logout-all', async (c) => {
 });
 
 /**
- * Verifica se o acesso atual vem da rede interna da Fábrica (conforme config rede_ponto)
+ * Verifica se o acesso atual vem da rede interna.
  */
 rotasAuth.get('/verificar-rede', async (c) => {
     const { DB, softhub_kv } = c.env;
@@ -276,21 +146,14 @@ rotasAuth.get('/verificar-rede', async (c) => {
             const row = await DB.prepare('SELECT valor FROM configuracoes_sistema WHERE chave = "rede_ponto"').first() as any;
             if (row?.valor) {
                 redePonto = JSON.parse(row.valor);
-                if (softhub_kv) {
-                    try {
-                        await softhub_kv.put('rede_ponto', row.valor, { expirationTtl: 3600 });
-                    } catch (kvError: any) {
-                        log('warn', '[AUTH-KV] Falha ao salvar rede_ponto no cache', { erro: kvError.message });
-                    }
-                }
+                if (softhub_kv) await softhub_kv.put('rede_ponto', row.valor, { expirationTtl: 3600 });
             }
         }
 
-        const ehRedeInterna = redePonto.includes(ipAtual);
-        return c.json({ ehRedeInterna, ip: ipAtual });
+        return c.json({ ehRedeInterna: redePonto.includes(ipAtual), ip: ipAtual });
     } catch (e) {
-        return c.json({ ehRedeInterna: false, erro: 'Falha ao validar rede' });
+        return c.json({ ehRedeInterna: false });
     }
 });
 
-export default rotasAuth;
+export default rotasAuth;
