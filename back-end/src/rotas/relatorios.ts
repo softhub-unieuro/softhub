@@ -309,4 +309,134 @@ rotasRelatorios.get('/exportar/ponto', autenticacaoRequerida(), verificarPermiss
 });
 
 
+/**
+ * 👤 RELATÓRIO INDIVIDUAL DE FREQUÊNCIA
+ * Extrato detalhado de todas as batidas de um membro em um período.
+ */
+rotasRelatorios.get('/membro/:id/frequencia', autenticacaoRequerida(), verificarPermissao('relatorios:visualizar'), async (c: Context) => {
+    const { DB } = c.env;
+    const id = c.req.param('id');
+    const ini = c.req.query('inicio');
+    const fim = c.req.query('fim');
+
+    try {
+        let query = `
+            SELECT 
+                data,
+                entrada,
+                saida,
+                tempo_total,
+                ip_entrada,
+                ip_saida,
+                status
+            FROM ponto_registros
+            WHERE usuario_id = ?
+        `;
+        const params: any[] = [id];
+
+        if (ini) { query += ` AND data >= ?`; params.push(ini); }
+        if (fim) { query += ` AND data <= ?`; params.push(fim); }
+
+        query += ` ORDER BY data DESC`;
+
+        const registros = await DB.prepare(query).bind(...params).all();
+
+        return c.json({ registros: registros.results });
+    } catch (erro: any) {
+        log('error', '[RELATORIOS] Falha ao buscar frequência individual', { id, erro: erro.message });
+        return c.json({ erro: 'Falha ao buscar frequência individual' }, 500);
+    }
+});
+
+/**
+ * 📄 EXPORTAR CSV INDIVIDUAL
+ */
+rotasRelatorios.get('/exportar/ponto/membro/:id', autenticacaoRequerida(), verificarPermissao('relatorios:visualizar'), async (c: Context) => {
+    const { DB } = c.env;
+    const id = c.req.param('id');
+    const ini = c.req.query('inicio');
+    const fim = c.req.query('fim');
+
+    try {
+        let query = `
+            SELECT 
+                data, entrada, saida, tempo_total 
+            FROM ponto_registros 
+            WHERE usuario_id = ?
+        `;
+        const params: any[] = [id];
+        if (ini) { query += ` AND data >= ?`; params.push(ini); }
+        if (fim) { query += ` AND data <= ?`; params.push(fim); }
+        query += ` ORDER BY data DESC`;
+
+        const { results } = await DB.prepare(query).bind(...params).all();
+
+        let csv = 'Data;Entrada;Saida;Duracao(min)\n';
+        results.forEach((r: any) => {
+            csv += `${r.data};${r.entrada || ''};${r.saida || ''};${r.tempo_total || 0}\n`;
+        });
+
+        return new Response(csv, {
+            headers: {
+                'Content-Type': 'text/csv; charset=utf-8',
+                'Content-Disposition': `attachment; filename="extrato_membro_${id}.csv"`
+            }
+        });
+    } catch (erro: any) {
+        return c.json({ erro: 'Falha ao exportar CSV' }, 500);
+    }
+});
+
+/**
+ * 📊 EXPORTAR MAPA DE PRESENÇA (MATRIZ SEMESTRAL)
+ * Gera um CSV estilo grade: [Membro | Dia 1 | Dia 2 | ... | Dia N | Total]
+ */
+rotasRelatorios.get('/exportar/mapa-semestral', autenticacaoRequerida(), verificarPermissao('relatorios:visualizar'), async (c: Context) => {
+    const { DB } = c.env;
+    const ini = c.req.query('inicio') || '2025-01-01';
+    const fim = c.req.query('fim') || '2025-06-30';
+
+    try {
+        const membros = await DB.prepare(`SELECT id, nome FROM usuarios ORDER BY nome`).all();
+        const batidas = await DB.prepare(`
+            SELECT usuario_id, data, SUM(tempo_total) as horas 
+            FROM ponto_registros 
+            WHERE data >= ? AND data <= ?
+            GROUP BY usuario_id, data
+        `).bind(ini, fim).all();
+
+        const datas: string[] = [];
+        let atual = new Date(ini);
+        const dataFimObj = new Date(fim);
+        while (atual <= dataFimObj) {
+            datas.push(atual.toISOString().split('T')[0]);
+            atual.setDate(atual.getDate() + 1);
+        }
+
+        let csv = 'Membro;' + datas.join(';') + ';Total Horas\n';
+        membros.results.forEach((m: any) => {
+            let linha = `${m.nome}`;
+            let totalMembro = 0;
+            datas.forEach(d => {
+                const b = batidas.results.find((reg: any) => reg.usuario_id === m.id && reg.data === d);
+                const horas = b ? (b as any).horas : 0;
+                totalMembro += horas;
+                linha += `;${horas > 0 ? (horas / 60).toFixed(1).replace('.', ',') : ''}`;
+            });
+            linha += `;${(totalMembro / 60).toFixed(1).replace('.', ',')}\n`;
+            csv += linha;
+        });
+
+        return new Response(csv, {
+            headers: {
+                'Content-Type': 'text/csv; charset=utf-8',
+                'Content-Disposition': `attachment; filename="mapa_frequencia_${ini}_${fim}.csv"`
+            }
+        });
+    } catch (erro: any) {
+        log('error', '[RELATORIOS] Falha ao exportar mapa semestral', { erro: erro.message });
+        return c.json({ erro: 'Falha ao exportar mapa semestral' }, 500);
+    }
+});
+
 export default rotasRelatorios;

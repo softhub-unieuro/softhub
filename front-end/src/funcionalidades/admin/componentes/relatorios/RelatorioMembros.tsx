@@ -39,22 +39,22 @@ export const RelatorioMembros = memo(({ membrosFiltrados }: RelatorioMembrosProp
                             <tr 
                                 key={m.id} 
                                 onClick={() => handleVerHistorico(m)}
-                                className="hover:bg-indigo-50/30 transition-all group cursor-pointer"
+                                className="hover:bg-primary/5 transition-all group cursor-pointer"
                             >
                                 <td className="px-10 py-8">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-[1.2rem] bg-slate-100 flex items-center justify-center font-black text-slate-400 text-lg group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                                        <div className="w-12 h-12 rounded-[1.2rem] bg-slate-100 flex items-center justify-center font-black text-slate-400 text-lg group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
                                             {m.nome.charAt(0)}
                                         </div>
                                         <div>
-                                            <p className="text-sm font-black text-slate-800 uppercase leading-none mb-1 group-hover:text-indigo-600 transition-colors">{m.nome}</p>
+                                            <p className="text-sm font-black text-slate-800 uppercase leading-none mb-1 group-hover:text-primary transition-colors">{m.nome}</p>
                                             <p className="text-[10px] text-slate-400 font-bold">{m.email}</p>
                                         </div>
                                     </div>
                                 </td>
                                 <td className="px-10 py-8">
                                     <div className="space-y-1">
-                                        <p className="text-[10px] font-black text-indigo-600 uppercase tracking-tight">{m.equipe_nome || 'Liderança'}</p>
+                                        <p className="text-[10px] font-black text-primary uppercase tracking-tight">{m.equipe_nome || 'Liderança'}</p>
                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{m.grupo_nome || 'Geral'}</p>
                                     </div>
                                 </td>

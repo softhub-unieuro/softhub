@@ -2,20 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/compartilhado/servicos/api';
 import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
 
-export interface RelatorioEquipes {
-    grupos: {
-        id: string;
-        nome: string;
-        equipe_nome: string | null;
-        total_membros: number;
-    }[];
-    equipes: {
-        id: string;
-        nome: string;
-        lider_nome: string | null;
-        total_membros: number;
-    }[];
-}
 
 export interface RelatorioFrequenciaGeral {
     tendencia: {
@@ -79,17 +65,6 @@ export function usarRelatorios(dataInicio?: string, dataFim?: string) {
     
     const podeVisualizarRelatorios = usarPermissaoAcesso("relatorios:visualizar");
 
-    // 1. Relatório de Estrutura (Estático, muda pouco)
-    const queryEquipes = useQuery<RelatorioEquipes>({
-        queryKey: ['relatorios', 'equipes'],
-        enabled: podeVisualizarRelatorios,
-        queryFn: async () => {
-            const res = await api.get('/api/relatorios/equipes');
-            return res.data;
-        },
-        staleTime: 10 * 60 * 1000, // 10 minutos
-    });
-
     // 2. Relatório de Frequência Geral (Dinâmico p/ período)
     const queryFrequenciaGeral = useQuery<RelatorioFrequenciaGeral>({
         queryKey: ['relatorios', 'frequencia', 'geral', dataInicio, dataFim],
@@ -152,9 +127,8 @@ export function usarRelatorios(dataInicio?: string, dataFim?: string) {
         }
     };
 
-    const carregando = queryEquipes.isLoading || queryFrequenciaGeral.isLoading || queryFrequenciaMembros.isLoading || queryProjetos.isLoading || queryDesempenho.isLoading;
+    const carregando = queryFrequenciaGeral.isLoading || queryFrequenciaMembros.isLoading || queryProjetos.isLoading || queryDesempenho.isLoading;
     const erro = (
-        (queryEquipes.error as any)?.response?.data?.erro || 
         (queryFrequenciaGeral.error as any)?.response?.data?.erro || 
         (queryFrequenciaMembros.error as any)?.response?.data?.erro || 
         (queryProjetos.error as any)?.response?.data?.erro || 
@@ -162,8 +136,52 @@ export function usarRelatorios(dataInicio?: string, dataFim?: string) {
         null
     );
 
+    const buscarFrequenciaMembro = async (membroId: string) => {
+        if (!membroId) return [];
+        const params: any = {};
+        if (dataInicio) params.inicio = dataInicio;
+        if (dataFim) params.fim = dataFim;
+        const res = await api.get(`/api/relatorios/membro/${membroId}/frequencia`, { params });
+        return res.data.registros || [];
+    };
+
+    const exportarPontoMembro = async (membroId: string) => {
+        try {
+            const res = await api.get(`/api/relatorios/exportar/ponto/membro/${membroId}`, {
+                params: { inicio: dataInicio, fim: dataFim },
+                responseType: 'blob'
+            });
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `extrato_membro_${membroId}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (e) {
+            console.error('Erro ao exportar:', e);
+        }
+    };
+
+    const exportarMapaSemestral = async () => {
+        try {
+            const res = await api.get('/api/relatorios/exportar/mapa-semestral', {
+                params: { inicio: dataInicio, fim: dataFim },
+                responseType: 'blob'
+            });
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `mapa_frequencia_${dataInicio || 'semestre'}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (e) {
+            console.error('Erro ao exportar mapa:', e);
+        }
+    };
+
     return {
-        equipesRelatorio: queryEquipes.data || null,
         frequenciaGeral: queryFrequenciaGeral.data || null,
         frequenciaMembros: queryFrequenciaMembros.data || [],
         projetosRelatorio: queryProjetos.data?.projetos || [],
@@ -171,8 +189,10 @@ export function usarRelatorios(dataInicio?: string, dataFim?: string) {
         carregando,
         erro,
         exportarPonto,
+        buscarFrequenciaMembro,
+        exportarPontoMembro,
+        exportarMapaSemestral,
         recarregar: () => {
-            queryEquipes.refetch();
             queryFrequenciaGeral.refetch();
             queryFrequenciaMembros.refetch();
             queryProjetos.refetch();

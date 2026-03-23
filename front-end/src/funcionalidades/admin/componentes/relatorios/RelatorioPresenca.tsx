@@ -17,22 +17,22 @@ export const RelatorioPresenca = memo(({ frequenciaGeral }: RelatorioPresencaPro
                         <h3 className="text-xl font-black text-slate-900 uppercase">Tendência de Atividade</h3>
                         <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">Gráfico de volume de presenças registradas</p>
                     </div>
-                    <div className="p-4 bg-indigo-50 text-indigo-600 rounded-[1.5rem]"><TrendingUp size={24} /></div>
+                    <div className="p-4 bg-primary/10 text-primary rounded-[1.5rem]"><TrendingUp size={24} /></div>
                 </div>
                 <div className="h-[380px] w-full" style={{ minHeight: '380px' }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={frequenciaGeral.tendencia} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="gradEssencial" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.15}/>
-                                    <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
+                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15}/>
+                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="5 5" stroke="#f1f5f9" vertical={false} />
                             <XAxis dataKey="data" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 'bold' }} tickFormatter={(v) => v.split('-').reverse().slice(0, 2).join('/')} />
                             <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
                             <RechartsTooltip contentStyle={{ border: 'none', borderRadius: '20px', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontSize: '12px' }} />
-                            <Area type="monotone" dataKey="total_presentes" stroke="#4f46e5" strokeWidth={5} fill="url(#gradEssencial)" animationDuration={1500} />
+                            <Area type="monotone" dataKey="total_presentes" stroke="#3b82f6" strokeWidth={5} fill="url(#gradEssencial)" animationDuration={1500} />
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
