@@ -7,469 +7,272 @@ const rotasRelatorios = new Hono<{ Bindings: Env, Variables: { usuario: any } }>
 
 /**
  * 📊 RELATÓRIO DE ESTRUTURA DE EQUIPES
- * Retorna contagem de membros por grupo e equipe, além de lideranças.
+ * Retorna contagem de membros por grupo e equipe.
  */
 rotasRelatorios.get('/equipes', autenticacaoRequerida(), verificarPermissao('relatorios:visualizar'), async (c: Context) => {
     const { DB, softhub_kv } = c.env;
 
     try {
         const cacheKey = 'relatorio:equipes';
-        const cached = await softhub_kv?.get(cacheKey);
-        if (cached) return c.json(JSON.parse(cached));
+        if (softhub_kv) {
+            const cached = await softhub_kv.get(cacheKey);
+            if (cached) {
+                try { return c.json(JSON.parse(cached)); } catch(e) { /* ignore cache error */ }
+            }
+        }
 
-        // 1. Resumo de Grupos
         const gruposResumo = await DB.prepare(`
-            SELECT
-                g.id,
-                g.nome,
-                (SELECT nome FROM equipes WHERE id = g.equipe_id) as equipe_nome,
-                (SELECT COUNT(*) FROM usuarios_organizacao WHERE grupo_id = g.id) as total_membros
+            SELECT g.id, g.nome, e.nome as equipe_nome,
+                   (SELECT COUNT(*) FROM usuarios_organizacao WHERE grupo_id = g.id) as total_membros
             FROM grupos g
+            LEFT JOIN equipes e ON e.id = g.equipe_id
         `).all();
 
-        // 2. Resumo de Equipes
         const equipesResumo = await DB.prepare(`
-            SELECT 
-                e.id,
-                e.nome,
-                (SELECT nome FROM usuarios WHERE id = e.lider_id) as lider_nome,
-                (SELECT COUNT(*) FROM usuarios_organizacao WHERE equipe_id = e.id) as total_membros
+            SELECT e.id, e.nome, u.nome as lider_nome,
+                   (SELECT COUNT(*) FROM usuarios_organizacao WHERE equipe_id = e.id) as total_membros
             FROM equipes e
+            LEFT JOIN usuarios u ON u.id = e.lider_id
         `).all();
 
         const resposta = {
-            grupos: gruposResumo.results,
-            equipes: equipesResumo.results
+            grupos: gruposResumo.results || [],
+            equipes: equipesResumo.results || []
         };
 
         if (softhub_kv) {
-            try {
-                await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 900 }); // 15 min
-            } catch (kvError: any) {
-                log('warn', '[RELATORIO-KV] Falha ao salvar cache (quota?)', { erro: kvError.message });
-            }
+            await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 900 });
         }
 
         return c.json(resposta);
     } catch (erro: any) {
-        log('error', '[RELATORIOS] Falha ao gerar relatório de equipes', { erro: erro.message });
+        log('error', '[RELATORIOS-EQUIPES] Falha', { erro: erro.message });
         return c.json({ erro: 'Falha ao gerar relatório de equipes' }, 500);
     }
 });
 
 /**
  * 📅 RELATÓRIO GERAL DE FREQUÊNCIA
- * Retorna métricas agregadas de presença e justificativas.
  */
 rotasRelatorios.get('/frequencia/geral', autenticacaoRequerida(), verificarPermissao('relatorios:visualizar'), async (c: Context) => {
     const { DB, softhub_kv } = c.env;
     const { data_inicio, data_fim } = c.req.query();
 
-    const cacheKey = `relatorio:frequencia_geral:${data_inicio || 'auto'}_${data_fim || 'auto'}`;
-    const cached = await softhub_kv?.get(cacheKey);
-    if (cached) return c.json(JSON.parse(cached));
-
-    const filtroData = data_inicio && data_fim 
-        ? `AND registrado_em BETWEEN '${data_inicio}' AND '${data_fim}'`
-        : `AND registrado_em >= date('now', '-30 days')`;
-
-    const filtroDataJustificativa = data_inicio && data_fim 
-        ? `AND criado_em BETWEEN '${data_inicio}' AND '${data_fim}'`
-        : '';
-
+    const cacheKey = `relatorio:freq_geral:${data_inicio || 'all'}_${data_fim || 'all'}`;
+    
     try {
-        // Presenças diárias no período
-        const presencasDiarias = await DB.prepare(`
-            SELECT 
-                date(registrado_em) as data,
-                COUNT(DISTINCT usuario_id) as total_presentes
-            FROM ponto_registros
-            WHERE lower(tipo) = 'entrada'
-            ${filtroData}
-            GROUP BY date(registrado_em)
-            ORDER BY data ASC
-        `).all();
-
-        // Status das justificativas no período
-        const justificativasStatus = await DB.prepare(`
-            SELECT 
-                status,
-                COUNT(*) as total
-            FROM justificativas_ponto
-            WHERE 1=1
-            ${filtroDataJustificativa}
-            GROUP BY status
-        `).all();
-
-        // Tipos de justificativas mais comuns no período
-        const justificativasTipos = await DB.prepare(`
-            SELECT 
-                tipo,
-                COUNT(*) as total
-            FROM justificativas_ponto
-            WHERE status = 'aprovada'
-            ${filtroDataJustificativa}
-            GROUP BY tipo
-        `).all();
-
-        // Lista detalhada de justificativas no período para auditoria
-        const justificativasLista = await DB.prepare(`
-            SELECT 
-                j.id,
-                u.nome as usuario_nome,
-                j.tipo,
-                j.status,
-                j.motivo as descricao,
-                j.criado_em
-            FROM justificativas_ponto j
-            JOIN usuarios u ON u.id = j.usuario_id
-            WHERE 1=1
-            ${filtroDataJustificativa}
-            ORDER BY j.criado_em DESC
-        `).all();
-
-        const resposta = {
-            tendencia: presencasDiarias.results,
-            statusJustificativas: justificativasStatus.results,
-            tiposJustificativas: justificativasTipos.results,
-            justificativasLista: justificativasLista.results
-        };
-
         if (softhub_kv) {
-            try {
-                await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 900 });
-            } catch (kvError: any) {
-                log('warn', '[RELATORIO-KV] Falha ao salvar cache consolidado', { erro: kvError.message });
+            const cached = await softhub_kv.get(cacheKey);
+            if (cached) {
+                try { return c.json(JSON.parse(cached)); } catch(e) {}
             }
         }
 
+        const filtroPonto = data_inicio && data_fim 
+            ? `AND registrado_em BETWEEN '${data_inicio}' AND '${data_fim} 23:59:59'`
+            : `AND registrado_em >= date('now', '-30 days')`;
+
+        const filtroJust = data_inicio && data_fim 
+            ? `AND criado_em BETWEEN '${data_inicio}' AND '${data_fim} 23:59:59'`
+            : "";
+
+        const presencas = await DB.prepare(`
+            SELECT date(registrado_em) as data, COUNT(DISTINCT usuario_id) as total_presentes
+            FROM ponto_registros WHERE lower(tipo) = 'entrada' ${filtroPonto}
+            GROUP BY 1 ORDER BY 1 ASC
+        `).all();
+
+        const justStatus = await DB.prepare(`
+            SELECT status, COUNT(*) as total FROM justificativas_ponto
+            WHERE 1=1 ${filtroJust} GROUP BY 1
+        `).all();
+
+        const justLista = await DB.prepare(`
+            SELECT j.id, u.nome as usuario_nome, j.tipo, j.status, j.motivo as descricao, j.criado_em
+            FROM justificativas_ponto j
+            JOIN usuarios u ON u.id = j.usuario_id
+            WHERE 1=1 ${filtroJust}
+            ORDER BY j.criado_em DESC LIMIT 100
+        `).all();
+
+        const resposta = {
+            tendencia: presencas.results || [],
+            statusJustificativas: justStatus.results || [],
+            justificativasLista: justLista.results || []
+        };
+
+        if (softhub_kv) await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 900 });
+
         return c.json(resposta);
     } catch (erro: any) {
-        log('error', '[RELATORIOS] Falha ao gerar relatório de frequência geral', { erro: erro.message });
-        return c.json({ erro: 'Falha ao gerar relatório de frequência geral' }, 500);
+        log('error', '[RELATORIOS-GERAL] Falha', { erro: erro.message, stack: erro.stack });
+        return c.json({ erro: 'Falha técnica no relatório geral' }, 500);
     }
 });
 
 /**
  * 👤 RELATÓRIO DE FREQUÊNCIA POR MEMBRO
- * Retorna o histórico resumido de cada membro com base no período.
  */
 rotasRelatorios.get('/frequencia/membros', autenticacaoRequerida(), verificarPermissao('relatorios:visualizar'), async (c: Context) => {
     const { DB, softhub_kv } = c.env;
     const { data_inicio, data_fim } = c.req.query();
 
     try {
-        const cacheKey = `relatorio:frequencia_membros:${data_inicio || 'auto'}_${data_fim || 'auto'}`;
-        const cached = await softhub_kv?.get(cacheKey);
-        if (cached) return c.json(JSON.parse(cached));
-
-        const subFiltroPonto = data_inicio && data_fim 
-            ? `AND registrado_em BETWEEN '${data_inicio}' AND '${data_fim}'`
+        const filtro = data_inicio && data_fim 
+            ? `AND registrado_em BETWEEN '${data_inicio}' AND '${data_fim} 23:59:59'`
             : "";
 
-        const subFiltroJustificativa = data_inicio && data_fim 
-            ? `AND criado_em BETWEEN '${data_inicio}' AND '${data_fim}'`
-            : "";
-
-        const membrosFrequencia = await DB.prepare(`
-            SELECT 
-                u.id, 
-                u.nome,
-                u.email,
-                (SELECT GROUP_CONCAT(e.nome) FROM usuarios_organizacao uo JOIN equipes e ON e.id = uo.equipe_id WHERE uo.usuario_id = u.id) as equipe_nome,
-                (SELECT GROUP_CONCAT(g.nome) FROM usuarios_organizacao uo JOIN grupos g ON g.id = uo.grupo_id WHERE uo.usuario_id = u.id) as grupo_nome,
-                (SELECT COUNT(DISTINCT date(registrado_em)) FROM ponto_registros WHERE usuario_id = u.id AND lower(tipo) = 'entrada' ${subFiltroPonto}) as dias_presentes,
-                (SELECT GROUP_CONCAT(DISTINCT date(registrado_em)) FROM ponto_registros WHERE usuario_id = u.id AND lower(tipo) = 'entrada' ${subFiltroPonto}) as datas_presenca,
-                (SELECT COUNT(*) FROM justificativas_ponto WHERE usuario_id = u.id AND status = 'aprovada' ${subFiltroJustificativa}) as justificativas_aprovadas,
-                (SELECT MAX(registrado_em) FROM ponto_registros WHERE usuario_id = u.id) as ultima_batida
+        const membros = await DB.prepare(`
+            SELECT u.id, u.nome, u.email,
+                (SELECT COUNT(DISTINCT date(registrado_em)) FROM ponto_registros WHERE usuario_id = u.id AND lower(tipo) = 'entrada' ${filtro}) as total_dias,
+                (SELECT SUM(tempo) FROM (
+                    SELECT usuario_id, registrado_em, 
+                           (julianday(LEAD(registrado_em) OVER (PARTITION BY usuario_id, date(registrado_em) ORDER BY registrado_em)) - julianday(registrado_em)) * 1440 as tempo
+                    FROM ponto_registros
+                    WHERE lower(tipo) IN ('entrada', 'saida') ${filtro}
+                ) WHERE usuario_id = u.id AND tempo > 0) as total_horas
             FROM usuarios u
+            WHERE u.arquivado = 0
             ORDER BY u.nome ASC
         `).all();
 
-        const resposta = {
-            membros: membrosFrequencia.results
-        };
-
-        if (softhub_kv) {
-            try {
-                await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 900 });
-            } catch (kvError: any) {
-                log('warn', '[RELATORIO-KV] Falha ao salvar cache dashboard', { erro: kvError.message });
-            }
-        }
-
-        return c.json(resposta);
+        return c.json({ membros: membros.results || [] });
     } catch (erro: any) {
-        log('error', '[RELATORIOS] Falha ao gerar relatório de frequência por membro', { erro: erro.message });
-        return c.json({ erro: 'Falha ao gerar relatório de frequência por membro' }, 500);
+        log('error', '[RELATORIOS-MEMBROS] Falha', { erro: erro.message });
+        return c.json({ erro: 'Falha no relatório de membros' }, 500);
     }
 });
 
 /**
- * 🚀 RELATÓRIO DE DESEMPENHO DE PROJETOS
- * Métricas de entrega, backlog e saúde dos projetos ativos.
- */
-rotasRelatorios.get('/projetos', autenticacaoRequerida(), verificarPermissao('relatorios:visualizar'), async (c: Context) => {
-    const { DB } = c.env;
-
-    try {
-        const projetosProgresso = await DB.prepare(`
-            SELECT 
-                p.id,
-                p.nome,
-                p.publico,
-                (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id) as total_tarefas,
-                (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id AND status = 'concluida') as concluidas,
-                (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id AND status != 'concluida' AND status != 'arquivado') as em_aberto,
-                (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id AND prioridade = 'urgente' AND status != 'concluida') as urgentes_pendentes
-            FROM projetos p
-            WHERE p.arquivado = 0
-            ORDER BY total_tarefas DESC
-        `).all();
-
-        return c.json({ projetos: projetosProgresso.results });
-    } catch (erro: any) {
-        log('error', '[RELATORIOS] Falha ao gerar relatório de projetos', { erro: erro.message });
-        return c.json({ erro: 'Falha ao gerar relatório de desempenho de projetos' }, 500);
-    }
-});
-
-/**
- * 🏆 RELATÓRIO DE PRODUTIVIDADE (DESEMPENHO POR MEMBRO)
- * Ranking de entregas e engajamento técnico.
- */
-rotasRelatorios.get('/desempenho-membros', autenticacaoRequerida(), verificarPermissao('relatorios:visualizar'), async (c: Context) => {
-    const { DB } = c.env;
-
-    try {
-        // Busca o ranking de membros com base nas tarefas onde são responsáveis
-        const desempenho = await DB.prepare(`
-            SELECT 
-                u.id,
-                u.nome,
-                u.email,
-                (SELECT COUNT(*) FROM tarefas t JOIN tarefas_responsaveis tr ON t.id = tr.tarefa_id WHERE tr.usuario_id = u.id AND t.status = 'concluida') as entregas_totais,
-                (SELECT COUNT(*) FROM tarefas t JOIN tarefas_responsaveis tr ON t.id = tr.tarefa_id WHERE tr.usuario_id = u.id AND t.status IN ('in_progress', 'em_revisao')) as em_andamento,
-                (SELECT MAX(t.data_conclusao) FROM tarefas t JOIN tarefas_responsaveis tr ON t.id = tr.tarefa_id WHERE tr.usuario_id = u.id AND t.status = 'concluida') as ultima_entrega
-            FROM usuarios u
-            WHERE u.id IN (SELECT DISTINCT usuario_id FROM tarefas_responsaveis)
-            ORDER BY entregas_totais DESC
-            LIMIT 50
-        `).all();
-
-        return c.json({ desempenho: desempenho.results });
-    } catch (erro: any) {
-        log('error', '[RELATORIOS] Falha ao gerar relatório de desempenho de membros', { erro: erro.message });
-        return c.json({ erro: 'Falha ao gerar relatório de desempenho de membros' }, 500);
-    }
-});
-
-/**
- * 📥 EXPORTAÇÃO CSV DE PONTO (OFICIAL)
- * Gera o arquivo para auditoria externa ou RH.
- */
-rotasRelatorios.get('/exportar/ponto', autenticacaoRequerida(), verificarPermissao('ponto:exportar'), async (c: Context) => {
-    const { DB } = c.env;
-    const { data_inicio, data_fim } = c.req.query();
-
-    const filtro = data_inicio && data_fim 
-        ? `AND p.registrado_em BETWEEN '${data_inicio}' AND '${data_fim}'`
-        : `AND p.registrado_em >= date('now', '-30 days')`;
-
-    try {
-        const { results } = await DB.prepare(`
-            SELECT 
-                u.nome as Membro,
-                p.tipo as Ação,
-                p.registrado_em as Momento,
-                p.ip_origem as IP,
-                (SELECT nome FROM equipes WHERE id = (SELECT equipe_id FROM usuarios_organizacao WHERE usuario_id = u.id LIMIT 1)) as Equipe
-            FROM ponto_registros p
-            JOIN usuarios u ON u.id = p.usuario_id
-            WHERE 1=1
-            ${filtro}
-            ORDER BY p.registrado_em DESC
-        `).all();
-
-        const csvContent = [
-            "Membro;Equipe;Ação;Data;Hora;IP",
-            ...(results || []).map((r: any) => {
-                const d = new Date(r.Momento);
-                return `"${r.Membro}";"${r.Equipe || 'N/A'}";"${r.Ação}";"${d.toLocaleDateString('pt-BR')}";"${d.toLocaleTimeString('pt-BR')}";"${r.IP}"`;
-            })
-        ].join("\n");
-
-        return c.text(csvContent, 200, {
-            'Content-Type': 'text/csv; charset=utf-8',
-            'Content-Disposition': `attachment; filename="auditoria_ponto_${new Date().toISOString().split('T')[0]}.csv"`
-        });
-    } catch (erro: any) {
-        return c.json({ erro: 'Falha ao exportar CSV' }, 500);
-    }
-});
-
-
-/**
- * 👤 RELATÓRIO INDIVIDUAL DE FREQUÊNCIA
- * Extrato detalhado de todas as batidas de um membro em um período.
+ * 👤 EXTRATO INDIVIDUAL DETALHADO
+ * Pareia entradas/saídas para calcular tempo.
  */
 rotasRelatorios.get('/membro/:id/frequencia', autenticacaoRequerida(), verificarPermissao('relatorios:visualizar'), async (c: Context) => {
     const { DB } = c.env;
-    const id = c.req.param('id');
-    const ini = c.req.query('inicio');
-    const fim = c.req.query('fim');
+    const { id } = c.req.param();
+    const { inicio, fim } = c.req.query();
 
     try {
-        let query = `
+        const filtro = inicio && fim 
+            ? `AND registrado_em BETWEEN '${inicio}' AND '${fim} 23:59:59'`
+            : "";
+
+        const sessoes = await DB.prepare(`
             SELECT 
-                data,
-                entrada,
-                saida,
-                tempo_total,
-                ip_entrada,
-                ip_saida,
-                status
+                date(registrado_em) as data,
+                MIN(CASE WHEN lower(tipo) = 'entrada' THEN registrado_em END) as entrada,
+                MAX(CASE WHEN lower(tipo) = 'saida' THEN registrado_em END) as saida,
+                ip_origem as ip_entrada
             FROM ponto_registros
-            WHERE usuario_id = ?
-        `;
-        const params: any[] = [id];
+            WHERE usuario_id = ? ${filtro}
+            GROUP BY date(registrado_em)
+            ORDER BY data DESC
+        `).bind(id).all();
 
-        if (ini) { query += ` AND data >= ?`; params.push(ini); }
-        if (fim) { query += ` AND data <= ?`; params.push(fim); }
-
-        query += ` ORDER BY data DESC`;
-
-        const registros = await DB.prepare(query).bind(...params).all();
-
-        return c.json({ registros: registros.results });
-    } catch (erro: any) {
-        log('error', '[RELATORIOS] Falha ao buscar frequência individual', { id, erro: erro.message });
-        return c.json({ erro: 'Falha ao buscar frequência individual' }, 500);
-    }
-});
-
-/**
- * 📄 EXPORTAR CSV INDIVIDUAL
- */
-rotasRelatorios.get('/exportar/ponto/membro/:id', autenticacaoRequerida(), verificarPermissao('relatorios:visualizar'), async (c: Context) => {
-    const { DB } = c.env;
-    const id = c.req.param('id');
-    const ini = c.req.query('inicio');
-    const fim = c.req.query('fim');
-
-    try {
-        let query = `
-            SELECT 
-                data, entrada, saida, tempo_total 
-            FROM ponto_registros 
-            WHERE usuario_id = ?
-        `;
-        const params: any[] = [id];
-        if (ini) { query += ` AND data >= ?`; params.push(ini); }
-        if (fim) { query += ` AND data <= ?`; params.push(fim); }
-        query += ` ORDER BY data DESC`;
-
-        const { results } = await DB.prepare(query).bind(...params).all();
-
-        let csv = 'Data;Entrada;Saida;Duracao(min)\n';
-        results.forEach((r: any) => {
-            csv += `${r.data};${r.entrada || ''};${r.saida || ''};${r.tempo_total || 0}\n`;
+        const formatado = (sessoes.results || []).map((s: any) => {
+            const tEntrada = s.entrada ? new Date(s.entrada).getTime() : 0;
+            const tSaida = s.saida ? new Date(s.saida).getTime() : 0;
+            const diffMin = tEntrada && tSaida ? Math.round((tSaida - tEntrada) / 60000) : 0;
+            
+            return {
+                data: s.data,
+                entrada: s.entrada ? s.entrada.split('T')[1].substring(0, 5) : '--:--',
+                saida: s.saida ? s.saida.split('T')[1].substring(0, 5) : '--:--',
+                tempo_total: diffMin,
+                ip_entrada: s.ip_entrada,
+                status: diffMin > 0 ? 'completo' : 'aberto'
+            };
         });
 
-        return new Response(csv, {
-            headers: {
-                'Content-Type': 'text/csv; charset=utf-8',
-                'Content-Disposition': `attachment; filename="extrato_membro_${id}.csv"`
-            }
-        });
+        return c.json({ registros: formatado });
     } catch (erro: any) {
-        return c.json({ erro: 'Falha ao exportar CSV' }, 500);
+        log('error', '[RELATORIOS-INDIVIDUAL] Falha', { id, erro: erro.message });
+        return c.json({ erro: 'Erro ao processar extrato individual' }, 500);
     }
 });
 
 /**
  * 📊 EXPORTAR MAPA DE PRESENÇA (MATRIZ SEMESTRAL)
- * Gera um CSV estilo grade: [Membro | Dia 1 | Dia 2 | ... | Dia N | Total]
  */
 rotasRelatorios.get('/exportar/mapa-semestral', autenticacaoRequerida(), verificarPermissao('relatorios:visualizar'), async (c: Context) => {
     const { DB } = c.env;
-    
-    // Pegar parâmetros e tratar string vazia
-    let iniRaw = c.req.query('inicio');
-    let fimRaw = c.req.query('fim');
-    if (!iniRaw || iniRaw === '') iniRaw = '2025-01-01';
-    if (!fimRaw || fimRaw === '') fimRaw = '2025-06-30';
+    let ini = c.req.query('inicio') || '2025-01-01';
+    let fim = c.req.query('fim') || '2025-06-30';
 
     try {
-        // Validação básica de Datas
-        const dataInicioObj = new Date(iniRaw);
-        const dataFimObj = new Date(fimRaw);
-
-        if (isNaN(dataInicioObj.getTime()) || isNaN(dataFimObj.getTime())) {
-            return c.json({ erro: 'Datas inválidas fornecidas' }, 400);
-        }
-
-        // 1. Pegar todos os membros
-        const membros = await DB.prepare(`SELECT id, nome FROM usuarios ORDER BY nome`).all();
+        const membros = await DB.prepare(`SELECT id, nome FROM usuarios WHERE arquivado = 0 ORDER BY nome`).all();
         const membrosLista = membros.results || [];
         
-        // 2. Pegar todas as batidas no período
-        const batidas = await DB.prepare(`
-            SELECT usuario_id, data, SUM(tempo_total) as horas 
-            FROM ponto_registros 
-            WHERE data >= ? AND data <= ?
-            GROUP BY usuario_id, data
-        `).bind(iniRaw, fimRaw).all();
-        const batidasLista = batidas.results || [];
+        const sessoes = await DB.prepare(`
+            SELECT 
+                usuario_id, 
+                date(registrado_em) as dia,
+                (julianday(MAX(CASE WHEN lower(tipo) = 'saida' THEN registrado_em END)) - 
+                 julianday(MIN(CASE WHEN lower(tipo) = 'entrada' THEN registrado_em END))) * 1440 as minutos
+            FROM ponto_registros
+            WHERE registrado_em BETWEEN ? AND ?
+            GROUP BY usuario_id, date(registrado_em)
+        `).bind(ini, `${fim} 23:59:59`).all();
+        const sessoesLista = sessoes.results || [];
 
-        // 3. Gerar lista de dias no intervalo
+        const mapa = new Map();
+        sessoesLista.forEach((s: any) => mapa.set(`${s.usuario_id}_${s.dia}`, s.minutos || 0));
+
         const datas: string[] = [];
-        let atual = new Date(dataInicioObj);
-        while (atual <= dataFimObj) {
-            datas.push(atual.toISOString().split('T')[0]);
-            atual.setDate(atual.getDate() + 1);
-            
-            // Segurança contra loop infinito por datas malucas
-            if (datas.length > 200) break; 
+        let cur = new Date(ini);
+        const end = new Date(fim);
+        while (cur <= end) {
+            datas.push(cur.toISOString().split('T')[0]);
+            cur.setDate(cur.getDate() + 1);
+            if (datas.length > 200) break;
         }
 
-        // 4. Indexar batidas para performance O(1)
-        const mapaBatidas = new Map();
-        batidasLista.forEach((b: any) => {
-            mapaBatidas.set(`${b.usuario_id}_${b.data}`, b.horas || 0);
-        });
-
-        // 5. Montar o CSV
-        let csv = 'Membro;' + datas.join(';') + ';Total Horas\n';
-        
+        let csv = '\uFEFFMembro;' + datas.join(';') + ';Total Horas\n';
         membrosLista.forEach((m: any) => {
+            let total = 0;
             let linha = `${m.nome}`;
-            let totalMembro = 0;
             datas.forEach(d => {
-                const horas = mapaBatidas.get(`${m.id}_${d}`) || 0;
-                totalMembro += horas;
-                linha += `;${horas > 0 ? (horas / 60).toFixed(1).replace('.', ',') : ''}`;
+                const min = mapa.get(`${m.id}_${d}`) || 0;
+                total += min;
+                linha += `;${min > 0 ? (min/60).toFixed(1).replace('.', ',') : ''}`;
             });
-            linha += `;${(totalMembro / 60).toFixed(1).replace('.', ',')}\n`;
+            linha += `;${(total/60).toFixed(1).replace('.', ',')}\n`;
             csv += linha;
         });
 
-        // Converter para latin1 ou garantir UTF-8 com BOM para Excel identificar
-        const bom = '\uFEFF';
-        return new Response(bom + csv, {
-            headers: {
-                'Content-Type': 'text/csv; charset=utf-8',
-                'Content-Disposition': `attachment; filename="mapa_frequencia_${iniRaw}_${fimRaw}.csv"`
-            }
-        });
+        return new Response(csv, { headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="mapa_frequencia.csv"` } });
     } catch (erro: any) {
-        log('error', '[RELATORIOS] Falha ao exportar mapa semestral', { 
-            erro: erro.message,
-            stack: erro.stack,
-            params: { ini: iniRaw, fim: fimRaw }
-        });
-        return c.json({ erro: 'Falha técnica ao gerar matriz semestral' }, 500);
+        log('error', '[RELATORIOS-MAPA] Falha', { erro: erro.message });
+        return c.json({ erro: 'Falha técnica na matriz' }, 500);
     }
+});
+
+/**
+ * 🚀 DEMAIS RELATÓRIOS (DESEMPENHO E PROJETOS)
+ */
+rotasRelatorios.get('/projetos', autenticacaoRequerida(), verificarPermissao('relatorios:visualizar'), async (c: Context) => {
+    const { DB } = c.env;
+    try {
+        const res = await DB.prepare(`
+            SELECT p.id, p.nome, p.publico,
+                (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id) as total_tasks,
+                (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id AND status = 'concluida') as done
+            FROM projetos p WHERE arquivado = 0
+        `).all();
+        return c.json({ projetos: res.results || [] });
+    } catch (e: any) { return c.json({ erro: e.message }, 500); }
+});
+
+rotasRelatorios.get('/desempenho-membros', autenticacaoRequerida(), verificarPermissao('relatorios:visualizar'), async (c: Context) => {
+    const { DB } = c.env;
+    try {
+        const res = await DB.prepare(`
+            SELECT u.nome, u.email,
+                (SELECT COUNT(*) FROM tarefas_responsaveis tr JOIN tarefas t ON t.id = tr.tarefa_id WHERE tr.usuario_id = u.id AND t.status = 'concluida') as entregas
+            FROM usuarios u WHERE arquivado = 0 ORDER BY entregas DESC LIMIT 20
+        `).all();
+        return c.json({ desempenho: res.results || [] });
+    } catch (e: any) { return c.json({ erro: e.message }, 500); }
 });
 
 export default rotasRelatorios;
