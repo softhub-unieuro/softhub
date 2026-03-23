@@ -30,77 +30,67 @@ export class QrAuthService {
     }
 
     /**
-     * Gera um token aleatório seguro (32 bytes hex) e armazena seu hash no KV.
+     * Gera um token aleatório seguro (32 bytes hex) e armazena seu hash no D1.
      */
     static async generateQrToken(c: any): Promise<{ token: string; expiresAt: string }> {
-        const { softhub_kv } = c.env as Env;
-        if (!softhub_kv) {
-            log('error', '[QR-AUTH] KV Namespace "softhub_kv" não encontrado no ambiente');
-            throw new Error('KV não disponível no servidor.');
-        }
+        const { DB } = c.env as Env;
+        if (!DB) throw new Error('D1 Database não disponível.');
 
         try {
-            // 1. Gerar token aleatório seguro (High Entropy)
             const array = new Uint8Array(32);
             crypto.getRandomValues(array);
             const tokenPlain = Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
             
-            // 2. Definir expiração (2 min - Auditoria Part 2)
             const agora = new Date();
-            const expiresAt = new Date(agora.getTime() + 1000 * 120).toISOString(); 
-
-            // 3. Salvar apenas o HASH no KV (Segurança)
+            const expiresAt = new Date(agora.getTime() + 1000 * 120).toISOString(); // 2 min
             const tokenHash = await this.hashToken(tokenPlain);
-            const dados: QrTokenKV = {
-                status: 'pending',
-                ip_origem: c.req.header('CF-Connecting-IP') ?? 'unknown',
-                userAgent: c.req.header('User-Agent') ?? 'unknown',
-                criadoEm: agora.toISOString(),
-                expiresAt: expiresAt
-            };
 
-            await softhub_kv.put(`${this.prefixo}${tokenHash}`, JSON.stringify(dados), { expirationTtl: 120 });
+            await DB.prepare(
+                'INSERT INTO tokens_qr (id, status, ip_origem, user_agent, expira_em) VALUES (?, ?, ?, ?, ?)'
+            ).bind(
+                tokenHash,
+                'pending',
+                c.req.header('CF-Connecting-IP') ?? 'unknown',
+                c.req.header('User-Agent') ?? 'unknown',
+                expiresAt
+            ).run();
 
             return { token: tokenPlain, expiresAt };
         } catch (err: any) {
-            log('error', '[QR-AUTH] Erro ao gerar/gravar token', { erro: err.message, stack: err.stack });
+            log('error', '[QR-AUTH] Erro ao gerar/gravar token no D1', { erro: err.message });
             throw err;
         }
     }
 
     /**
      * Confirma o login no Dispositivo B (Autenticado).
-     * Transcreve a identidade para o Dispositivo A via token QR.
      */
     static async confirmQrLogin(c: any, tokenPlain: string, authenticatedUser: any): Promise<boolean> {
-        const { softhub_kv, DB } = c.env as Env;
-        if (!softhub_kv) return false;
+        const { DB } = c.env as Env;
+        if (!DB) return false;
 
         const tokenHash = await this.hashToken(tokenPlain);
-        const res = await softhub_kv.get(`${this.prefixo}${tokenHash}`);
+        const sessao = await DB.prepare('SELECT * FROM tokens_qr WHERE id = ?').bind(tokenHash).first<any>();
         
-        if (!res) return false;
+        if (!sessao) return false;
 
-        const dados = JSON.parse(res) as QrTokenKV;
+        // Validação de expiração
+        if (new Date(sessao.expira_em).getTime() < Date.now()) return false;
+        if (sessao.status !== 'pending' && sessao.status !== 'scanned') return false;
 
-        // Validação de estado e expiração (Checklist Part 2)
-        const expirou = new Date(dados.expiresAt).getTime() < Date.now();
-        if (expirou || dados.status !== 'pending' && dados.status !== 'scanned') {
-            return false;
-        }
-
-        // 1. Emitir NOVA sessão independente para o Dispositivo A (Convergência Part 3)
-        // O user no Dispositivo A terá seu próprio JWT.
+        // 1. Emitir nova sessão
         const sessaoAuth = await createSessionForUser(c, authenticatedUser, 'QR Token Sync');
 
-        // 2. Atualização Atômica (Status: Confirmed)
-        dados.status = 'confirmed';
-        dados.user_id = authenticatedUser.id;
-        dados.jwt_token = sessaoAuth.accessToken;
-        dados.refresh_token = sessaoAuth.refreshToken;
-
-        // No KV não há transação real, mas com expirationTtl e verificação inicial reduzimos race condition.
-        await softhub_kv.put(`${this.prefixo}${tokenHash}`, JSON.stringify(dados), { expirationTtl: 120 });
+        // 2. Atualizar no DB
+        await DB.prepare(
+            'UPDATE tokens_qr SET status = ?, user_id = ?, jwt_token = ?, refresh_token = ? WHERE id = ?'
+        ).bind(
+            'confirmed',
+            authenticatedUser.id,
+            sessaoAuth.accessToken,
+            sessaoAuth.refreshToken,
+            tokenHash
+        ).run();
 
         return true;
     }
@@ -109,32 +99,34 @@ export class QrAuthService {
      * Retorna o status atual do token para o SSE.
      */
     static async getQrTokenStatus(c: any, tokenPlain: string): Promise<QrTokenKV | null> {
-        const { softhub_kv } = c.env as Env;
-        if (!softhub_kv) return null;
-
+        const { DB } = c.env as Env;
         const tokenHash = await this.hashToken(tokenPlain);
-        const res = await softhub_kv.get(`${this.prefixo}${tokenHash}`);
         
+        const res = await DB.prepare('SELECT * FROM tokens_qr WHERE id = ?').bind(tokenHash).first<any>();
         if (!res) return null;
-        return JSON.parse(res) as QrTokenKV;
+
+        return {
+            status: res.status as QrStatus,
+            user_id: res.user_id,
+            jwt_token: res.jwt_token,
+            refresh_token: res.refresh_token,
+            ip_origem: res.ip_origem,
+            userAgent: res.user_agent,
+            criadoEm: res.criado_em,
+            expiresAt: res.expira_em
+        };
     }
 
     /**
-     * Marca o token como usado e remove os dados sensíveis (JWT) após o consumo pelo SSE.
+     * Marca o token como usado e remove os dados sensíveis (JWT).
      */
     static async markAsUsed(c: any, tokenPlain: string): Promise<void> {
-        const { softhub_kv } = c.env as Env;
-        if (!softhub_kv) return;
-
+        const { DB } = c.env as Env;
         const tokenHash = await this.hashToken(tokenPlain);
-        const res = await softhub_kv.get(`${this.prefixo}${tokenHash}`);
-        if (!res) return;
 
-        const dados = JSON.parse(res) as QrTokenKV;
-        dados.status = 'used';
-        delete dados.jwt_token;
-        delete dados.refresh_token;
-
-        await softhub_kv.put(`${this.prefixo}${tokenHash}`, JSON.stringify(dados), { expirationTtl: 60 });
+        await DB.prepare(
+            'UPDATE tokens_qr SET status = "used", jwt_token = NULL, refresh_token = NULL WHERE id = ?'
+        ).bind(tokenHash).run();
     }
 }
+

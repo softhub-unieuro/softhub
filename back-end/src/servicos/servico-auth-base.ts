@@ -65,8 +65,14 @@ export async function createSessionForUser(
 
     // 5. Cache de sessão no KV para acessos rápidos (Otimização)
     if (softhub_kv) {
-        await softhub_kv.put(`sessao:${usuario.id}:${jti}`, 'ativa', { expirationTtl: 3600 });
+        try {
+            await softhub_kv.put(`sessao:${usuario.id}:${jti}`, 'ativa', { expirationTtl: 3600 });
+        } catch (e: any) {
+            log('warn', '[AUTH-SESSION] Falha ao salvar cache no KV (Provável limite excedido)', { erro: e.message });
+            // Não falhamos o login por causa do cache. O banco D1 é a fonte da verdade.
+        }
     }
+
 
     return {
         accessToken,

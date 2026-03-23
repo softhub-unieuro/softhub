@@ -22,7 +22,7 @@ export const SecaoLoginMicrosoft = memo(({
     handleInstallClick
 }: SecaoLoginMicrosoftProps) => {
     return (
-        <div className="flex-1 p-8 lg:p-12 flex flex-col items-center justify-center animar-entrada atraso-2">
+        <div className="flex-1 flex flex-col items-center justify-center animar-entrada atraso-2">
             <div className="space-y-8 lg:space-y-12 w-full max-w-sm">
                 <div className="space-y-4 text-center lg:text-left">
                     <div className="inline-flex py-1 px-3 bg-red-500/5 text-red-600 text-[10px] font-black uppercase tracking-widest rounded-full leading-none border border-red-500/10">
