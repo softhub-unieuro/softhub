@@ -18,7 +18,7 @@ rotasAuthQr.post('/qr/gerar', async (c) => {
         return c.json({ sessaoId: token, expiraEm: expiresAt });
     } catch (err: any) {
         log('error', '[QR-AUTH] Falha ao gerar token', { erro: err?.message });
-        return c.json({ erro: 'Não foi possível gerar o código de acesso.' }, 500);
+        return c.json({ erro: 'Não foi possível gerar o código de acesso.', detalhe: err.message }, 500);
     }
 });
 

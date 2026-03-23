@@ -34,30 +34,38 @@ export class QrAuthService {
      */
     static async generateQrToken(c: any): Promise<{ token: string; expiresAt: string }> {
         const { softhub_kv } = c.env as Env;
-        if (!softhub_kv) throw new Error('KV não disponível');
+        if (!softhub_kv) {
+            log('error', '[QR-AUTH] KV Namespace "softhub_kv" não encontrado no ambiente');
+            throw new Error('KV não disponível no servidor.');
+        }
 
-        // 1. Gerar token seguro (High Entropy)
-        const array = new Uint8Array(32);
-        crypto.getRandomValues(array);
-        const tokenPlain = Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
-        
-        // 2. Definir expiração (2 min - Auditoria Part 2)
-        const agora = new Date();
-        const expiresAt = new Date(agora.getTime() + 1000 * 120).toISOString(); 
+        try {
+            // 1. Gerar token aleatório seguro (High Entropy)
+            const array = new Uint8Array(32);
+            crypto.getRandomValues(array);
+            const tokenPlain = Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+            
+            // 2. Definir expiração (2 min - Auditoria Part 2)
+            const agora = new Date();
+            const expiresAt = new Date(agora.getTime() + 1000 * 120).toISOString(); 
 
-        // 3. Salvar apenas o HASH no KV (Segurança)
-        const tokenHash = await this.hashToken(tokenPlain);
-        const dados: QrTokenKV = {
-            status: 'pending',
-            ip_origem: c.req.header('CF-Connecting-IP') ?? 'unknown',
-            userAgent: c.req.header('User-Agent') ?? 'unknown',
-            criadoEm: agora.toISOString(),
-            expiresAt: expiresAt
-        };
+            // 3. Salvar apenas o HASH no KV (Segurança)
+            const tokenHash = await this.hashToken(tokenPlain);
+            const dados: QrTokenKV = {
+                status: 'pending',
+                ip_origem: c.req.header('CF-Connecting-IP') ?? 'unknown',
+                userAgent: c.req.header('User-Agent') ?? 'unknown',
+                criadoEm: agora.toISOString(),
+                expiresAt: expiresAt
+            };
 
-        await softhub_kv.put(`${this.prefixo}${tokenHash}`, JSON.stringify(dados), { expirationTtl: 120 });
+            await softhub_kv.put(`${this.prefixo}${tokenHash}`, JSON.stringify(dados), { expirationTtl: 120 });
 
-        return { token: tokenPlain, expiresAt };
+            return { token: tokenPlain, expiresAt };
+        } catch (err: any) {
+            log('error', '[QR-AUTH] Erro ao gerar/gravar token', { erro: err.message, stack: err.stack });
+            throw err;
+        }
     }
 
     /**
