@@ -32,7 +32,7 @@ export const RelatorioProjetos = memo(({ projetos }: RelatorioProjetosProps) => 
                             <h4 className="text-xl font-black text-slate-900 tracking-tighter uppercase mb-2 group-hover:text-indigo-600 transition-colors">
                                 {p.nome}
                             </h4>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-8">Gestão de Entregas</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-8">Status de Entregas</p>
 
                             <div className="space-y-6">
                                 {/* Barra de Progresso */}
@@ -90,8 +90,8 @@ export const RelatorioProjetos = memo(({ projetos }: RelatorioProjetosProps) => 
                                 <TrendingUp size={22} strokeWidth={2.5} />
                             </div>
                             <div>
-                                <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight leading-none mb-1">Volumetria de Tarefas</h3>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none">Total acumulado por projeto ativo.</p>
+                                <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight leading-none mb-1">Visão Geral do Backlog</h3>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none">Total acumulado e volume por projeto ativo.</p>
                             </div>
                         </div>
                     </div>

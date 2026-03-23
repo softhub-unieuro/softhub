@@ -393,33 +393,60 @@ rotasRelatorios.get('/exportar/ponto/membro/:id', autenticacaoRequerida(), verif
  */
 rotasRelatorios.get('/exportar/mapa-semestral', autenticacaoRequerida(), verificarPermissao('relatorios:visualizar'), async (c: Context) => {
     const { DB } = c.env;
-    const ini = c.req.query('inicio') || '2025-01-01';
-    const fim = c.req.query('fim') || '2025-06-30';
+    
+    // Pegar parâmetros e tratar string vazia
+    let iniRaw = c.req.query('inicio');
+    let fimRaw = c.req.query('fim');
+    if (!iniRaw || iniRaw === '') iniRaw = '2025-01-01';
+    if (!fimRaw || fimRaw === '') fimRaw = '2025-06-30';
 
     try {
+        // Validação básica de Datas
+        const dataInicioObj = new Date(iniRaw);
+        const dataFimObj = new Date(fimRaw);
+
+        if (isNaN(dataInicioObj.getTime()) || isNaN(dataFimObj.getTime())) {
+            return c.json({ erro: 'Datas inválidas fornecidas' }, 400);
+        }
+
+        // 1. Pegar todos os membros
         const membros = await DB.prepare(`SELECT id, nome FROM usuarios ORDER BY nome`).all();
+        const membrosLista = membros.results || [];
+        
+        // 2. Pegar todas as batidas no período
         const batidas = await DB.prepare(`
             SELECT usuario_id, data, SUM(tempo_total) as horas 
             FROM ponto_registros 
             WHERE data >= ? AND data <= ?
             GROUP BY usuario_id, data
-        `).bind(ini, fim).all();
+        `).bind(iniRaw, fimRaw).all();
+        const batidasLista = batidas.results || [];
 
+        // 3. Gerar lista de dias no intervalo
         const datas: string[] = [];
-        let atual = new Date(ini);
-        const dataFimObj = new Date(fim);
+        let atual = new Date(dataInicioObj);
         while (atual <= dataFimObj) {
             datas.push(atual.toISOString().split('T')[0]);
             atual.setDate(atual.getDate() + 1);
+            
+            // Segurança contra loop infinito por datas malucas
+            if (datas.length > 200) break; 
         }
 
+        // 4. Indexar batidas para performance O(1)
+        const mapaBatidas = new Map();
+        batidasLista.forEach((b: any) => {
+            mapaBatidas.set(`${b.usuario_id}_${b.data}`, b.horas || 0);
+        });
+
+        // 5. Montar o CSV
         let csv = 'Membro;' + datas.join(';') + ';Total Horas\n';
-        membros.results.forEach((m: any) => {
+        
+        membrosLista.forEach((m: any) => {
             let linha = `${m.nome}`;
             let totalMembro = 0;
             datas.forEach(d => {
-                const b = batidas.results.find((reg: any) => reg.usuario_id === m.id && reg.data === d);
-                const horas = b ? (b as any).horas : 0;
+                const horas = mapaBatidas.get(`${m.id}_${d}`) || 0;
                 totalMembro += horas;
                 linha += `;${horas > 0 ? (horas / 60).toFixed(1).replace('.', ',') : ''}`;
             });
@@ -427,15 +454,21 @@ rotasRelatorios.get('/exportar/mapa-semestral', autenticacaoRequerida(), verific
             csv += linha;
         });
 
-        return new Response(csv, {
+        // Converter para latin1 ou garantir UTF-8 com BOM para Excel identificar
+        const bom = '\uFEFF';
+        return new Response(bom + csv, {
             headers: {
                 'Content-Type': 'text/csv; charset=utf-8',
-                'Content-Disposition': `attachment; filename="mapa_frequencia_${ini}_${fim}.csv"`
+                'Content-Disposition': `attachment; filename="mapa_frequencia_${iniRaw}_${fimRaw}.csv"`
             }
         });
     } catch (erro: any) {
-        log('error', '[RELATORIOS] Falha ao exportar mapa semestral', { erro: erro.message });
-        return c.json({ erro: 'Falha ao exportar mapa semestral' }, 500);
+        log('error', '[RELATORIOS] Falha ao exportar mapa semestral', { 
+            erro: erro.message,
+            stack: erro.stack,
+            params: { ini: iniRaw, fim: fimRaw }
+        });
+        return c.json({ erro: 'Falha técnica ao gerar matriz semestral' }, 500);
     }
 });
 

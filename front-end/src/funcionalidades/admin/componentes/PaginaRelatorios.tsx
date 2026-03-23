@@ -37,8 +37,9 @@ import { RelatorioGradeSemestral } from '@/funcionalidades/admin/componentes/rel
  * Integrado à identidade visual padrão do sistema com estilo premium.
  */
 const PaginaRelatorios = memo(() => {
-    const [dataInicio, setDataInicio] = useState('');
-    const [dataFim, setDataFim] = useState('');
+    // SEMESTRES (Ref DX-005)
+    const [dataInicio, setDataInicio] = useState('2025-01-01');
+    const [dataFim, setDataFim] = useState('2025-06-30');
     const [abaAtiva, setAbaAtiva] = useState<null | 'presenca' | 'justificativas' | 'individual' | 'projetos' | 'desempenho' | 'grade'>(null);
     
     const { 
@@ -63,12 +64,12 @@ const PaginaRelatorios = memo(() => {
     }, [frequenciaMembros, busca]);
 
     const DIMENSOES = useMemo(() => [
-        { id: 'presenca', titulo: 'Ponto Analítico', subtitulo: 'Tendências e Fluxo', icone: BarChart4, cor: 'from-primary to-blue-600', sombra: 'shadow-primary/10', info: 'Visão geral de presenças e volume de acessos.' },
-        { id: 'grade', titulo: 'Grade Semestral', subtitulo: 'Matriz Membro x Dia', icone: Grid3X3, cor: 'from-emerald-600 to-teal-700', sombra: 'shadow-emerald-500/10', info: 'Controle consolidado de assiduidade do período letivo.' },
-        { id: 'individual', titulo: 'Extrato Individual', subtitulo: 'Auditoria de Membro', icone: ShieldCheck, cor: 'from-blue-600 to-indigo-800', sombra: 'shadow-indigo-500/10', info: 'Linha do tempo detalhada e sessões por membro.' },
-        { id: 'justificativas', titulo: 'Mapa de Faltas', subtitulo: 'Audit de Ausências', icone: ClipboardList, cor: 'from-amber-500 to-orange-500', sombra: 'shadow-amber-500/10', info: 'Controle e auditoria de justificativas.' },
-        { id: 'desempenho', titulo: 'Velocidade Operativa', subtitulo: 'Ranking de Entregas', icone: Zap, cor: 'from-purple-500 to-violet-600', sombra: 'shadow-violet-500/10', info: 'Ranking de produtividade e engajamento.' },
-        { id: 'projetos', titulo: 'Saúde de Produtos', subtitulo: 'Gestão de Backlog', icone: LayoutGrid, cor: 'from-rose-500 to-pink-500', sombra: 'shadow-rose-500/10', info: 'Progresso, conclusões e atrasos por projeto.' },
+        { id: 'presenca', titulo: 'Frequência Geral', subtitulo: 'Visão Coletiva de Ponto', icone: BarChart4, cor: 'from-primary to-blue-600', sombra: 'shadow-primary/10', info: 'Volume de acessos diários, assiduidade média e fluxo da fábrica.' },
+        { id: 'grade', titulo: 'Grade de Assiduidade', subtitulo: 'Mapa Mensal Membro x Dia', icone: Grid3X3, cor: 'from-emerald-600 to-teal-700', sombra: 'shadow-emerald-500/10', info: 'Grade completa do semestre para auditoria acadêmica consolidada.' },
+        { id: 'individual', titulo: 'Extrato por Membro', subtitulo: 'Auditoria Individual', icone: ShieldCheck, cor: 'from-blue-600 to-indigo-800', sombra: 'shadow-indigo-500/10', info: 'Linha do tempo detalhada, sessões e IPs de uma pessoa específica.' },
+        { id: 'justificativas', titulo: 'Justificativas de Ponto', subtitulo: 'Gestão de Ausências', icone: ClipboardList, cor: 'from-amber-500 to-orange-500', sombra: 'shadow-amber-500/10', info: 'Controle de atestados, faltas justificadas e pendências de audit.' },
+        { id: 'desempenho', titulo: 'Ranking de Produtividade', subtitulo: 'Desempenho Técnico', icone: Zap, cor: 'from-purple-500 to-violet-600', sombra: 'shadow-violet-500/10', info: 'Ranking de tarefas entregues e engajamento produtivo dos membros.' },
+        { id: 'projetos', titulo: 'Status de Projetos', subtitulo: 'Saúde do Backlog', icone: LayoutGrid, cor: 'from-rose-500 to-pink-500', sombra: 'shadow-rose-500/10', info: 'Progresso das entregas, tarefas atrasadas e volume por cada projeto.' },
     ], []);
 
     return (

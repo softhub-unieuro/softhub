@@ -12,7 +12,7 @@ export const RelatorioAusencias = memo(({ frequenciaGeral }: RelatorioAusenciasP
     return (
         <div className="bg-white border border-slate-100 rounded-[3rem] overflow-hidden shadow-sm">
             <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/20">
-                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Painel de Auditoria de Justificativas</h3>
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Justificativas de Ponto</h3>
                 <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl"><ClipboardList size={18} /></div>
             </div>
             <div className="overflow-x-auto">

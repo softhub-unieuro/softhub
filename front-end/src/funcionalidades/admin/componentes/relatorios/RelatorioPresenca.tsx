@@ -14,7 +14,7 @@ export const RelatorioPresenca = memo(({ frequenciaGeral }: RelatorioPresencaPro
             <div className="bg-white border border-slate-100 rounded-[3rem] p-10 shadow-sm">
                 <div className="flex items-center justify-between mb-10">
                     <div>
-                        <h3 className="text-xl font-black text-slate-900 uppercase">Tendência de Atividade</h3>
+                        <h3 className="text-xl font-black text-slate-900 uppercase">Frequência Geral</h3>
                         <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">Gráfico de volume de presenças registradas</p>
                     </div>
                     <div className="p-4 bg-primary/10 text-primary rounded-[1.5rem]"><TrendingUp size={24} /></div>

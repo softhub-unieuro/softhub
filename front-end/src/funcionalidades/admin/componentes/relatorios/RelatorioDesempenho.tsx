@@ -60,8 +60,8 @@ export const RelatorioDesempenho = memo(({ desempenho }: RelatorioDesempenhoProp
                             <Zap size={22} strokeWidth={2.5} />
                         </div>
                         <div>
-                            <h3 className="text-lg font-black text-slate-800 uppercase tracking-tighter leading-none mb-1">Produtividade Técnica</h3>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none">Métricas de resolução de tarefas.</p>
+                            <h3 className="text-lg font-black text-slate-800 uppercase tracking-tighter leading-none mb-1">Ranking de Produtividade</h3>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none">Melhores entregadores e engajamento técnico.</p>
                         </div>
                     </div>
                 </div>
