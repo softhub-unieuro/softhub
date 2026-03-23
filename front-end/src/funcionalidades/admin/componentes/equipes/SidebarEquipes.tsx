@@ -1,6 +1,6 @@
-import { Search, Users, Trash2, Plus } from 'lucide-react';
+import { Users, Trash2 } from 'lucide-react';
 import { EstadoVazio } from '@/compartilhado/componentes/EstadoVazio';
-import { useState, useMemo, memo } from 'react';
+import { memo } from 'react';
 
 interface SidebarEquipesProps {
     equipes: any[];
@@ -10,7 +10,6 @@ interface SidebarEquipesProps {
     aoExcluir: (e: any) => void;
     podeCriar: boolean;
     aoCriar: () => void;
-    termoBusca?: string;
 }
 
 export const SidebarEquipes = memo(({
@@ -20,8 +19,7 @@ export const SidebarEquipes = memo(({
     podeEditar,
     aoExcluir,
     podeCriar,
-    aoCriar,
-    termoBusca = ''
+    aoCriar
 }: SidebarEquipesProps) => {
     return (
         <aside className="w-full lg:w-80 flex flex-col shrink-0 h-full">
@@ -73,8 +71,8 @@ export const SidebarEquipes = memo(({
                     {equipes.length === 0 && (
                         <div className="py-12 flex flex-col items-center justify-center">
                             <EstadoVazio 
-                                titulo={termoBusca ? "Nenhum resultado" : "Sem Equipes"}
-                                descricao={termoBusca ? `Não encontramos equipes com "${termoBusca}"` : "Nenhuma equipe foi criada ainda."}
+                                titulo="Sem Equipes"
+                                descricao="Nenhuma equipe foi criada ainda."
                                 compacto={true}
                                 acao={podeCriar ? {
                                     rotulo: "Criar Equipe",

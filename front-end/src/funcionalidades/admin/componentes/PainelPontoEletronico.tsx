@@ -1,10 +1,11 @@
-import { useState, memo, useEffect } from 'react';
+import { useState, memo, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 import { Bot, Users, ClipboardCheck, Clock } from 'lucide-react';
 import { CabecalhoFuncionalidade } from '@/compartilhado/componentes/CabecalhoFuncionalidade';
 import { PainelJustificativas } from '@/funcionalidades/admin/componentes/justificativas/PainelListaJustificativas';
 import { PainelMonitoramentoRealTime } from '@/funcionalidades/admin/componentes/justificativas/PainelMonitoramentoRealTime';
 import { PainelHistoricoPorMembro } from '@/funcionalidades/admin/componentes/justificativas/PainelHistoricoPorMembro';
+import { usarJustificativasAdmin } from '@/funcionalidades/admin/hooks/usarJustificativasAdmin';
 
 /**
  * Painel Central de Gestão de Ponto Eletrônico & Auditoria.
@@ -15,6 +16,11 @@ export const PainelPontoEletronico = memo(() => {
     const abaUrl = searchParams.get('aba') as any;
     const [abaAtiva, setAbaAtiva] = useState<'pendencias' | 'monitoramento' | 'historico'>(abaUrl || 'pendencias');
 
+    const { justificativas } = usarJustificativasAdmin();
+    const pendentesCount = useMemo(() => 
+        justificativas.filter(j => j.status === 'pendente').length, 
+    [justificativas]);
+
     useEffect(() => {
         if (abaUrl && ['pendencias', 'monitoramento', 'historico'].includes(abaUrl)) {
             setAbaAtiva(abaUrl);
@@ -22,7 +28,13 @@ export const PainelPontoEletronico = memo(() => {
     }, [abaUrl]);
 
     const sections = [
-        { id: 'pendencias', label: 'Auditoria de Pendências', icone: ClipboardCheck, desc: 'Aprovar ou rejeitar justificativas de ausências.' },
+        { 
+            id: 'pendencias', 
+            label: 'Auditoria de Pendências', 
+            icone: ClipboardCheck, 
+            desc: 'Aprovar ou rejeitar justificativas de ausências.',
+            count: pendentesCount
+        },
         { id: 'monitoramento', label: 'Monitoramento em Real-time', icone: Users, desc: 'Quem está com o cronômetro aberto na Fábrica.' },
         { id: 'historico', label: 'Frequência & Históricos', icone: Clock, desc: 'Analise o engajamento e audite batidas individuais.' },
     ];
@@ -42,15 +54,22 @@ export const PainelPontoEletronico = memo(() => {
                         key={section.id}
                         onClick={() => setAbaAtiva(section.id as any)}
                         className={`
-                            flex items-center gap-4 px-6 py-4 rounded-[2rem] border transition-all duration-500 group
+                            flex items-center gap-4 px-6 py-4 rounded-[2rem] border transition-all duration-500 group relative
                             ${abaAtiva === section.id 
                                 ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-100 translate-y-[-2px]' 
                                 : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'
                             }
                         `}
                     >
-                        <div className={`p-2.5 rounded-xl transition-colors ${abaAtiva === section.id ? 'bg-white/10 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>
+                        <div className={`relative p-2.5 rounded-xl transition-colors ${abaAtiva === section.id ? 'bg-white/10 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>
                             <section.icone size={18} />
+                            {(section as any).count > 0 && (
+                                <span className={`absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center text-[10px] font-black border-2 ${
+                                    abaAtiva === section.id ? 'bg-rose-500 text-white border-indigo-600' : 'bg-rose-500 text-white border-white shadow-sm'
+                                }`}>
+                                    {(section as any).count}
+                                </span>
+                            )}
                         </div>
                         <div className="text-left">
                             <p className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">{section.label}</p>

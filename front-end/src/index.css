@@ -253,7 +253,7 @@
   }
 
   .card-glass-hover {
-    @apply hover:bg-card/60 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 active:scale-[0.98];
+    @apply hover:bg-card/60 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5;
   }
 
   .text-gradient-premium {

@@ -1,27 +1,17 @@
 import { useState, useMemo, memo } from 'react';
 import { 
-    FileText, 
-    Network,
-    Users as UsersIcon,
-    Search,
     Calendar,
     Activity,
     ClipboardList,
     Printer,
-    CheckCircle2,
-    XCircle,
-    Clock,
-    User,
-    TrendingUp,
-    LayoutGrid,
-    ArrowUpRight,
-    Zap,
-    ArrowRight,
-    Map,
+    FileSearch,
     BarChart4,
-    AlertCircle,
     UserCheck,
-    FileSearch
+    Map,
+    Download,
+    LayoutGrid,
+    Zap,
+    Search
 } from 'lucide-react';
 import { usarRelatorios } from '@/funcionalidades/admin/hooks/usarRelatorios';
 import { CabecalhoFuncionalidade } from '@/compartilhado/componentes/CabecalhoFuncionalidade';
@@ -32,22 +22,27 @@ import { RelatorioPresenca } from '@/funcionalidades/admin/componentes/relatorio
 import { RelatorioAusencias } from '@/funcionalidades/admin/componentes/relatorios/RelatorioAusencias';
 import { RelatorioMembros } from '@/funcionalidades/admin/componentes/relatorios/RelatorioMembros';
 import { RelatorioMapeamento } from '@/funcionalidades/admin/componentes/relatorios/RelatorioMapeamento';
+import { RelatorioProjetos } from '@/funcionalidades/admin/componentes/relatorios/RelatorioProjetos';
+import { RelatorioDesempenho } from '@/funcionalidades/admin/componentes/relatorios/RelatorioDesempenho';
 
 /**
  * Pagina de Relatórios - Versão Relatórios Essenciais e Estruturados.
- * Focada em 4 pilares fundamentais: Frequência, Justificativas, Alocação e Desempenho.
+ * Focada em 6 pilares fundamentais: Frequência, Justificativas, Alocação, Projetos e Desempenho e Mapeamento.
  */
 const PaginaRelatorios = memo(() => {
     const [dataInicio, setDataInicio] = useState('');
     const [dataFim, setDataFim] = useState('');
-    const [abaAtiva, setAbaAtiva] = useState<'presenca' | 'justificativas' | 'equipes' | 'alunos'>('presenca');
+    const [abaAtiva, setAbaAtiva] = useState<'presenca' | 'justificativas' | 'equipes' | 'alunos' | 'projetos' | 'desempenho'>('presenca');
     
     const { 
         equipesRelatorio, 
         frequenciaGeral, 
         frequenciaMembros, 
+        projetosRelatorio,
+        desempenhoRelatorio,
         carregando, 
         erro,
+        exportarPonto,
         recarregar 
     } = usarRelatorios(dataInicio, dataFim);
 
@@ -65,23 +60,24 @@ const PaginaRelatorios = memo(() => {
         { id: 'presenca', label: 'Consolidado de Presenças', icone: BarChart4, info: 'Visão volumétrica e tendências diárias.' },
         { id: 'justificativas', label: 'Controle de Ausências', icone: ClipboardList, info: 'Gestão de justificativas e motivos de falta.' },
         { id: 'alunos', label: 'Auditoria de Membros', icone: UserCheck, info: 'Frequência individual e status de engajamento.' },
+        { id: 'projetos', label: 'Desempenho de Projetos', icone: LayoutGrid, info: 'Progresso, saúde e entregas por produto.' },
+        { id: 'desempenho', label: 'Produtividade Técnica', icone: Zap, info: 'Ranking de entregas e foco dos membros.' },
         { id: 'equipes', label: 'Mapeamento Estrutural', icone: Map, info: 'Organização de equipes e grupos operativos.' },
     ], []);
 
     return (
         <div className="w-full space-y-8 pb-20 animar-entrada max-w-[1600px] mx-auto px-4 sm:px-6">
-            {/* Cabeçalho Original (Não Alterar conforme Regra) */}
             <CabecalhoFuncionalidade 
-                titulo="Central de Relatórios Essenciais"
+                titulo="Central de Relatórios"
                 subtitulo="Acesse as métricas fundamentais para monitoramento e tomada de decisão estratégica."
                 icone={FileSearch}
             />
 
             {/* Filtros e Seleção de Relatório Essencial */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 {/* Seletor de Relatórios (Esquerda) */}
                 <div className="lg:col-span-1 space-y-3">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 mb-2">Relatórios Disponíveis</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 mb-2">Selecione uma Dimensão</p>
                     {ABAS_ESSENCIAIS.map((aba, index) => (
                         <button
                             key={aba.id}
@@ -125,19 +121,30 @@ const PaginaRelatorios = memo(() => {
                                 <button onClick={() => window.print()} className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm">
                                     <Printer size={18} />
                                 </button>
-                                <button onClick={recarregar} disabled={carregando} className="flex items-center gap-3 px-8 py-3 bg-indigo-600 text-white rounded-full text-xs font-bold uppercase tracking-widest hover:bg-indigo-700 active:scale-95 transition-all shadow-xl shadow-indigo-100 disabled:opacity-50 min-w-[200px]">
+                                
+                                {abaAtiva === 'presenca' && (
+                                    <button 
+                                        onClick={exportarPonto}
+                                        className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-600 hover:bg-emerald-100 transition-all shadow-sm flex items-center gap-2 px-6"
+                                    >
+                                        <Download size={18} />
+                                        <span className="text-[10px] font-black uppercase tracking-widest">Exportar CSV</span>
+                                    </button>
+                                )}
+
+                                <button onClick={recarregar} disabled={carregando} className="flex items-center gap-3 px-8 py-3 bg-indigo-600 text-white rounded-full text-xs font-bold uppercase tracking-widest hover:bg-indigo-700 active:scale-95 transition-all shadow-xl shadow-indigo-100 disabled:opacity-50">
                                     <Activity size={18} className={carregando ? 'animate-spin' : ''} />
-                                    <span>{carregando ? 'GERANDO...' : 'GERAR RELATÓRIO'}</span>
+                                    <span>{carregando ? 'GERANDO...' : 'ATUALIZAR'}</span>
                                 </button>
                             </div>
                         </div>
                         
-                        {abaAtiva === 'alunos' && (
+                        {(abaAtiva === 'alunos' || abaAtiva === 'desempenho') && (
                             <div className="relative w-full xl:w-72 group">
                                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 transition-colors" size={16} />
                                 <input 
                                     type="text" 
-                                    placeholder="Buscar..."
+                                    placeholder="Consultar membro..."
                                     value={busca}
                                     onChange={(e) => setBusca(e.target.value)}
                                     className="w-full bg-white border border-slate-200 rounded-2xl py-3 pl-14 pr-6 text-xs font-bold text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 transition-all outline-none shadow-sm"
@@ -149,13 +156,13 @@ const PaginaRelatorios = memo(() => {
                     {erro && <Alerta tipo="erro" mensagem={erro} />}
 
                     {carregando && frequenciaMembros.length === 0 ? (
-                        <div className="space-y-6 animate-pulse">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
                                 {[1, 2, 3, 4].map(i => (
                                     <div key={i} className="h-32 bg-card/60 border border-border/40 rounded-3xl" />
                                 ))}
                             </div>
-                            <div className="h-[400px] bg-card/60 border border-border/40 rounded-3xl" />
+                            <Carregando Centralizar={true} />
                         </div>
                     ) : (
                         <div className="animar-entrada atraso-1">
@@ -173,6 +180,16 @@ const PaginaRelatorios = memo(() => {
                             {/* ── RELATÓRIO: AUDITORIA DE MEMBROS ── */}
                             {abaAtiva === 'alunos' && frequenciaMembros && (
                                 <RelatorioMembros membrosFiltrados={membrosFiltrados} />
+                            )}
+
+                            {/* ── RELATÓRIO: DESEMPENHO DE PROJETOS ── */}
+                            {abaAtiva === 'projetos' && projetosRelatorio && (
+                                <RelatorioProjetos projetos={projetosRelatorio} />
+                            )}
+
+                            {/* ── RELATÓRIO: PRODUTIVIDADE TÉCNICA ── */}
+                            {abaAtiva === 'desempenho' && desempenhoRelatorio && (
+                                <RelatorioDesempenho desempenho={desempenhoRelatorio} />
                             )}
 
                             {/* ── RELATÓRIO: MAPEAMENTO ESTRUTURAL ── */}

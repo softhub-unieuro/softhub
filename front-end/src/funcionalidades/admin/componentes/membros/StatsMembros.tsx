@@ -36,7 +36,7 @@ export const StatsMembros = memo(({
             icone: AlertCircle,
             atraso: 'atraso-3',
             clicavel: true,
-            onClick: () => window.location.href = '/app/admin/justificativas'
+            onClick: () => window.location.href = '/app/admin/gestao-de-pontos?aba=pendencias'
         },
         {
             label: 'Sem Equipe',

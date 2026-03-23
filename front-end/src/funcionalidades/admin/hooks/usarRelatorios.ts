@@ -52,6 +52,25 @@ export interface RelatorioFrequenciaMembro {
     ultima_batida: string | null;
 }
 
+export interface RelatorioProjeto {
+    id: string;
+    nome: string;
+    publico: number;
+    total_tarefas: number;
+    concluidas: number;
+    em_aberto: number;
+    urgentes_pendentes: number;
+}
+
+export interface RelatorioDesempenhoMembro {
+    id: string;
+    nome: string;
+    email: string;
+    entregas_totais: number;
+    em_andamento: number;
+    ultima_entrega: string | null;
+}
+
 /**
  * Hook para buscar relatórios gerenciais com React Query.
  * Suporta filtragem por período de data.
@@ -95,11 +114,51 @@ export function usarRelatorios(dataInicio?: string, dataFim?: string) {
         },
     });
 
-    const carregando = queryEquipes.isLoading || queryFrequenciaGeral.isLoading || queryFrequenciaMembros.isLoading;
+    // 4. Relatório de Projetos
+    const queryProjetos = useQuery<{ projetos: RelatorioProjeto[] }>({
+        queryKey: ['relatorios', 'projetos'],
+        enabled: podeVisualizarRelatorios,
+        queryFn: async () => {
+            const res = await api.get('/api/relatorios/projetos');
+            return res.data;
+        },
+    });
+
+    // 5. Relatório de Desempenho de Membros
+    const queryDesempenho = useQuery<{ desempenho: RelatorioDesempenhoMembro[] }>({
+        queryKey: ['relatorios', 'desempenho'],
+        enabled: podeVisualizarRelatorios,
+        queryFn: async () => {
+            const res = await api.get('/api/relatorios/desempenho-membros');
+            return res.data;
+        },
+    });
+
+    const exportarPonto = async () => {
+        try {
+            const res = await api.get('/api/relatorios/exportar/ponto', {
+                params: { data_inicio: dataInicio, data_fim: dataFim },
+                responseType: 'blob'
+            });
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `relatorio_ponto_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (e) {
+            console.error('Erro ao exportar:', e);
+        }
+    };
+
+    const carregando = queryEquipes.isLoading || queryFrequenciaGeral.isLoading || queryFrequenciaMembros.isLoading || queryProjetos.isLoading || queryDesempenho.isLoading;
     const erro = (
         (queryEquipes.error as any)?.response?.data?.erro || 
         (queryFrequenciaGeral.error as any)?.response?.data?.erro || 
         (queryFrequenciaMembros.error as any)?.response?.data?.erro || 
+        (queryProjetos.error as any)?.response?.data?.erro || 
+        (queryDesempenho.error as any)?.response?.data?.erro || 
         null
     );
 
@@ -107,12 +166,17 @@ export function usarRelatorios(dataInicio?: string, dataFim?: string) {
         equipesRelatorio: queryEquipes.data || null,
         frequenciaGeral: queryFrequenciaGeral.data || null,
         frequenciaMembros: queryFrequenciaMembros.data || [],
+        projetosRelatorio: queryProjetos.data?.projetos || [],
+        desempenhoRelatorio: queryDesempenho.data?.desempenho || [],
         carregando,
         erro,
+        exportarPonto,
         recarregar: () => {
             queryEquipes.refetch();
             queryFrequenciaGeral.refetch();
             queryFrequenciaMembros.refetch();
+            queryProjetos.refetch();
+            queryDesempenho.refetch();
         }
     };
 }

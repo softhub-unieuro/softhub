@@ -205,5 +205,107 @@ rotasRelatorios.get('/frequencia/membros', autenticacaoRequerida(), verificarPer
     }
 });
 
+/**
+ * 🚀 RELATÓRIO DE DESEMPENHO DE PROJETOS
+ * Métricas de entrega, backlog e saúde dos projetos ativos.
+ */
+rotasRelatorios.get('/projetos', autenticacaoRequerida(), verificarPermissao('relatorios:visualizar'), async (c: Context) => {
+    const { DB } = c.env;
+
+    try {
+        const projetosProgresso = await DB.prepare(`
+            SELECT 
+                p.id,
+                p.nome,
+                p.publico,
+                (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id) as total_tarefas,
+                (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id AND status = 'concluido') as concluidas,
+                (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id AND status != 'concluido' AND status != 'arquivado') as em_aberto,
+                (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id AND prioridade = 'urgente' AND status != 'concluido') as urgentes_pendentes
+            FROM projetos p
+            WHERE p.arquivado = 0
+            ORDER BY total_tarefas DESC
+        `).all();
+
+        return c.json({ projetos: projetosProgresso.results });
+    } catch (erro: any) {
+        log('error', '[RELATORIOS] Falha ao gerar relatório de projetos', { erro: erro.message });
+        return c.json({ erro: 'Falha ao gerar relatório de desempenho de projetos' }, 500);
+    }
+});
+
+/**
+ * 🏆 RELATÓRIO DE PRODUTIVIDADE (DESEMPENHO POR MEMBRO)
+ * Ranking de entregas e engajamento técnico.
+ */
+rotasRelatorios.get('/desempenho-membros', autenticacaoRequerida(), verificarPermissao('relatorios:visualizar'), async (c: Context) => {
+    const { DB } = c.env;
+
+    try {
+        const desempenho = await DB.prepare(`
+            SELECT 
+                u.id,
+                u.nome,
+                u.email,
+                (SELECT COUNT(*) FROM tarefas WHERE responsavel_id = u.id AND status = 'concluido') as entregas_totais,
+                (SELECT COUNT(*) FROM tarefas WHERE responsavel_id = u.id AND status IN ('fazendo', 'revisao')) as em_andamento,
+                (SELECT MAX(concluido_em) FROM tarefas WHERE responsavel_id = u.id AND status = 'concluido') as ultima_entrega
+            FROM usuarios u
+            WHERE u.id IN (SELECT DISTINCT responsavel_id FROM tarefas)
+            ORDER BY entregas_totais DESC
+            LIMIT 50
+        `).all();
+
+        return c.json({ desempenho: desempenho.results });
+    } catch (erro: any) {
+        log('error', '[RELATORIOS] Falha ao gerar relatório de desempenho de membros', { erro: erro.message });
+        return c.json({ erro: 'Falha ao gerar relatório de desempenho de membros' }, 500);
+    }
+});
+
+/**
+ * 📥 EXPORTAÇÃO CSV DE PONTO (OFICIAL)
+ * Gera o arquivo para auditoria externa ou RH.
+ */
+rotasRelatorios.get('/exportar/ponto', autenticacaoRequerida(), verificarPermissao('ponto:exportar'), async (c: Context) => {
+    const { DB } = c.env;
+    const { data_inicio, data_fim } = c.req.query();
+
+    const filtro = data_inicio && data_fim 
+        ? `AND p.registrado_em BETWEEN '${data_inicio}' AND '${data_fim}'`
+        : `AND p.registrado_em >= date('now', '-30 days')`;
+
+    try {
+        const { results } = await DB.prepare(`
+            SELECT 
+                u.nome as Membro,
+                p.tipo as Ação,
+                p.registrado_em as Momento,
+                p.ip_origem as IP,
+                (SELECT nome FROM equipes WHERE id = (SELECT equipe_id FROM usuarios_organizacao WHERE usuario_id = u.id LIMIT 1)) as Equipe
+            FROM ponto_registros p
+            JOIN usuarios u ON u.id = p.usuario_id
+            WHERE 1=1
+            ${filtro}
+            ORDER BY p.registrado_em DESC
+        `).all();
+
+        const csvContent = [
+            "Membro;Equipe;Ação;Data;Hora;IP",
+            ...(results || []).map((r: any) => {
+                const d = new Date(r.Momento);
+                return `"${r.Membro}";"${r.Equipe || 'N/A'}";"${r.Ação}";"${d.toLocaleDateString('pt-BR')}";"${d.toLocaleTimeString('pt-BR')}";"${r.IP}"`;
+            })
+        ].join("\n");
+
+        return c.text(csvContent, 200, {
+            'Content-Type': 'text/csv; charset=utf-8',
+            'Content-Disposition': `attachment; filename="auditoria_ponto_${new Date().toISOString().split('T')[0]}.csv"`
+        });
+    } catch (erro: any) {
+        return c.json({ erro: 'Falha ao exportar CSV' }, 500);
+    }
+});
+
 
 export default rotasRelatorios;
