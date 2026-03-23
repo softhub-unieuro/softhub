@@ -19,9 +19,9 @@ export const RelatorioPresenca = memo(({ frequenciaGeral }: RelatorioPresencaPro
                     </div>
                     <div className="p-4 bg-indigo-50 text-indigo-600 rounded-[1.5rem]"><TrendingUp size={24} /></div>
                 </div>
-                <div className="h-[380px] w-full">
+                <div className="h-[380px] w-full" style={{ minHeight: '380px' }}>
                     <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={frequenciaGeral.tendencia}>
+                        <AreaChart data={frequenciaGeral.tendencia} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="gradEssencial" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.15}/>

@@ -219,9 +219,9 @@ rotasRelatorios.get('/projetos', autenticacaoRequerida(), verificarPermissao('re
                 p.nome,
                 p.publico,
                 (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id) as total_tarefas,
-                (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id AND status = 'concluido') as concluidas,
-                (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id AND status != 'concluido' AND status != 'arquivado') as em_aberto,
-                (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id AND prioridade = 'urgente' AND status != 'concluido') as urgentes_pendentes
+                (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id AND status = 'concluida') as concluidas,
+                (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id AND status != 'concluida' AND status != 'arquivado') as em_aberto,
+                (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id AND prioridade = 'urgente' AND status != 'concluida') as urgentes_pendentes
             FROM projetos p
             WHERE p.arquivado = 0
             ORDER BY total_tarefas DESC
@@ -242,16 +242,17 @@ rotasRelatorios.get('/desempenho-membros', autenticacaoRequerida(), verificarPer
     const { DB } = c.env;
 
     try {
+        // Busca o ranking de membros com base nas tarefas onde são responsáveis
         const desempenho = await DB.prepare(`
             SELECT 
                 u.id,
                 u.nome,
                 u.email,
-                (SELECT COUNT(*) FROM tarefas WHERE responsavel_id = u.id AND status = 'concluido') as entregas_totais,
-                (SELECT COUNT(*) FROM tarefas WHERE responsavel_id = u.id AND status IN ('fazendo', 'revisao')) as em_andamento,
-                (SELECT MAX(concluido_em) FROM tarefas WHERE responsavel_id = u.id AND status = 'concluido') as ultima_entrega
+                (SELECT COUNT(*) FROM tarefas t JOIN tarefas_responsaveis tr ON t.id = tr.tarefa_id WHERE tr.usuario_id = u.id AND t.status = 'concluida') as entregas_totais,
+                (SELECT COUNT(*) FROM tarefas t JOIN tarefas_responsaveis tr ON t.id = tr.tarefa_id WHERE tr.usuario_id = u.id AND t.status IN ('in_progress', 'em_revisao')) as em_andamento,
+                (SELECT MAX(t.data_conclusao) FROM tarefas t JOIN tarefas_responsaveis tr ON t.id = tr.tarefa_id WHERE tr.usuario_id = u.id AND t.status = 'concluida') as ultima_entrega
             FROM usuarios u
-            WHERE u.id IN (SELECT DISTINCT responsavel_id FROM tarefas)
+            WHERE u.id IN (SELECT DISTINCT usuario_id FROM tarefas_responsaveis)
             ORDER BY entregas_totais DESC
             LIMIT 50
         `).all();
