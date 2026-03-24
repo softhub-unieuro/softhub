@@ -72,6 +72,43 @@ rotasProjetos.get('/publicos', async (c) => {
 });
 
 /**
+ * GET /api/projetos/equipe-publica
+ * Rota pública que retorna a contagem real de alunos e seus dados básicos (nome, foto, role).
+ */
+rotasProjetos.get('/equipe-publica', async (c) => {
+    const { DB, softhub_kv } = c.env;
+    try {
+        const cacheKey = 'portfolio:equipe';
+        const cached = await softhub_kv?.get(cacheKey);
+        if (cached) return c.json(JSON.parse(cached));
+
+        const query = `
+            SELECT id, nome, role, foto_perfil
+            FROM usuarios 
+            WHERE arquivado = 0
+            ORDER BY nome ASC
+        `;
+        const { results } = await DB.prepare(query).all();
+
+        const response = {
+            total: results.length,
+            membros: results
+        };
+
+        if (softhub_kv) {
+            try {
+                await softhub_kv.put(cacheKey, JSON.stringify(response), { expirationTtl: 3600 }); // 1h de cache
+            } catch (kvError: any) {}
+        }
+
+        return c.json(response);
+    } catch (e: any) {
+        log('error', '[PORTFOLIO] Falha ao buscar equipe pública', { erro: e.message });
+        return c.json({ erro: 'Falha ao sincronizar equipe' }, 500);
+    }
+});
+
+/**
  * Lista todos os projetos disponíveis para o usuário autenticado.
  * Filtra por permissão de Admin, projetos públicos ou projetos onde a equipe do usuário está vinculada.
  */

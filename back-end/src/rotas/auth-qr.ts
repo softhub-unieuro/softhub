@@ -112,31 +112,16 @@ rotasAuthQr.get('/qr/stream/:token', async (c) => {
 
 // ── 3. Confirmar Scanneamento (Mobile Logado) ─────────────────────────────────────────
 rotasAuthQr.post('/qr/identificar', autenticacaoRequerida(), async (c) => {
-    // Esta rota é opcional para feedback visual no Dispositivo A (PC) avisando que o celular leu.
-    const { softhub_kv } = c.env;
     const { sessaoId } = await c.req.json();
     const usuario = c.get('usuario' as any) as any;
 
     try {
-        const tokenHash = await (async (t) => {
-             const msgUint8 = new TextEncoder().encode(t);
-             const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-             const hashArray = Array.from(new Uint8Array(hashBuffer));
-             return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        })(sessaoId);
-
-        const res = await softhub_kv.get(`qr_token:${tokenHash}`);
-        if (!res) return c.json({ erro: 'QR Code expirado.' }, 404);
-
-        const dados = JSON.parse(res);
-        if (dados.status === 'pending') {
-            dados.status = 'scanned';
-            dados.user_id = usuario.id;
-            await softhub_kv.put(`qr_token:${tokenHash}`, JSON.stringify(dados), { expirationTtl: 120 });
-        }
-        return c.json({ sucesso: true });
+        const sucesso = await QrAuthService.identifyQrScan(c, sessaoId, usuario.id);
+        
+        if (sucesso) return c.json({ sucesso: true });
+        return c.json({ erro: 'QR Code expirado ou inválido.' }, 404);
     } catch {
-        return c.json({ erro: 'Falha na identificação.' }, 500);
+        return c.json({ erro: 'Falha na identificação do dispositivo.' }, 500);
     }
 });
 

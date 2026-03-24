@@ -63,6 +63,30 @@ export class QrAuthService {
     }
 
     /**
+     * Identifica que um dispositivo móvel escaneou o código.
+     * Atualiza o status para 'scanned' no D1.
+     */
+    static async identifyQrScan(c: any, tokenPlain: string, userId: string): Promise<boolean> {
+        const { DB } = c.env as Env;
+        if (!DB) return false;
+
+        const tokenHash = await this.hashToken(tokenPlain);
+        
+        const res = await DB.prepare('SELECT status, expira_em FROM tokens_qr WHERE id = ?').bind(tokenHash).first<any>();
+        if (!res) return false;
+
+        // Validação de expiração e status
+        if (new Date(res.expira_em).getTime() < Date.now()) return false;
+        if (res.status !== 'pending') return true; // Já pode estar scanned, ignoramos se for o caso
+
+        await DB.prepare(
+            'UPDATE tokens_qr SET status = "scanned", user_id = ? WHERE id = ?'
+        ).bind(userId, tokenHash).run();
+
+        return true;
+    }
+
+    /**
      * Confirma o login no Dispositivo B (Autenticado).
      */
     static async confirmQrLogin(c: any, tokenPlain: string, authenticatedUser: any): Promise<boolean> {

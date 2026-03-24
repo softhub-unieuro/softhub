@@ -36,6 +36,18 @@ export function LayoutPrincipal({ children }: LayoutPrincipalProps) {
     // Inicia o hook de monitoramento para saída automática ao fechar a página
     usarSaidaAutomatica();
 
+    // Trava de Scroll do Body quando a Sidebar Mobile está aberta
+    useEffect(() => {
+        if (sidebarAberta) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [sidebarAberta]);
+
     // Dinamismo Inteligente: Atualiza o título da aba com o nome do projeto ativo
     useEffect(() => {
         const projeto = projetos.find(p => p.id === projetoAtivoId);
@@ -69,7 +81,7 @@ export function LayoutPrincipal({ children }: LayoutPrincipalProps) {
 
                         {/* Drawer Content com Slide In */}
                         <div
-                            className="absolute inset-y-0 left-0 w-[280px] bg-sidebar border-r border-sidebar-border shadow-2xl animate-sidebar-in h-screen"
+                            className="absolute inset-y-0 left-0 w-[280px] bg-sidebar border-r border-sidebar-border shadow-2xl animate-sidebar-in h-[100dvh]"
                             onClick={e => e.stopPropagation()}
                         >
                             <div className="flex flex-col h-full relative">

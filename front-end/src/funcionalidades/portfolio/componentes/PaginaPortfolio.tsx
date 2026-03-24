@@ -1,19 +1,22 @@
 import { memo, useState, useCallback } from 'react';
-import { ExternalLink, Github, Code2, Rocket, Globe, Boxes, ChevronRight, Figma, BookText, Sparkles } from 'lucide-react';
-import { usarPortfolio } from '../hooks/usarPortfolio';
+import { Github, Code2, Globe, Boxes, ChevronRight, GraduationCap, Cpu, Layers, MousePointer2, Users } from 'lucide-react';
+import { usarPortfolio, usarEquipe } from '../hooks/usarPortfolio';
 import { Skeleton } from '@/compartilhado/componentes/Skeleton';
 import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 import { Link } from 'react-router';
-import { pluralizar } from '@/utilitarios/formatadores';
 import { GITHUB_USUARIO } from '@/utilitarios/constantes';
 import { ModalDetalhesPortfolio } from './ModalDetalhesPortfolio';
+import { Avatar } from '@/compartilhado/componentes/Avatar';
+import logoUnieuro from '@/assets/logo-unieuro-branca.png';
 
 /**
  * Landing Page do Portfolio Público da Fábrica de Software.
  * Exibe projetos desenvolvidos para visitantes externos sem necessidade de login.
+ * Design Refinado: Equilíbrio entre Rigor Universitário e Agilidade Tech.
  */
 export const PaginaPortfolio = memo(() => {
-    const { projetos, carregando, erro } = usarPortfolio();
+    const { projetos, carregando: carregandoProjetos } = usarPortfolio();
+    const { total: totalEquipe, membros, carregando: carregandoEquipe } = usarEquipe();
     const { estaAutenticado } = usarAutenticacao();
     const [projetoSelecionado, setProjetoSelecionado] = useState<string | null>(null);
 
@@ -26,183 +29,170 @@ export const PaginaPortfolio = memo(() => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#020617] text-slate-100 selection:bg-primary/20 selection:text-primary scroll-smooth">
+        <div className="min-h-screen bg-[#000a12] text-slate-100 selection:bg-red-500/20 selection:text-red-500 scroll-smooth">
             
-            {/* ═══════════════════════════════════════════════════ */}
-            {/* 🎯 NAVIGATION - FLOATING BLUR                      */}
-            {/* ═══════════════════════════════════════════════════ */}
-            <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-3rem)] max-w-5xl">
-                <header className="px-6 py-4 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] flex items-center justify-between shadow-2xl shadow-black/40">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
-                            <Rocket className="text-white" size={20} strokeWidth={2.5} />
-                        </div>
+            {/* 🎯 NAVIGATION */}
+            <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-3rem)] max-w-6xl">
+                <header className="px-8 py-5 bg-white/[0.03] backdrop-blur-3xl border border-white/10 rounded-[2.5rem] flex items-center justify-between shadow-2xl shadow-black/60">
+                    <div className="flex items-center gap-5">
+                        <img src={logoUnieuro} alt="Unieuro" className="w-10 h-10 object-contain" />
+                        <div className="w-[1px] h-8 bg-white/10 mx-1 hidden sm:block" />
                         <div className="flex flex-col">
-                            <span className="text-xs font-black tracking-tight uppercase leading-none text-white">SoftHub</span>
-                            <span className="text-[9px] font-bold text-primary uppercase tracking-[0.2em] leading-none mt-1">Portfolio</span>
+                            <span className="text-sm font-black tracking-tight uppercase leading-none text-white italic">Fábrica de Software</span>
+                            <span className="text-[9px] font-bold text-red-600 uppercase tracking-[0.3em] leading-none mt-1.5">Unieuro Labs</span>
                         </div>
                     </div>
                     
-                    <nav className="hidden md:flex items-center gap-8">
-                        <a href="#projetos" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Galeria</a>
-                        <a href="https://unieuro.edu.br" target="_blank" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Unieuro</a>
-                        <div className="w-[1px] h-4 bg-white/10" />
+                    <nav className="hidden md:flex items-center gap-10">
+                        <a href="#pilares" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Educação</a>
+                        <a href="#projetos" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Portfólio</a>
                         <Link 
                             to={estaAutenticado ? "/app/dashboard" : "/login"} 
-                            className="px-6 py-2 bg-primary text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.05] active:scale-[0.98] transition-all"
+                            className="px-8 py-2.5 bg-red-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-red-600/20 hover:bg-red-500 hover:scale-[1.05] active:scale-[0.98] transition-all"
                         >
-                            {estaAutenticado ? "Dashboard" : "Acesso Restrito"}
+                            {estaAutenticado ? "Acessar Dash" : "Acesso Interno"}
                         </Link>
                     </nav>
 
-                    <Link to="/login" className="md:hidden p-2.5 bg-white/5 rounded-full text-white">
-                        <Globe size={18} />
+                    <Link to="/login" className="md:hidden p-3 bg-white/5 rounded-full text-white">
+                        <GraduationCap size={20} />
                     </Link>
                 </header>
             </div>
 
-            {/* ═══════════════════════════════════════════════════ */}
-            {/* 🚀 HERO SECTION - TECH GRID BACKGROUND            */}
-            {/* ═══════════════════════════════════════════════════ */}
-            <section className="relative pt-48 pb-32 overflow-hidden flex flex-col items-center">
-                {/* Geometria de Fundo */}
+            {/* 🚀 HERO SECTION */}
+            <section className="relative pt-56 pb-40 overflow-hidden flex flex-col items-center">
                 <div className="absolute inset-0 pointer-events-none overflow-hidden -z-10">
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_center,_var(--color-primary)_0%,transparent_70%)] opacity-[0.07] scale-150 blur-3xl" />
-                    <div className="absolute inset-0 opacity-[0.04]" style={{
-                        backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
-                        backgroundSize: '40px 40px'
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_center,_#ef4444_0%,transparent_70%)] opacity-[0.08] scale-150 blur-3xl" />
+                    <div className="absolute inset-0 opacity-[0.03]" style={{
+                        backgroundImage: `radial-gradient(circle at 1px 1px, #fff 1px, transparent 0)`,
+                        backgroundSize: '48px 48px'
                     }} />
                 </div>
 
-                <div className="container mx-auto px-6 text-center space-y-10">
-                    <div className="inline-flex items-center gap-2.5 px-5 py-2 bg-primary/10 border border-primary/20 rounded-full text-primary text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/5 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                        <Sparkles size={12} className="animate-pulse" /> Engenharia de Software Unieuro
+                <div className="container mx-auto px-6 text-center space-y-12">
+                    <div className="inline-flex items-center gap-3 px-6 py-2 bg-red-600/10 border border-red-500/20 rounded-full text-red-500 text-[10px] font-black uppercase tracking-[0.3em] shadow-lg shadow-red-600/5">
+                        <Cpu size={12} className="animate-pulse" /> Formando o Futuro da Tecnologia
                     </div>
                     
-                    <h1 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter text-white leading-[0.85] max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-1000">
-                        Onde código vira <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-blue-400 to-indigo-500">experiência.</span>
+                    <h1 className="text-6xl md:text-8xl lg:text-[110px] font-black tracking-tighter text-white leading-[0.85] max-w-5xl mx-auto">
+                        Conhecimento que vira <br />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-red-400 to-amber-500">soluções reais.</span>
                     </h1>
                     
-                    <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto font-medium leading-relaxed opacity-0 animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-forwards" style={{ animationDelay: '300ms' }}>
-                        Uma vitrine da inovação acadêmica. Desenvolvemos soluções completas, escaláveis e focadas em resolver problemas do ecossistema real da Fábrica de Software.
+                    <p className="text-lg md:text-2xl text-slate-400 max-w-3xl mx-auto font-medium leading-relaxed">
+                        Transformamos o aprendizado acadêmico em produtos digitais de alto desempenho. Aqui, alunos de Engenharia e Ciência da Computação operam com o rigor de uma fábrica moderna.
                     </p>
 
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-6 opacity-0 animate-in fade-in slide-in-from-bottom-10 duration-1000 fill-mode-forwards" style={{ animationDelay: '500ms' }}>
-                        <a href="#projetos" className="group px-10 py-5 bg-white text-slate-950 rounded-[2rem] font-black text-[11px] uppercase tracking-widest shadow-2xl shadow-white/10 hover:shadow-white/20 hover:-translate-y-1 transition-all flex items-center gap-2">
-                            Explorar Projetos <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-8 pt-8">
+                        <a href="#projetos" className="group px-12 py-6 bg-white text-slate-950 rounded-full font-black text-[12px] uppercase tracking-[0.2em] shadow-2xl shadow-red-600/10 hover:shadow-red-600/30 hover:-translate-y-1 transition-all flex items-center gap-3">
+                            Explorar Portfólio <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
                         </a>
                         
-                        <div className="flex items-center gap-4 px-6 py-4 bg-white/5 border border-white/10 rounded-[2rem] backdrop-blur-lg">
-                            <div className="flex -space-x-3">
-                                {[1, 2, 3].map(i => (
-                                    <div key={i} className="w-10 h-10 rounded-full border-2 border-[#020617] overflow-hidden grayscale hover:grayscale-0 transition-all cursor-pointer">
-                                        <img src={`https://api.dicebear.com/7.x/pixel-art/svg?seed=dev${i}`} alt="Dev" className="w-full h-full object-cover" />
-                                    </div>
-                                ))}
+                        <div className="flex items-center gap-6 px-8 py-5 bg-white/[0.02] border border-white/5 rounded-full backdrop-blur-xl">
+                            <div className="flex -space-x-4">
+                                {carregandoEquipe ? (
+                                    [1, 2, 3].map(i => <div key={i} className="w-12 h-12 rounded-full bg-white/10 animate-pulse" />)
+                                ) : (
+                                    membros.slice(0, 4).map(m => (
+                                        <Avatar key={m.id} nome={m.nome} fotoPerfil={m.foto_perfil} tamanho="lg" className="border-4 border-[#000a12]" />
+                                    ))
+                                )}
                             </div>
-                            <div className="h-8 w-[1px] bg-white/10 mx-1" />
-                            <div className="flex flex-col items-start leading-none">
-                                <span className="text-sm font-black text-white">+30 MEMBROS</span>
-                                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">EM ATIVIDADE</span>
+                            <div className="h-10 w-[1px] bg-white/10 mx-1" />
+                            <div className="flex flex-col items-start leading-tight text-left">
+                                <span className="text-base font-black text-white tracking-tighter uppercase">{totalEquipe} Alunos</span>
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Capacitados</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* ═══════════════════════════════════════════════════ */}
-            {/* 🖼️ PROJECTS GALLERY - BENTO-ISH GRID               */}
-            {/* ═══════════════════════════════════════════════════ */}
-            <section id="projetos" className="relative py-32">
-                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                
-                <div className="container mx-auto px-6 space-y-20">
-                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-1.5 h-6 bg-primary rounded-full" />
-                                <h2 className="text-[11px] font-black uppercase tracking-[0.4em] text-primary">Showcase Tecnológico</h2>
-                            </div>
-                            <h2 className="text-4xl md:text-5xl font-black tracking-tighter text-white">Produtos em Produção</h2>
-                            <p className="text-slate-500 max-w-md font-medium">Arquitetura de microsserviços e interfaces táteis de alta performance.</p>
+            {/* 🎓 PILARES SECTION */}
+            <section id="pilares" className="py-40 bg-white/[0.01] border-y border-white/5 relative">
+                <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-16">
+                    <div className="space-y-6 group">
+                        <div className="w-16 h-16 bg-red-600/10 rounded-3xl flex items-center justify-center border border-red-600/20 group-hover:bg-red-600 transition-all duration-700">
+                            <GraduationCap size={32} className="text-red-500 group-hover:text-white" />
                         </div>
-                        <div className="flex items-center gap-3 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl">
-                            <Boxes size={16} className="text-primary" />
-                            <span className="text-[11px] font-black uppercase tracking-widest text-white">{projetos.length} {pluralizar(projetos.length, 'Projeto Ativo', 'Projetos Ativos')}</span>
+                        <h3 className="text-2xl font-black text-white uppercase tracking-tight">Rigor Acadêmico</h3>
+                        <p className="text-slate-500 font-medium leading-relaxed group-hover:text-slate-300 transition-colors">
+                            Fundamentação teórica aplicada diretamente na prática. Nossos processos seguem as melhores normas de engenharia do mercado.
+                        </p>
+                    </div>
+                    
+                    <div className="space-y-6 group">
+                        <div className="w-16 h-16 bg-red-600/10 rounded-3xl flex items-center justify-center border border-red-600/20 group-hover:bg-red-600 transition-all duration-700">
+                            <Layers size={32} className="text-red-500 group-hover:text-white" />
+                        </div>
+                        <h3 className="text-2xl font-black text-white uppercase tracking-tight">Estágio de Elite</h3>
+                        <p className="text-slate-500 font-medium leading-relaxed group-hover:text-slate-300 transition-colors">
+                            Nossos membros operam como profissionais de mercado, dominando stacks modernas como React 19, Hono e Cloudflare.
+                        </p>
+                    </div>
+
+                    <div className="space-y-6 group">
+                        <div className="w-16 h-16 bg-red-600/10 rounded-3xl flex items-center justify-center border border-red-600/20 group-hover:bg-red-600 transition-all duration-700">
+                            <MousePointer2 size={32} className="text-red-500 group-hover:text-white" />
+                        </div>
+                        <h3 className="text-2xl font-black text-white uppercase tracking-tight">Impacto Digital</h3>
+                        <p className="text-slate-500 font-medium leading-relaxed group-hover:text-slate-300 transition-colors">
+                            Sistemas publicados que resolvem problemas reais da comunidade acadêmica Unieuro e de parceiros locais.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            {/* 🖼️ PROJECTS GALLERY */}
+            <section id="projetos" className="relative py-40">
+                <div className="container mx-auto px-6 space-y-24">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-10">
+                        <div className="space-y-5">
+                            <div className="flex items-center gap-4 text-red-500 uppercase font-black tracking-widest text-xs">
+                                <div className="w-2 h-8 bg-red-600 rounded-full" />
+                                Vitrine de Soluções
+                            </div>
+                            <h2 className="text-5xl md:text-6xl font-[900] tracking-tighter text-white uppercase italic">Impacto em Produção</h2>
+                            <p className="text-slate-500 max-w-lg text-lg font-medium">Arquitetura de microsserviços e interfaces de alto desempenho.</p>
+                        </div>
+                        <div className="flex items-center gap-4 px-8 py-4 bg-white/[0.03] border border-white/10 rounded-3xl backdrop-blur-sm">
+                            <Boxes size={20} className="text-red-500" />
+                            <span className="text-[12px] font-black uppercase tracking-widest text-white">{projetos.length} Projetos Ativos</span>
                         </div>
                     </div>
 
-                    {carregando ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                    {carregandoProjetos ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
                             {[1, 2, 3].map(i => (
-                                <div key={i} className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 space-y-6">
-                                    <Skeleton className="h-48 w-full rounded-2xl bg-white/5" />
-                                    <div className="space-y-4">
-                                        <Skeleton className="h-6 w-3/4 bg-white/5" />
-                                        <Skeleton className="h-20 w-full bg-white/5" />
-                                    </div>
+                                <div key={i} className="bg-white/5 border border-white/10 rounded-[3rem] p-10 space-y-8 animate-pulse">
+                                    <Skeleton className="h-64 w-full rounded-2xl bg-white/5" />
+                                    <Skeleton className="h-8 w-3/4 bg-white/10" />
+                                    <Skeleton className="h-20 w-full bg-white/5" />
                                 </div>
                             ))}
                         </div>
-                    ) : erro ? (
-                        <div className="py-24 text-center space-y-6 bg-white/5 rounded-[3rem] border border-white/10">
-                            <p className="text-rose-400 font-bold uppercase tracking-widest text-sm">{erro}</p>
-                            <button onClick={() => window.location.reload()} className="px-8 py-3 bg-white/10 rounded-full text-xs font-black uppercase tracking-[0.2em] text-white hover:bg-white/20 transition-all">Tentar novamente</button>
-                        </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-                            {projetos.map((p, idx) => (
-                                <div 
-                                    key={p.id} 
-                                    onClick={() => handleAbrirDetalhes(p.id)}
-                                    className="group relative cursor-pointer bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-primary/40 rounded-[2.5rem] overflow-hidden transition-all duration-700 hover:-translate-y-2 opacity-0 animate-in fade-in zoom-in-95 duration-1000 fill-mode-forwards shadow-2xl shadow-black/40"
-                                    style={{ animationDelay: `${idx * 150}ms` }}
-                                >
-                                    {/* Thumbnail / Icon Area */}
-                                    <div className="aspect-[16/10] bg-[#0f172a] flex items-center justify-center relative group-hover:bg-primary/5 transition-colors overflow-hidden">
-                                        <div className="absolute inset-0 bg-gradient-to-t from-[#020617] to-transparent opacity-60" />
-                                        <Code2 size={64} strokeWidth={1} className="text-white opacity-20 group-hover:scale-110 group-hover:text-primary transition-all duration-1000" />
-                                        
-                                        {/* Badges Flutuantes */}
-                                        <div className="absolute top-6 right-6 flex flex-col gap-2 scale-90 group-hover:scale-100 transition-transform">
-                                            <div className="px-3 py-1.5 bg-primary/90 backdrop-blur-md text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-xl flex items-center gap-2">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                                                Live
-                                            </div>
-                                            <div className="px-3 py-1.5 bg-background/80 backdrop-blur-md text-slate-400 rounded-xl text-[9px] font-black uppercase tracking-widest border border-white/5">
-                                                {idx % 2 === 0 ? 'Vite' : 'Cloudflare'}
-                                            </div>
-                                        </div>
-
-                                        {/* Overlay Hover */}
-                                        <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700 flex items-center justify-center">
-                                            <div className="p-4 bg-white text-[#020617] rounded-full scale-0 group-hover:scale-100 transition-all duration-500 delay-100 shadow-2xl">
-                                                <ExternalLink size={24} strokeWidth={3} />
-                                            </div>
-                                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+                            {projetos.map((p) => (
+                                <div key={p.id} onClick={() => handleAbrirDetalhes(p.id)} className="group cursor-pointer bg-white/[0.02] hover:bg-white/[0.04] border border-white/5 hover:border-red-600/30 rounded-[3rem] overflow-hidden transition-all duration-700 hover:-translate-y-4 shadow-2xl shadow-black/80">
+                                    <div className="aspect-[16/11] bg-slate-900/50 flex items-center justify-center relative">
+                                        <Code2 size={72} className="text-white opacity-10 group-hover:scale-125 group-hover:text-red-500 transition-all duration-1000" />
+                                        <div className="absolute top-8 right-8 px-4 py-2 bg-red-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl">Live Proj</div>
                                     </div>
-
-                                    {/* Detalhes do Card */}
-                                    <div className="p-8 pb-10 space-y-5">
+                                    <div className="p-10 pb-12 space-y-6 text-left">
                                         <div className="flex items-center justify-between">
-                                            <h3 className="text-2xl font-black text-white group-hover:text-primary transition-colors tracking-tight">{p.nome}</h3>
-                                            <div className="flex items-center gap-2">
-                                                {p.github_repo && <Github size={14} className="text-slate-500 hover:text-white transition-colors" />}
-                                            </div>
+                                            <h3 className="text-3xl font-black text-white group-hover:text-red-500 transition-colors uppercase italic tracking-tighter leading-none">{p.nome}</h3>
+                                            {p.github_repo && <Github size={18} className="text-slate-600 hover:text-white transition-all" />}
                                         </div>
-                                        
-                                        <p className="text-[13px] text-slate-400 font-medium line-clamp-2 leading-relaxed h-[42px] group-hover:text-slate-200 transition-colors">
-                                            {p.descricao || 'Arquitetura de microsserviços com foco em escalabilidade global e experiência do usuário tátil.'}
+                                        <p className="text-[14px] text-slate-500 font-medium line-clamp-2 leading-relaxed h-[44px]">
+                                            {p.descricao || 'Protótipo de alta fidelidade desenvolvido com foco em performance bruta.'}
                                         </p>
-
-                                        <div className="flex flex-wrap items-center gap-2 pt-2">
-                                            <span className="text-[8px] font-black uppercase tracking-widest border border-white/10 px-3 py-1.5 rounded-full text-slate-500 group-hover:text-slate-300 transition-colors">Software Architecture</span>
-                                            <span className="text-[8px] font-black uppercase tracking-widest border border-white/10 px-3 py-1.5 rounded-full text-slate-500 group-hover:text-slate-300 transition-colors">Hono API</span>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-1 bg-red-600/20 group-hover:w-16 transition-all duration-700" />
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 group-hover:text-red-400">Software Labs</span>
                                         </div>
                                     </div>
-
-                                    {/* Border de Brilho no Hover */}
-                                    <div className="absolute inset-x-0 bottom-0 h-[3px] bg-primary scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-700" />
                                 </div>
                             ))}
                         </div>
@@ -210,53 +200,87 @@ export const PaginaPortfolio = memo(() => {
                 </div>
             </section>
 
-            {/* ═══════════════════════════════════════════════════ */}
-            {/* 🏁 FOOTER - MINIMAL DARK TECH                      */}
-            {/* ═══════════════════════════════════════════════════ */}
-            <footer className="relative py-32 border-t border-white/5 bg-[#010410]">
-                <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16">
-                    <div className="lg:col-span-2 space-y-8">
-                        <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10">
-                                <Rocket size={24} className="text-primary" />
+            {/* 👥 REAL TEAM SECTION - MOSAIC OF AVATARS */}
+            <section id="equipe" className="py-40 relative">
+                <div className="absolute inset-0 bg-red-600/[0.01] -z-10" />
+                <div className="container mx-auto px-6 space-y-20">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-10">
+                        <div className="space-y-4 text-center md:text-left">
+                            <div className="inline-flex items-center gap-3 text-red-500 font-black tracking-[0.3em] text-[10px] uppercase bg-red-600/10 px-4 py-2 rounded-full">
+                                <Users size={12} /> Capital Humano Real
                             </div>
+                            <h2 className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase italic leading-none">Nossos <span className="text-red-600">Talentos.</span></h2>
+                            <p className="text-lg text-slate-500 font-medium max-w-xl">Membros atuais que operam a produtividade da Fábrica de Software neste semestre.</p>
+                        </div>
+                        <div className="flex flex-col items-center md:items-end">
+                            <span className="text-8xl font-black text-white leading-none tracking-tighter">{totalEquipe}</span>
+                            <span className="text-xs font-bold text-red-600 uppercase tracking-[0.5em] mt-2">Membros Ativos</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-white/[0.01] border border-white/5 rounded-[4rem] p-12 lg:p-20 overflow-hidden relative group">
+                        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-8 lg:gap-12 opacity-80 group-hover:opacity-100 transition-all duration-700">
+                            {carregandoEquipe ? (
+                                Array.from({ length: 20 }).map((_, i) => <div key={i} className="aspect-square bg-white/5 rounded-3xl animate-pulse" />)
+                            ) : (
+                                membros.map(m => (
+                                    <div key={m.id} className="flex flex-col items-center gap-4 group/membro">
+                                        <Avatar nome={m.nome} fotoPerfil={m.foto_perfil} tamanho="lg" className="hover:scale-110 transition-all duration-500 hover:rotate-6 shadow-2xl" />
+                                        <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest text-center truncate w-full group-hover/membro:text-white transition-colors">
+                                            {m.nome.split(' ')[0]}
+                                        </span>
+                                    </div>
+                                ))
+                             )}
+                        </div>
+                        
+                        {/* Background Decoration */}
+                        <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-red-600/5 rounded-full blur-[100px] pointer-events-none" />
+                    </div>
+                </div>
+            </section>
+
+            {/* 🏁 FOOTER */}
+            <footer className="relative py-40 border-t border-white/5 bg-[#000408]">
+                <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-20">
+                    <div className="lg:col-span-2 space-y-10 text-left">
+                        <div className="flex items-center gap-5">
+                            <img src={logoUnieuro} alt="Unieuro" className="w-12 h-12 object-contain" />
                             <div className="flex flex-col">
-                                <span className="text-lg font-black tracking-tight text-white uppercase">SoftHub v3.0</span>
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Unieuro Fábrica de Software</span>
+                                <span className="text-2xl font-black tracking-tighter text-white uppercase italic leading-none">Fábrica de Software</span>
+                                <span className="text-[12px] font-bold text-red-600 uppercase tracking-[0.4em] mt-2">Unieuro Brasília</span>
                             </div>
                         </div>
-                        <p className="text-sm text-slate-400 max-w-sm font-medium leading-relaxed">
-                            Desenvolvendo o futuro da tecnologia acadêmica. Sistemas construídos com paixão, rigor técnico e excelência em design.
+                        <p className="text-[15px] text-slate-500 max-w-sm font-medium leading-relaxed">
+                            A união entre o ensino de excelência e a prática profissional. Desenvolvido por talentos do Centro Universitário Unieuro.
                         </p>
                     </div>
-
-                    <div className="space-y-6">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white">Navegação</h4>
-                        <ul className="space-y-4">
-                            <li><a href="#projetos" className="text-sm font-medium text-slate-400 hover:text-primary transition-colors">Galeria</a></li>
-                            <li><a href="https://unieuro.edu.br" className="text-sm font-medium text-slate-400 hover:text-primary transition-colors">Unieuro Institucional</a></li>
-                            <li><Link to="/login" className="text-sm font-medium text-slate-400 hover:text-primary transition-colors">Acesso Administrativo</Link></li>
+                    <div className="space-y-8 text-left">
+                        <h4 className="text-[11px] font-black uppercase tracking-[0.5em] text-white/40">Ecossistema</h4>
+                        <ul className="space-y-5">
+                            <li><a href="https://unieuro.edu.br" className="text-sm font-bold text-slate-400 hover:text-red-500 transition-colors">Portal Unieuro</a></li>
+                            <li><a href={`https://github.com/${GITHUB_USUARIO}`} className="text-sm font-bold text-slate-400 hover:text-red-500 transition-colors">Github Lab</a></li>
+                            <li><Link to="/login" className="text-sm font-bold text-slate-400 hover:text-red-500 transition-colors">Área do Membro</Link></li>
                         </ul>
                     </div>
-
-                    <div className="space-y-6">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white">Ecossistema</h4>
-                        <div className="flex gap-4">
-                            <a href={`https://github.com/${GITHUB_USUARIO}`} target="_blank" className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary/20 hover:border-primary/40 text-slate-400 hover:text-white transition-all shadow-xl">
-                                <Github size={20} />
+                    <div className="space-y-8 text-left">
+                        <h4 className="text-[11px] font-black uppercase tracking-[0.5em] text-white/40">Contato</h4>
+                        <div className="flex gap-5">
+                            <a href="#" className="w-14 h-14 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-red-600/20 text-slate-400 hover:text-white transition-all shadow-xl">
+                                <Globe size={24} />
                             </a>
-                            <a href="https://unieuro.edu.br" target="_blank" className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary/20 hover:border-primary/40 text-slate-400 hover:text-white transition-all shadow-xl">
-                                <Globe size={20} />
+                            <a href="#" className="w-14 h-14 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-red-600/20 text-slate-400 hover:text-white transition-all shadow-xl">
+                                <Github size={24} />
                             </a>
                         </div>
-                        <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest max-w-[200px]">
-                            BRASÍLIA, DF — BRASIL © {new Date().getFullYear()} SOFTHUB LABS
+                        <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest mt-4">
+                            © {new Date().getFullYear()} — UNIEURO LABS <br />
+                            BRASÍLIA, DF
                         </p>
                     </div>
                 </div>
             </footer >
 
-            {/* Modal de Detalhes Dinâmico */}
             <ModalDetalhesPortfolio 
                 projetoId={projetoSelecionado}
                 aberto={!!projetoSelecionado}
