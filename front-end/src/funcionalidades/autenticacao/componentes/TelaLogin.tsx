@@ -104,12 +104,12 @@ export default function TelaLogin() {
                             {/* Divisor Elegante com Gradiente */}
                             <div className="hidden lg:block w-[1px] bg-gradient-to-b from-transparent via-slate-200 to-transparent self-stretch my-20" />
                             
-                            {/* Painel QR com Glassmorphism Suave */}
-                            <div className="flex-1 flex flex-col items-center justify-center p-12 relative animate-in slide-in-from-right duration-1000 bg-slate-50/30 backdrop-blur-[2px]">
+                            {/* Painel QR de Elite */}
+                            <div className="flex-1 flex flex-col items-center justify-center p-12 relative animate-in slide-in-from-right duration-700">
                                 <PainelQRCode />
-                                <div className="mt-8 text-center space-y-3 max-w-[280px]">
-                                    <h4 className="text-xl font-black text-slate-900 tracking-tight leading-none">Acesso Rápido</h4>
-                                    <p className="text-[12px] text-slate-500 font-bold leading-relaxed">
+                                <div className="mt-10 text-center space-y-4 max-w-[280px]">
+                                    <h4 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase italic">Acesso Rápido</h4>
+                                    <p className="text-[12px] text-slate-500 font-bold leading-relaxed uppercase tracking-tight">
                                         Escaneie com a câmera do seu celular já autenticado para entrar instantaneamente no computador.
                                     </p>
                                 </div>

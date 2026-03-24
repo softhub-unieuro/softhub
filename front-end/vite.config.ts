@@ -13,6 +13,9 @@ export default defineConfig(({ mode }) => {
             tailwindcss(),
             VitePWA({
                 registerType: 'autoUpdate',
+                devOptions: {
+                    enabled: true // Permite testar PWA em localhost
+                },
                 manifest: {
                     name: 'SoftHub - Fábrica de Software',
                     short_name: 'SoftHub',
@@ -20,16 +23,20 @@ export default defineConfig(({ mode }) => {
                     theme_color: '#020617',
                     background_color: '#020617',
                     display: 'standalone',
+                    start_url: '/',
+                    scope: '/',
                     icons: [
                         {
                             src: 'icons/icon-192x192.png',
                             sizes: '192x192',
-                            type: 'image/png'
+                            type: 'image/png',
+                            purpose: 'any maskable'
                         },
                         {
                             src: 'icons/icon-512x512.png',
                             sizes: '512x512',
-                            type: 'image/png'
+                            type: 'image/png',
+                            purpose: 'any maskable'
                         }
                     ]
                 }
