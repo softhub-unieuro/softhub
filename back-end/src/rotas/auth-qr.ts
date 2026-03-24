@@ -44,12 +44,9 @@ rotasAuthQr.get('/qr/stream/:token', async (c) => {
                 if (!encerrar) controller.enqueue(encoder.encode(': heartbeat\n\n'));
             }, 30000);
 
-            const interval = setInterval(async () => {
-                if (encerrar) {
-                    clearInterval(interval);
-                    clearInterval(heartbeat);
-                    return;
-                }
+            // Função de verificação (Refatorada para Instant Response)
+            const verificar = async () => {
+                if (encerrar) return;
 
                 try {
                     const sessao = await QrAuthService.getQrTokenStatus(c, token);
@@ -90,7 +87,12 @@ rotasAuthQr.get('/qr/stream/:token', async (c) => {
                     clearInterval(heartbeat);
                     try { controller.error(e); } catch {}
                 }
-            }, 1000);
+            };
+
+            // Executa a primeira vez IMEDIATAMENTE (Audit SEG-012)
+            verificar();
+
+            const interval = setInterval(verificar, 500);
 
             c.req.raw.signal.addEventListener('abort', () => {
                 encerrar = true;
