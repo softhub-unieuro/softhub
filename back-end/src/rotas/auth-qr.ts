@@ -120,14 +120,20 @@ rotasAuthQr.post('/qr/identificar', autenticacaoRequerida(), async (c) => {
     try {
         const sucesso = await QrAuthService.identifyQrScan(c, sessaoId, usuario.id);
         
-        if (sucesso) return c.json({ sucesso: true });
+        if (sucesso) {
+            log('info', '[QR-AUTH] Dispositivo identificado', { usuario: usuario.email, sessaoId });
+            return c.json({ sucesso: true });
+        }
+        
+        log('warn', '[QR-AUTH] Tentativa de identificação em QR inválido', { usuario: usuario.email, sessaoId });
         return c.json({ erro: 'QR Code expirado ou inválido.' }, 404);
-    } catch {
+    } catch (err: any) {
+        log('error', '[QR-AUTH] Falha crítica na identificação', { erro: err.message, usuario: usuario.email });
         return c.json({ erro: 'Falha na identificação do dispositivo.' }, 500);
     }
 });
 
-// ── 4. Autorizar Login (Mobile Logado) ────────────────────────────────────────────────
+// ── 4. Autorizar Login (Ação Final do Mobile) ─────────────────────────────────────────
 rotasAuthQr.post('/qr/autorizar', autenticacaoRequerida(), async (c) => {
     const { DB } = c.env;
     const { sessaoId } = await c.req.json();
@@ -137,6 +143,7 @@ rotasAuthQr.post('/qr/autorizar', autenticacaoRequerida(), async (c) => {
         const sucesso = await QrAuthService.confirmQrLogin(c, sessaoId, usuario);
         
         if (sucesso) {
+            log('info', '[QR-AUTH] Login QR Autorizado com sucesso', { usuario: usuario.email, sessaoId });
             await registrarLog(DB, {
                 usuarioId: usuario.id,
                 acao: 'LOGIN_QR_CONFIRMADO',
