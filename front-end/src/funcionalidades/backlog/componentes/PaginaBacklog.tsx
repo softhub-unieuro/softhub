@@ -22,6 +22,7 @@ import { useState, useCallback, memo } from 'react';
 import { ModalCriarTarefa } from './ModalCriarTarefa';
 import { BarraFiltros, FiltroPills } from '@/compartilhado/componentes/BarraFiltros';
 import { LinhaTarefaBacklog } from './LinhaTarefaBacklog';
+import { CardTarefaBacklogMobile } from './CardTarefaBacklogMobile';
 import { BacklogVazioProjetos } from './BacklogVazioProjetos';
 
 const PaginaBacklog = memo(() => {
@@ -160,24 +161,34 @@ const PaginaBacklog = memo(() => {
                     descricao="Nenhuma tarefa corresponde aos filtros. Tente mudar os filtros ou crie uma nova tarefa."
                 />
             ) : (
-                <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden animar-entrada atraso-2">
-                    <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
-                            <thead>
-                                <tr className="border-b border-white/5 bg-white/[0.02]">
-                                    <th className="px-8 py-6 text-left text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">Nome da Tarefa</th>
-                                    <th className="px-4 py-6 text-center text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">Prioridade</th>
-                                    <th className="px-4 py-6 text-center text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">Status</th>
-                                    <th className="px-4 py-6 text-center text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">Responsáveis</th>
-                                    <th className="px-8 py-6 text-right text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/5">
-                                {tarefas.map(tarefa => (
-                                    <LinhaTarefaBacklog key={tarefa.id} tarefa={tarefa} />
-                                ))}
-                            </tbody>
-                        </table>
+                <div className="space-y-6">
+                    {/* VISÃO MOBILE — Cards Táteis */}
+                    <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-6 animar-entrada atraso-2">
+                        {tarefas.map(tarefa => (
+                            <CardTarefaBacklogMobile key={tarefa.id} tarefa={tarefa} />
+                        ))}
+                    </div>
+
+                    {/* VISÃO DESKTOP — Tabela Operacional */}
+                    <div className="hidden lg:block bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden animar-entrada atraso-2">
+                        <div className="overflow-x-auto">
+                            <table className="w-full border-collapse">
+                                <thead>
+                                    <tr className="border-b border-white/5 bg-white/[0.02]">
+                                        <th className="px-8 py-6 text-left text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">Nome da Tarefa</th>
+                                        <th className="px-4 py-6 text-center text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">Prioridade</th>
+                                        <th className="px-4 py-6 text-center text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">Status</th>
+                                        <th className="px-4 py-6 text-center text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">Responsáveis</th>
+                                        <th className="px-8 py-6 text-right text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {tarefas.map(tarefa => (
+                                        <LinhaTarefaBacklog key={tarefa.id} tarefa={tarefa} />
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             )}

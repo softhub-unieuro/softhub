@@ -60,7 +60,7 @@ export const SidebarEquipes = memo(({
                                         ev.stopPropagation();
                                         aoExcluir(e);
                                     }}
-                                    className={`p-2 rounded-lg text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-all active:scale-95 ${idEquipeAtiva === e.id ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100'}`}
+                                    className={`p-2 rounded-lg text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-all active:scale-95 ${idEquipeAtiva === e.id ? 'opacity-100' : 'lg:opacity-0 lg:group-hover/card:opacity-100'}`}
                                 >
                                     <Trash2 size={12} />
                                 </button>

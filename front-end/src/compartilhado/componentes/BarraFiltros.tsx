@@ -60,8 +60,8 @@ export function BarraFiltros({
                     )}
                 </div>
 
-                {/* Filtros Customizados */}
-                <div className="flex flex-wrap items-center gap-2">
+                {/* Filtros Customizados — Rolagem horizontal no mobile */}
+                <div className="flex flex-row items-center gap-2 overflow-x-auto no-scrollbar w-full lg:w-auto pb-1 lg:pb-0 lg:overflow-visible">
                     {children}
                 </div>
             </div>
@@ -97,11 +97,11 @@ export function FiltroSelect({
     className?: string;
 }) {
     return (
-        <div className={`relative flex items-center group ${className}`}>
+        <div className={`relative flex items-center group shrink-0 ${className}`}>
             <select
                 value={valor}
                 onChange={(e) => aoMudar(e.target.value)}
-                className={`h-11 pl-4 pr-10 bg-background border border-border rounded-2xl text-[10px] font-black uppercase tracking-widest text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all appearance-none cursor-pointer min-w-[120px] shadow-sm hover:bg-accent hover:text-accent-foreground ${valor ? 'text-primary border-primary/20 bg-primary/5' : ''}`}
+                className={`h-11 pl-4 pr-10 bg-background border border-border rounded-2xl text-[10px] font-black uppercase tracking-widest text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all appearance-none cursor-pointer min-w-[110px] shadow-sm hover:bg-accent hover:text-accent-foreground ${valor ? 'text-primary border-primary/20 bg-primary/5' : ''}`}
             >
                 <option value="" className="bg-popover text-popover-foreground">{rotuloPadrao}</option>
                 {opcoes.map(opt => (
@@ -132,20 +132,20 @@ export function FiltroDataRange({
     desabilitado?: boolean;
 }) {
     return (
-        <div className={`flex items-center bg-background border border-border rounded-2xl px-4 h-11 focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary transition-all shadow-sm ${desabilitado ? 'opacity-30 pointer-events-none' : 'hover:border-primary/20'}`}>
-            <Calendar size={14} className={`mr-3 shrink-0 ${inicio || fim ? 'text-primary' : 'text-muted-foreground'}`} />
+        <div className={`flex items-center bg-background border border-border rounded-2xl px-3 sm:px-4 h-11 focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary transition-all shadow-sm shrink-0 ${desabilitado ? 'opacity-30 pointer-events-none' : 'hover:border-primary/20'}`}>
+            <Calendar size={14} className={`mr-2 sm:mr-3 shrink-0 ${inicio || fim ? 'text-primary' : 'text-muted-foreground'}`} />
             <input
                 type="date"
                 value={inicio}
                 onChange={e => aoMudarInicio(e.target.value)}
-                className="bg-transparent border-none text-[11px] font-semibold text-muted-foreground focus:text-foreground focus:outline-none w-[110px] uppercase selection:bg-primary/30"
+                className="bg-transparent border-none text-[10px] sm:text-[11px] font-bold text-muted-foreground focus:text-foreground focus:outline-none w-[90px] sm:w-[110px] uppercase selection:bg-primary/30"
             />
-            <span className="mx-2 text-muted-foreground/50 text-[10px] font-black uppercase tracking-tighter">até</span>
+            <span className="mx-1.5 text-muted-foreground/30 text-[10px] font-black uppercase tracking-tighter">—</span>
             <input
                 type="date"
                 value={fim}
                 onChange={e => aoMudarFim(e.target.value)}
-                className="bg-transparent border-none text-[11px] font-semibold text-muted-foreground focus:text-foreground focus:outline-none w-[110px] uppercase selection:bg-primary/30"
+                className="bg-transparent border-none text-[10px] sm:text-[11px] font-bold text-muted-foreground focus:text-foreground focus:outline-none w-[90px] sm:w-[110px] uppercase selection:bg-primary/30"
             />
         </div>
     );
@@ -164,7 +164,7 @@ export function FiltroToggle({
     aoMudar: (v: any) => void;
 }) {
     return (
-        <div className="flex items-center bg-background border border-border rounded-2xl p-1 h-11 shadow-sm">
+        <div className="flex items-center bg-background border border-border rounded-2xl p-1 h-11 shadow-sm shrink-0">
             {opcoes.map((opt) => (
                 <button
                     key={opt.valor}

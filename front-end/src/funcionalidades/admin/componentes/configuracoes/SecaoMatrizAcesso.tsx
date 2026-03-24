@@ -168,6 +168,8 @@ export function SecaoMatrizAcesso({ configuracoes, atualizarConfiguracao, podeEd
         }
     }, [configuracoes, atualizarConfiguracao, onErroTemporario]);
 
+    const [roleAtivaMobile, setRoleAtivaMobile] = useState('ADMIN');
+
     if (!isAdmin && !temAcessoCritico) {
         return (
             <div className="h-full flex flex-col items-center justify-center p-12 bg-card border border-border rounded-2xl text-center">
@@ -211,7 +213,77 @@ export function SecaoMatrizAcesso({ configuracoes, atualizarConfiguracao, podeEd
                 </div>
             </div>
 
-            <div className="overflow-x-auto custom-scrollbar bg-card">
+            {/* 📱 VISÃO MOBILE: CARDS + ROLE SELECTOR */}
+            <div className="lg:hidden flex-1 overflow-y-auto bg-card">
+                {/* Seletor de Role (Tabs) */}
+                <div className="flex items-center gap-2 p-4 overflow-x-auto no-scrollbar border-b border-border bg-muted/5">
+                    {rolesMatriz.map(role => (
+                        <button
+                            key={role}
+                            onClick={() => setRoleAtivaMobile(role)}
+                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
+                                roleAtivaMobile === role 
+                                ? 'bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20' 
+                                : 'bg-background text-muted-foreground border-border/40'
+                            }`}
+                        >
+                            {role === 'TODOS' && <Globe size={11} className="inline mr-2 mb-0.5" />}
+                            {role}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Lista de Permissões Mobile */}
+                <div className="p-4 space-y-8">
+                    {permissoesFiltradas.map((grupo) => {
+                        const IconeModulo = grupo.icone;
+                        return (
+                            <div key={grupo.modulo} className="space-y-4">
+                                <div className="flex items-center gap-3 px-2">
+                                    <div className="p-2 bg-primary/5 rounded-lg">
+                                        <IconeModulo size={14} className="text-primary/60" />
+                                    </div>
+                                    <span className="text-[11px] font-black uppercase tracking-[0.2em] text-foreground/40">{grupo.label}</span>
+                                </div>
+                                <div className="space-y-px bg-muted/10 rounded-2xl border border-border/40 overflow-hidden shadow-sm">
+                                    {grupo.permissoes.map((perm) => {
+                                        const ativa = configuracoes?.permissoes_roles[roleAtivaMobile]?.[perm.chave] ?? false;
+                                        const universal = (configuracoes?.permissoes_roles['TODOS'] as any)?.[perm.chave] ?? false;
+                                        const salvandoEste = salvando === `permissoes_roles.${roleAtivaMobile}.${perm.chave}`;
+                                        const forcadoPorTodos = roleAtivaMobile !== 'TODOS' && universal;
+                                        const somenteAdminPodeClicar = perm.chave === 'configuracoes:matriz_governanca' && !isAdmin;
+
+                                        return (
+                                            <div key={perm.chave} className="flex items-center justify-between p-4 bg-card border-b border-border/20 last:border-0 active:bg-muted/30 transition-colors">
+                                                <div className="flex flex-col gap-1 pr-4">
+                                                    <span className="text-[11px] font-bold text-foreground/80 leading-tight">{perm.label}</span>
+                                                    {forcadoPorTodos && (
+                                                        <span className="text-[9px] font-black uppercase tracking-wider text-emerald-500/60">Herdado de Todos</span>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    disabled={salvandoEste || !podeEditar || forcadoPorTodos || somenteAdminPodeClicar}
+                                                    onClick={() => podeEditar && !forcadoPorTodos && !somenteAdminPodeClicar && handleTogglePermissao(roleAtivaMobile, perm.chave)}
+                                                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                                                        ativa || forcadoPorTodos
+                                                        ? roleAtivaMobile === 'TODOS' ? 'bg-emerald-500 text-white' : 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                                                        : 'bg-muted/40 border border-border/40 text-transparent'
+                                                    } ${salvandoEste ? 'animate-pulse scale-90' : ''}`}
+                                                >
+                                                    {(ativa || forcadoPorTodos) && <ShieldCheck size={18} strokeWidth={2.5} />}
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* 🖥️ VISÃO DESKTOP: TABELA CLÁSSICA */}
+            <div className="hidden lg:block overflow-x-auto custom-scrollbar bg-card">
                 <table className="w-full border-collapse">
                     <thead className="relative z-30">
                         <tr className="border-b border-border bg-muted/5">
@@ -283,7 +355,7 @@ export function SecaoMatrizAcesso({ configuracoes, atualizarConfiguracao, podeEd
                                                                         : ''
                                                                 } ${salvandoEste ? 'animate-pulse scale-90' : ''}`}
                                                             >
-                                                                {(ativa || forcadoPorTodos) && <ShieldCheck size={16} strokeWidth={2.5} />}
+                                                                 {(ativa || forcadoPorTodos) && <ShieldCheck size={16} strokeWidth={2.5} />}
                                                             </button>
                                                         </div>
                                                     </td>

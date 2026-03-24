@@ -110,9 +110,9 @@ export const PaginaDashboard = memo(() => {
                 <div className="relative z-10 p-6 lg:p-2">
                     
                     {/* LINHA SUPERIOR: Saudação + Data */}
-                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-8">
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-3">
+                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-8 items-center">
+                        <div className="space-y-3 flex flex-col items-center lg:items-start">
+                            <div className="flex items-center justify-center lg:justify-start gap-3">
                                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                     <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-500">Online</span>
@@ -122,12 +122,12 @@ export const PaginaDashboard = memo(() => {
                                     <span className="text-[10px] font-medium text-muted-foreground/50 capitalize">{obterDataFormatada()}</span>
                                 </div>
                             </div>
-                            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-foreground leading-[0.95]">
+                            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-foreground leading-[0.95] text-center lg:text-left">
                                 {obterSaudacao()}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-blue-400 to-indigo-400">
                                     {usuario?.nome?.split(' ')[0]}!
                                 </span> {new Date().getHours() >= 18 || new Date().getHours() < 6 ? '🌙' : '✨'}
                             </h1>
-                            <p className="text-muted-foreground/50 text-sm font-medium max-w-md">
+                            <p className="text-muted-foreground/50 text-sm font-medium max-w-md text-center lg:text-left">
                                 {pendentes > 0 
                                     ? `Você tem ${pendentes} tarefa${pendentes > 1 ? 's' : ''} pendente${pendentes > 1 ? 's' : ''} — foco no que importa.`
                                     : 'Tudo concluído por agora. Bom trabalho!'
@@ -136,29 +136,29 @@ export const PaginaDashboard = memo(() => {
                         </div>
 
                         {/* QUICK STATS — Mini resumo visual */}
-                        <div className="flex items-center gap-3">
-                            <div className="flex flex-col items-center gap-1 px-5 py-3 rounded-2xl bg-white/[0.03] border border-white/5">
-                                <span className="text-2xl font-black text-foreground">{stats?.tarefas.concluidas || 0}</span>
+                        <div className="flex flex-row flex-wrap items-center justify-center sm:justify-start gap-3 sm:gap-4 mx-auto lg:mx-0 w-full lg:w-auto">
+                            <div className="flex flex-col items-center gap-1 px-4 py-3 rounded-2xl bg-white/[0.03] border border-white/5 flex-1 sm:flex-initial min-w-[80px] sm:max-w-none">
+                                <span className="text-xl sm:text-2xl font-black text-foreground">{stats?.tarefas.concluidas || 0}</span>
                                 <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500/60">entregas</span>
                             </div>
-                            <div className="flex flex-col items-center gap-1 px-5 py-3 rounded-2xl bg-white/[0.03] border border-white/5">
-                                <span className="text-2xl font-black text-foreground">{stats?.tarefas.aproveitamento || 0}%</span>
+                            <div className="flex flex-col items-center gap-1 px-4 py-3 rounded-2xl bg-white/[0.03] border border-white/5 flex-1 sm:flex-initial min-w-[80px]">
+                                <span className="text-xl sm:text-2xl font-black text-foreground">{stats?.tarefas.aproveitamento || 0}%</span>
                                 <span className="text-[9px] font-bold uppercase tracking-widest text-amber-500/60">qualidade</span>
                             </div>
-                            <div className="flex flex-col items-center gap-1 px-5 py-3 rounded-2xl bg-white/[0.03] border border-white/5">
-                                <span className="text-2xl font-black text-foreground">{stats?.ponto.estimativaHoras || 0}h</span>
+                            <div className="flex flex-col items-center gap-1 px-4 py-3 rounded-2xl bg-white/[0.03] border border-white/5 flex-1 sm:flex-initial min-w-[80px]">
+                                <span className="text-xl sm:text-2xl font-black text-foreground">{stats?.ponto.estimativaHoras || 0}h</span>
                                 <span className="text-[9px] font-bold uppercase tracking-widest text-blue-500/60">horas</span>
                             </div>
                         </div>
                     </div>
 
                     {/* LINHA INFERIOR: Perfil + Equipe + Role */}
-                    <div className="flex flex-wrap items-center gap-3 border-t border-white/[0.04]">
+                    <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 border-t border-white/[0.04] pt-6 sm:pt-4">
                         
                         {/* CARD PERFIL */}
                         <button 
                             onClick={() => setModalPerfilAberto(true)}
-                            className="group/card flex items-center gap-3.5 py-2 pl-2 pr-5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 hover:border-primary/20 transition-all duration-300 active:scale-[0.97]"
+                            className="group/card w-full sm:w-auto flex items-center gap-3.5 py-2 pl-2 pr-5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 hover:border-primary/20 transition-all duration-300 active:scale-[0.97]"
                         >
                             <div className="relative">
                                 <div className="p-[2px] bg-gradient-to-br from-primary via-blue-500 to-indigo-500 rounded-full">
@@ -180,7 +180,7 @@ export const PaginaDashboard = memo(() => {
                         </button>
 
                         {/* CARD EQUIPE */}
-                        <div className="flex items-center gap-3 py-2 pl-2.5 pr-5 rounded-full bg-white/[0.04] border border-white/5">
+                        <div className="flex w-full sm:w-auto items-center gap-3 py-2 pl-2.5 pr-5 rounded-full bg-white/[0.04] border border-white/5">
                             <div className="w-9 h-9 rounded-full bg-indigo-500/10 flex items-center justify-center border border-indigo-500/15">
                                 <Users className="w-4 h-4 text-indigo-400" />
                             </div>
@@ -192,7 +192,7 @@ export const PaginaDashboard = memo(() => {
 
                         {/* BADGE DE ROLE */}
                         {perfil?.role && (
-                            <div className="flex items-center gap-2 py-2 pl-3 pr-4 rounded-full bg-primary/5 border border-primary/10">
+                            <div className="flex w-full sm:w-auto items-center justify-center sm:justify-start gap-2 py-2 pl-3 pr-4 rounded-full bg-primary/5 border border-primary/10">
                                 <Sparkles className="w-3.5 h-3.5 text-primary" />
                                 <span className="text-[10px] font-bold uppercase tracking-widest text-primary">{perfil.role}</span>
                             </div>

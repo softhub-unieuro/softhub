@@ -93,7 +93,7 @@ export function LayoutPrincipal({ children }: LayoutPrincipalProps) {
                     </button>
 
                     <main className="flex-1 w-full flex flex-col relative z-20 transition-all animar-entrada min-w-0">
-                        <div className="flex-1 flex flex-col pt-20 lg:pt-0">
+                        <div className="flex-1 flex flex-col">
                             <Breadcrumbs />
                             <div className="flex-1 flex flex-col w-full px-6 py-6">
                                 <ErrorBoundary modulo="Módulo Selecionado">

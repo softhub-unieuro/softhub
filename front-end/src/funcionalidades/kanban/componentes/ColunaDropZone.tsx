@@ -18,9 +18,10 @@ interface ColunaDropZoneProps {
     aoApertarTarefa: (t: Tarefa) => void;
     aoVerPerfil?: (id: string) => void;
     delayClass?: string;
+    className?: string;
 }
 
-export const ColunaDropZone = memo(({ id, titulo, tarefas, aoApertarTarefa, aoVerPerfil, delayClass }: ColunaDropZoneProps) => {
+export const ColunaDropZone = memo(({ id, titulo, tarefas, aoApertarTarefa, aoVerPerfil, delayClass, className }: ColunaDropZoneProps) => {
     const { setNodeRef, isOver } = useDroppable({
         id: id,
         data: { type: 'Column', coluna: id }
@@ -28,7 +29,7 @@ export const ColunaDropZone = memo(({ id, titulo, tarefas, aoApertarTarefa, aoVe
     const Icone = ICONES_COLUNAS[id] || Circle;
 
     return (
-        <div className={`flex flex-col flex-1 max-w-[400px] card-glass card-glass-hover overflow-hidden h-full transition-all duration-500 group/column animar-entrada ${delayClass}`}>
+        <div className={`flex flex-col shrink-0 w-full lg:flex-1 lg:max-w-[420px] card-glass card-glass-hover overflow-hidden h-full transition-all duration-500 group/column animar-entrada ${delayClass} ${className || ''}`}>
             <div className="p-5 border-b border-border/50 bg-muted/30 flex items-center justify-between shrink-0 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover/column:opacity-100 transition-opacity duration-700" />
                 <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-muted-foreground/80 flex items-center gap-2.5 relative z-10">

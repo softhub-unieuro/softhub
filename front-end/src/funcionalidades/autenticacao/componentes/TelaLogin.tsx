@@ -12,8 +12,6 @@ import { usarToast } from '@/compartilhado/hooks/usarToast';
 /**
  * Tela de login consolidada - MSAL Only (Auditoria Part 1).
  */
-let travaAuthGlobal = false;
-
 export default function TelaLogin() {
     const { accounts, inProgress, loginComMicrosoft, processarLoginNoBackend, estaAutenticado } = usarMsalAuth();
     const { isMobile } = usarDispositivo();
@@ -23,6 +21,7 @@ export default function TelaLogin() {
 
     const [configPublica, setConfigPublica] = useState<any>(null);
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+    const [processando, setProcessando] = useState(false);
 
     // Ouvir evento de instalação PWA (Auditoria Checklist Part 3)
     useEffect(() => {
@@ -64,13 +63,13 @@ export default function TelaLogin() {
 
     // Processa retorno do MSAL automaticamente (Checklist Part 2)
     useEffect(() => {
-        if (accounts.length > 0 && !estaAutenticado && inProgress === 'none' && !travaAuthGlobal) {
-            travaAuthGlobal = true;
+        if (accounts.length > 0 && !estaAutenticado && inProgress === 'none' && !processando) {
+            setProcessando(true);
             processarLoginNoBackend(accounts[0]).finally(() => {
-                travaAuthGlobal = false;
+                setProcessando(false);
             });
         }
-    }, [accounts, inProgress, estaAutenticado, processarLoginNoBackend]);
+    }, [accounts, inProgress, estaAutenticado, processarLoginNoBackend, processando]);
 
     const erroRedirect = searchParams.get('erro');
     const erroFinal = erroRedirect ? 'Erro na autenticação externa.' : null;
@@ -90,7 +89,7 @@ export default function TelaLogin() {
                             <SecaoLoginMicrosoft 
                                 configPublica={configPublica}
                                 erro={erroFinal}
-                                carregando={inProgress !== 'none'}
+                                carregando={inProgress !== 'none' || processando}
                                 handleLogin={loginComMicrosoft}
                                 isMobile={isMobile}
                                 deferredPrompt={deferredPrompt}
@@ -102,8 +101,11 @@ export default function TelaLogin() {
 
                     {!isMobile && (
                         <>
-                            <div className="hidden lg:block w-[1px] bg-border self-stretch my-24 opacity-50" />
-                            <div className="flex-1 flex flex-col items-center justify-center p-12 relative animate-in slide-in-from-right duration-1000">
+                            {/* Divisor Elegante com Gradiente */}
+                            <div className="hidden lg:block w-[1px] bg-gradient-to-b from-transparent via-slate-200 to-transparent self-stretch my-20" />
+                            
+                            {/* Painel QR com Glassmorphism Suave */}
+                            <div className="flex-1 flex flex-col items-center justify-center p-12 relative animate-in slide-in-from-right duration-1000 bg-slate-50/30 backdrop-blur-[2px]">
                                 <PainelQRCode />
                                 <div className="mt-8 text-center space-y-3 max-w-[280px]">
                                     <h4 className="text-xl font-black text-slate-900 tracking-tight leading-none">Acesso Rápido</h4>

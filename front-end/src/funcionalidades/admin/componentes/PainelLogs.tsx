@@ -1,4 +1,4 @@
-import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert, ChevronRight } from 'lucide-react';
 import { EstadoVazio } from '@/compartilhado/componentes/EstadoVazio';
 import { Paginacao } from '@/compartilhado/componentes/Paginacao';
 import { usarLogs } from '@/funcionalidades/admin/hooks/usarLogs';
@@ -21,10 +21,10 @@ export const PainelLogs = memo(() => {
         modoVisualizacao, setModoVisualizacao
     } = usarLogs();
 
-    const [expandidoId, setExpandidoId] = useState<string | null>(null);
+    const [expandidoId, setExpandidoId] = useState<string | undefined>(undefined);
 
     const handleAlternarExpansao = useCallback((id: string) => {
-        setExpandidoId(prev => prev === id ? null : id);
+        setExpandidoId(prev => prev === id ? undefined : id);
     }, []);
 
     const handleMudarBusca = useCallback((v: string) => {
@@ -148,35 +148,96 @@ export const PainelLogs = memo(() => {
                             descricao="Refine seus filtros ou busque em períodos anteriores."
                         />
                     ) : (
-                        <table className="w-full border-collapse table-fixed min-w-[1000px] lg:min-w-full">
-                            <thead className="sticky top-0 z-20 bg-card/95 backdrop-blur-xl border-b border-border/50 shadow-sm transition-all duration-300">
-                                <tr className="divide-x divide-border/5">
-                                    <th className="px-5 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 w-[140px]">CRONÔMETRO</th>
-                                    <th className="px-3 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 w-[180px]">OPERAÇÃO</th>
-                                    <th className="px-3 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 w-[200px]">AGENTE</th>
-                                    <th className="px-3 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">DESCRIÇÃO DO EVENTO</th>
-                                    <th className="px-5 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 w-[150px] text-right">MÓDULO</th>
-                                </tr>
-                            </thead>
-                            <tbody className={`divide-y divide-border/20 transition-opacity duration-300 ${carregando ? 'opacity-50' : 'opacity-100'}`}>
+                        <>
+                            {/* 🖥️ VISÃO DESKTOP: TABELA CLÁSSICA */}
+                            <table className="hidden lg:table w-full border-collapse table-fixed min-w-full">
+                                <thead className="sticky top-0 z-20 bg-card/95 backdrop-blur-xl border-b border-border/50 shadow-sm transition-all duration-300">
+                                    <tr className="divide-x divide-border/5">
+                                        <th className="px-5 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 w-[140px]">CRONÔMETRO</th>
+                                        <th className="px-3 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 w-[180px]">OPERAÇÃO</th>
+                                        <th className="px-3 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 w-[200px]">AGENTE</th>
+                                        <th className="px-3 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">DESCRIÇÃO DO EVENTO</th>
+                                        <th className="px-5 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 w-[150px] text-right">MÓDULO</th>
+                                    </tr>
+                                </thead>
+                                <tbody className={`divide-y divide-border/20 transition-opacity duration-300 ${carregando ? 'opacity-50' : 'opacity-100'}`}>
+                                    {logs.map(log => (
+                                        <Fragment key={log.id}>
+                                            <LinhaLog
+                                                log={log}
+                                                expandido={expandidoId === log.id}
+                                                aoAlternar={handleAlternarExpansao}
+                                            />
+                                            {expandidoId === log.id && (
+                                                <tr className="bg-muted/10 animate-in slide-in-from-top-4 duration-500">
+                                                    <td colSpan={5} className="p-0">
+                                                        <DetalheLog log={log} />
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </Fragment>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            {/* 📱 VISÃO MOBILE: LISTA DE CARDS OPERACIONAIS */}
+                            <div className="lg:hidden flex flex-col divide-y divide-border/10 bg-card">
                                 {logs.map(log => (
-                                    <Fragment key={log.id}>
-                                        <LinhaLog
-                                            log={log}
-                                            expandido={expandidoId === log.id}
-                                            aoAlternar={handleAlternarExpansao}
-                                        />
+                                    <div key={log.id} className="flex flex-col bg-card hover:bg-muted/5 transition-colors">
+                                        <div 
+                                            onClick={() => handleAlternarExpansao(log.id)}
+                                            className="p-5 flex flex-col gap-4 active:bg-muted/10 transition-all border-l-4 border-l-border/30"
+                                            style={{ 
+                                                borderLeftColor: log.acao.includes('ERRO') || log.acao.includes('DELETAR') ? '#f43f5e' : 
+                                                                log.acao.includes('CRIAR') ? '#10b981' : 
+                                                                log.acao.includes('ATUALIZAR') ? '#f59e0b' : '#3b82f6'
+                                            }}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-bold text-muted-foreground/50 tabular-nums">
+                                                    {new Date(log.criado_em).toLocaleDateString('pt-BR')} às {new Date(log.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                                <Emblema texto={log.modulo} variante="cinza" />
+                                            </div>
+
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center border border-border shrink-0 overflow-hidden">
+                                                    {log.foto_perfil ? (
+                                                        <img src={log.foto_perfil || ''} alt={log.nome || 'Avatar'} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="text-[10px] font-black text-muted-foreground/20">SYS</div>
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="text-[11px] font-black uppercase tracking-tight text-foreground/80 truncate leading-none mb-1">
+                                                        {log.nome || 'SISTEMA'}
+                                                    </span>
+                                                    <span className="text-xs font-medium text-muted-foreground py-0.5 leading-tight line-clamp-2">
+                                                        {log.descricao}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center justify-between mt-1">
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${
+                                                        log.acao.includes('ERRO') || log.acao.includes('DELETAR') ? 'bg-rose-500' : 
+                                                        log.acao.includes('CRIAR') ? 'bg-emerald-500' : 'bg-blue-500'
+                                                    }`} />
+                                                    <span className="text-[9px] font-black uppercase tracking-widest text-foreground/40">{log.acao.replace(/_/g, ' ')}</span>
+                                                </div>
+                                                <ChevronRight className={`w-4 h-4 text-muted-foreground/20 transition-transform ${expandidoId === log.id ? 'rotate-90 text-primary' : ''}`} />
+                                            </div>
+                                        </div>
                                         {expandidoId === log.id && (
-                                            <tr className="bg-muted/10 animate-in slide-in-from-top-4 duration-500">
-                                                <td colSpan={5} className="p-0">
-                                                    <DetalheLog log={log} />
-                                                </td>
-                                            </tr>
+                                            <div className="bg-muted/10 border-t border-border/10 p-4 animate-in slide-in-from-top-4 duration-500">
+                                                <DetalheLog log={log} />
+                                            </div>
                                         )}
-                                    </Fragment>
+                                    </div>
                                 ))}
-                            </tbody>
-                        </table>
+                            </div>
+                        </>
                     )}
                 </div>
 

@@ -56,6 +56,7 @@ export const QuadroKanban = memo(() => {
 
     const [filtros, setFiltros] = useState<any>({});
     const { tarefas, carregando, erro, moverCard } = usarKanban(projetoAtivoId, filtros);
+    const [colunaAtiva, setColunaAtiva] = useState<string>(COLUNAS_KANBAN[1]);
     const [activeTarefa, setActiveTarefa] = useState<Tarefa | null>(null);
     const [tarefaDetalhes, setTarefaDetalhes] = useState<Tarefa | null>(null);
     const [modalCriarAberto, setModalCriarAberto] = useState(false);
@@ -191,6 +192,23 @@ export const QuadroKanban = memo(() => {
 
             <PainelFiltrosKanban filtros={filtros} aoFiltrar={handleFiltrar} />
 
+            {/* Seletor de Colunas Mobile */}
+            <div className="lg:hidden flex overflow-x-auto scroll-none gap-2 px-6 py-4 -mx-6 mb-2 snap-x">
+                {COLUNAS_KANBAN.map((coluna) => (
+                    <button
+                        key={coluna}
+                        onClick={() => setColunaAtiva(coluna)}
+                        className={`shrink-0 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all snap-center border ${
+                            colunaAtiva === coluna 
+                                ? 'bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20' 
+                                : 'bg-card/40 text-muted-foreground/60 border-border/40'
+                        }`}
+                    >
+                        {LABELS_COLUNAS[coluna]}
+                    </button>
+                ))}
+            </div>
+
 
             {!carregandoProjetos && projetos.length === 0 ? (
                 <KanbanVazioProjetos podeGerenciarProjetos={podeGerenciarProjetos} />
@@ -237,6 +255,7 @@ export const QuadroKanban = memo(() => {
                                                 aoApertarTarefa={setTarefaDetalhes}
                                                 aoVerPerfil={handleVerPerfil}
                                                 delayClass={`atraso-${index + 1}`}
+                                                className={colunaAtiva === coluna ? 'flex' : 'hidden lg:flex'}
                                             />
                                         ))}
                                         <DragOverlay dropAnimation={null}>

@@ -43,11 +43,12 @@ export const SecaoLoginMicrosoft = memo(({
                 )}
 
                 <div className="space-y-6 lg:space-y-8">
+                <div className="flex items-center gap-4 flex-wrap sm:flex-nowrap justify-center lg:justify-start">
                     {/* BOTÃO OFICIAL MICROSOFT — NÃO ALTERAR */}
                     <button
                         onClick={handleLogin}
                         disabled={carregando}
-                        className="w-full flex items-center h-[41px] bg-[#2F2F2F] disabled:opacity-50 px-[12px] gap-[12px] border border-[#2F2F2F]"
+                        className="w-fit flex items-center h-[41px] bg-[#2F2F2F] disabled:opacity-50 px-[12px] gap-[12px] border border-[#2F2F2F] transition-all hover:brightness-110 active:scale-[0.98] shrink-0"
                         style={{ 
                             fontFamily: "'Segoe UI', 'Segoe UI Web (West European)', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif",
                             borderRadius: '2px',
@@ -63,6 +64,25 @@ export const SecaoLoginMicrosoft = memo(({
                         </div>
                         <span className="text-[15px] text-white leading-none whitespace-nowrap" style={{ fontWeight: 600 }}>Entrar com Microsoft</span>
                     </button>
+
+                    {carregando && (
+                        <div className="flex items-center gap-4 animate-in fade-in slide-in-from-left-4 duration-500">
+                            {/* Spinner Orbital Premium (Checklist UX Part 5) */}
+                            <div className="relative w-7 h-7 flex items-center justify-center shrink-0">
+                                {/* Órbita Externa (Lenta) */}
+                                <div className="absolute inset-0 border-[1.5px] border-slate-100 rounded-full" />
+                                <div className="absolute inset-0 border-t-[1.5px] border-l-[1.5px] border-red-500 rounded-full animate-[spin_1.2s_linear_infinite]" />
+                                
+                                {/* Órbita Interna (Rápida - Sentido Inverso) */}
+                                <div className="w-[18px] h-[18px] border-b-[2px] border-amber-500/60 rounded-full animate-[spin_0.8s_linear_infinite_reverse]" />
+                                
+                                {/* Núcleo Pulsante */}
+                                <div className="absolute w-[6px] h-[6px] bg-red-600 rounded-full animate-pulse shadow-[0_0_8px_rgba(220,38,38,0.5)]" />
+                            </div>
+                        </div>
+                    )}
+                </div>
+
 
                     <div className="flex items-center justify-center lg:justify-start gap-1.5 text-slate-500 text-[11px] lg:text-[11.5px] font-medium">
                         <Info size={11} className="shrink-0" />

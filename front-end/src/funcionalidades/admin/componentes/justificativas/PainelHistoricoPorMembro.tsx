@@ -75,61 +75,104 @@ export const PainelHistoricoPorMembro = memo(() => {
                         <EstadoVazio tipo="pesquisa" titulo="Nenhum membro filtrado" descricao="Ajuste os termos da sua busca para encontrar o membro desejado." />
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr className="bg-slate-50/50">
-                                    <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Membro</th>
-                                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Equipe / Cargo</th>
-                                    <th className="px-6 py-6 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Sessões Totais</th>
-                                    <th className="px-6 py-6 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Último Acesso</th>
-                                    <th className="px-10 py-6 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Auditoria</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50">
-                                {filtrados.map((m: any) => (
-                                    <tr key={m.id} className="group hover:bg-slate-50/50 transition-all">
-                                        <td className="px-10 py-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                                                    {m.nome.charAt(0)}
-                                                </div>
-                                                <div>
-                                                    <p className="text-[11px] font-black text-slate-800 uppercase leading-none mb-1 group-hover:text-indigo-600 transition-colors">{m.nome}</p>
-                                                    <p className="text-[9px] text-slate-400 font-bold">{m.email}</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-6">
-                                            <div className="space-y-1">
-                                                <p className="text-[9px] font-black text-indigo-600 uppercase tracking-tight">{m.equipe_nome || 'Liderança'}</p>
-                                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{m.grupo_nome || 'Geral'}</p>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-6 text-center">
-                                            <span className="text-lg font-black text-slate-800 leading-none">{m.dias_presentes || 0}</span>
-                                        </td>
-                                        <td className="px-6 py-6 text-right">
-                                            <p className="text-[10px] font-black text-slate-600">
-                                                {m.ultima_batida ? formatarDataHora(m.ultima_batida).split('às')[0] : '--'}
-                                            </p>
-                                            <p className="text-[9px] font-bold text-slate-400 italic">
-                                                {m.ultima_batida ? `às ${formatarDataHora(m.ultima_batida).split('às')[1]}` : ''}
-                                            </p>
-                                        </td>
-                                        <td className="px-10 py-6 text-right">
-                                            <button 
-                                                onClick={() => handleVerHistorico(m)}
-                                                className="px-4 py-2 bg-slate-100 hover:bg-indigo-600 text-slate-500 hover:text-white rounded-xl transition-all duration-300 group/btn shadow-sm hover:shadow-indigo-100"
-                                            >
-                                                <History size={16} />
-                                            </button>
-                                        </td>
+                    <>
+                        {/* 🖥️ VISÃO DESKTOP: TABELA */}
+                        <div className="hidden lg:block overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="bg-slate-50/50">
+                                        <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Membro</th>
+                                        <th className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Equipe / Cargo</th>
+                                        <th className="px-6 py-6 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Sessões Totais</th>
+                                        <th className="px-6 py-6 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Último Acesso</th>
+                                        <th className="px-10 py-6 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Auditoria</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {filtrados.map((m: any) => (
+                                        <tr key={m.id} className="group hover:bg-slate-50/50 transition-all">
+                                            <td className="px-10 py-6">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                                                        {m.nome.charAt(0)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[11px] font-black text-slate-800 uppercase leading-none mb-1 group-hover:text-indigo-600 transition-colors">{m.nome}</p>
+                                                        <p className="text-[9px] text-slate-400 font-bold">{m.email}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-6">
+                                                <div className="space-y-1">
+                                                    <p className="text-[9px] font-black text-indigo-600 uppercase tracking-tight">{m.equipe_nome || 'Liderança'}</p>
+                                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{m.grupo_nome || 'Geral'}</p>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-6 text-center">
+                                                <span className="text-lg font-black text-slate-800 leading-none">{m.dias_presentes || 0}</span>
+                                            </td>
+                                            <td className="px-6 py-6 text-right">
+                                                <p className="text-[10px] font-black text-slate-600">
+                                                    {m.ultima_batida ? formatarDataHora(m.ultima_batida).split('às')[0] : '--'}
+                                                </p>
+                                                <p className="text-[9px] font-bold text-slate-400 italic">
+                                                    {m.ultima_batida ? `às ${formatarDataHora(m.ultima_batida).split('às')[1]}` : ''}
+                                                </p>
+                                            </td>
+                                            <td className="px-10 py-6 text-right">
+                                                <button 
+                                                    onClick={() => handleVerHistorico(m)}
+                                                    className="px-4 py-2 bg-slate-100 hover:bg-indigo-600 text-slate-500 hover:text-white rounded-xl transition-all duration-300 group/btn shadow-sm hover:shadow-indigo-100"
+                                                >
+                                                    <History size={16} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* 📱 VISÃO MOBILE: CARDS DE FREQUÊNCIA */}
+                        <div className="lg:hidden p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {filtrados.map((m: any) => (
+                                <div key={m.id} className="p-5 bg-slate-50/10 border border-slate-100 rounded-[2rem] flex flex-col gap-4">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center font-black text-white text-xs">
+                                                {m.nome.charAt(0)}
+                                            </div>
+                                            <div className="flex flex-col min-w-0">
+                                                <span className="text-[11px] font-black uppercase tracking-tight text-slate-800 truncate">{m.nome}</span>
+                                                <span className="text-[9px] font-bold text-indigo-600 uppercase tracking-widest">
+                                                    {m.equipe_nome || 'Liderança'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Sessões</span>
+                                            <span className="text-xl font-black text-slate-800 leading-none">{m.dias_presentes || 0}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between py-3 border-y border-slate-100">
+                                        <div className="flex flex-col">
+                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Última Batida</span>
+                                            <p className="text-[10px] font-bold text-slate-600">
+                                                {m.ultima_batida ? formatarDataHora(m.ultima_batida) : '--'}
+                                            </p>
+                                        </div>
+                                        <button 
+                                            onClick={() => handleVerHistorico(m)}
+                                            className="h-10 w-10 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center active:bg-indigo-600 active:text-white transition-all shadow-sm"
+                                        >
+                                            <History size={18} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </>
                 )}
             </div>
 

@@ -24,7 +24,7 @@ export const CardMembroFino = memo(({ membro, aoRemover, aoMover }: CardMembroFi
                 </div>
             </div>
             {podeAlocar && (
-                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                <div className="flex items-center gap-0.5 lg:opacity-0 lg:group-hover:opacity-100 transition-all shrink-0">
                     <Tooltip texto="Transferir Membro">
                         <button
                             onClick={aoMover}

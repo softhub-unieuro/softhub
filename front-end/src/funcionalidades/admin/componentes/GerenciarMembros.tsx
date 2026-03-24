@@ -142,8 +142,8 @@ export const GerenciarMembros = memo(() => {
                 subtitulo="Configure quem participa e o que cada um pode fazer no sistema."
                 icone={UserCog}
             >
-                <div className="flex items-center gap-3">
-                    <div className="relative group/search max-w-xs">
+                <div className="flex items-center flex-wrap sm:flex-nowrap gap-3 w-full sm:w-auto">
+                    <div className="relative group/search flex-1 sm:max-w-xs min-w-[160px]">
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within/search:text-primary transition-colors" size={14} />
                         <input
                             placeholder="Buscar pessoa..."
@@ -154,13 +154,13 @@ export const GerenciarMembros = memo(() => {
                     </div>
 
                     {usarPermissaoAcesso('membros:gerenciar') && (
-                        <>
+                        <div className="flex items-center gap-2">
                             <button
                                 onClick={() => { setModoModal('individual'); setModalAberto(true); }}
-                                className="h-11 px-6 bg-primary text-white rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                className="h-11 px-4 sm:px-6 bg-primary text-white rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
                             >
                                 <Plus size={18} strokeWidth={3} />
-                                <span>Adicionar Pessoa</span>
+                                <span className="hidden xs:inline">Adicionar Pessoa</span>
                             </button>
 
                             <Tooltip texto="Adicionar Vários">
@@ -171,7 +171,7 @@ export const GerenciarMembros = memo(() => {
                                     <LayersPlus size={18} strokeWidth={3} />
                                 </button>
                             </Tooltip>
-                        </>
+                        </div>
                     )}
                 </div>
             </CabecalhoFuncionalidade>
