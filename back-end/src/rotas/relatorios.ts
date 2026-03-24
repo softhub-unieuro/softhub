@@ -68,45 +68,67 @@ rotasRelatorios.get('/frequencia/geral', autenticacaoRequerida(), verificarPermi
             }
         }
 
-        const filtroPonto = data_inicio && data_fim 
-            ? `AND registrado_em BETWEEN '${data_inicio}' AND '${data_fim} 23:59:59'`
-            : `AND registrado_em >= date('now', '-30 days')`;
+        const dataInicio = data_inicio || '2000-01-01';
+        const dataFim = data_fim || '2100-12-31';
+        const fimComHora = `${dataFim} 23:59:59`;
 
-        const filtroJust = data_inicio && data_fim 
-            ? `AND criado_em BETWEEN '${data_inicio}' AND '${data_fim} 23:59:59'`
-            : "";
+        log('debug', '[RELATORIOS-GERAL] Iniciando processamento', { dataInicio, dataFim });
 
+        // 1. Tendência de Presença
+        log('debug', '[RELATORIOS-GERAL] Buscando presenças...');
         const presencas = await DB.prepare(`
             SELECT date(registrado_em) as data, COUNT(DISTINCT usuario_id) as total_presentes
-            FROM ponto_registros WHERE lower(tipo) = 'entrada' ${filtroPonto}
+            FROM ponto_registros 
+            WHERE lower(tipo) = 'entrada' 
+            AND registrado_em BETWEEN ? AND ?
             GROUP BY 1 ORDER BY 1 ASC
-        `).all();
+        `).bind(dataInicio, fimComHora).all();
 
+        // 2. Status das Justificativas (Pendente, Aprovado, etc)
+        log('debug', '[RELATORIOS-GERAL] Buscando status de justificativas...');
         const justStatus = await DB.prepare(`
             SELECT status, COUNT(*) as total FROM justificativas_ponto
-            WHERE 1=1 ${filtroJust} GROUP BY 1
-        `).all();
+            WHERE criado_em BETWEEN ? AND ?
+            GROUP BY 1
+        `).bind(dataInicio, fimComHora).all();
 
+        // 3. Tipos das Justificativas (Saúde, Equipamento, etc)
+        log('debug', '[RELATORIOS-GERAL] Buscando tipos de justificativas...');
+        const justTipos = await DB.prepare(`
+            SELECT tipo, COUNT(*) as total FROM justificativas_ponto
+            WHERE criado_em BETWEEN ? AND ?
+            GROUP BY 1
+        `).bind(dataInicio, fimComHora).all();
+
+        // 4. Lista Recente para Auditoria
+        log('debug', '[RELATORIOS-GERAL] Buscando lista de justificativas...');
         const justLista = await DB.prepare(`
             SELECT j.id, u.nome as usuario_nome, j.tipo, j.status, j.motivo as descricao, j.criado_em
             FROM justificativas_ponto j
             JOIN usuarios u ON u.id = j.usuario_id
-            WHERE 1=1 ${filtroJust}
+            WHERE j.criado_em BETWEEN ? AND ?
             ORDER BY j.criado_em DESC LIMIT 100
-        `).all();
+        `).bind(dataInicio, fimComHora).all();
 
         const resposta = {
             tendencia: presencas.results || [],
             statusJustificativas: justStatus.results || [],
+            tiposJustificativas: justTipos.results || [],
             justificativasLista: justLista.results || []
         };
 
-        if (softhub_kv) await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 900 });
+        if (softhub_kv) {
+            await softhub_kv.put(cacheKey, JSON.stringify(resposta), { expirationTtl: 900 });
+        }
 
         return c.json(resposta);
     } catch (erro: any) {
-        log('error', '[RELATORIOS-GERAL] Falha', { erro: erro.message, stack: erro.stack });
-        return c.json({ erro: 'Falha técnica no relatório geral' }, 500);
+        log('error', '[RELATORIOS-GERAL] Falha crítica', { 
+            erro: erro.message, 
+            stack: erro.stack,
+            params: { data_inicio, data_fim }
+        });
+        return c.json({ erro: 'Falha técnica no relatório geral', detalhe: erro.message }, 500);
     }
 });
 
