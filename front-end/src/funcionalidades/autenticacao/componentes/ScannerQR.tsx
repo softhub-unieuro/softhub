@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { Camera, CheckCircle, AlertCircle, RefreshCw, ShieldCheck, Smartphone, Laptop, ArrowRight } from 'lucide-react';
+import { Camera, CheckCircle, AlertCircle, RefreshCw, X, Check, Smartphone, Laptop, Sparkles } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { api } from '../../../compartilhado/servicos/api';
 
 /**
- * Scanner de Login Rápido (UX Refinada).
- * Foca na velocidade e minimalismo: "Apontou, Escaneou, Entrou".
+ * Scanner de Login Premium (UI Upgrade).
+ * Design focado em transparência, precisão e elegância institucional.
  */
 export default function ScannerQR({ aoFechar }: { aoFechar: () => void }) {
     const [status, setStatus] = useState<'ocioso' | 'scaneando' | 'validando' | 'sucesso' | 'erro'>('ocioso');
@@ -13,7 +13,7 @@ export default function ScannerQR({ aoFechar }: { aoFechar: () => void }) {
     const [mensagemErro, setMensagemErro] = useState('');
     const scannerRef = useRef<Html5Qrcode | null>(null);
 
-    // Tenta iniciar automaticamente se já houver permissão
+    // Auto-start se permitido
     useEffect(() => {
         const checkPerms = async () => {
              try {
@@ -28,7 +28,7 @@ export default function ScannerQR({ aoFechar }: { aoFechar: () => void }) {
         if (status === 'scaneando') {
             const scanner = new Html5Qrcode('leitor-qr');
             scannerRef.current = scanner;
-            const config = { fps: 20, qrbox: { width: 220, height: 220 } };
+            const config = { fps: 24, qrbox: { width: 220, height: 220 } };
 
             scanner.start(
                 { facingMode: 'environment' },
@@ -40,11 +40,12 @@ export default function ScannerQR({ aoFechar }: { aoFechar: () => void }) {
                     }
                     
                     if (scannerRef.current) {
-                        scannerRef.current.stop().then(() => {
+                        scannerRef.current.stop().then(async () => {
                             setTokenSessao(token);
                             setStatus('validando');
-                            // Dispara a autorização IMEDIATA para reduzir cliques (UX Discord style)
-                            executarAutorizacaoAutomatica(token);
+                            try {
+                                await api.post('/api/auth/qr/identificar', { sessaoId: token });
+                            } catch (e) {}
                         });
                     }
                 },
@@ -59,107 +60,124 @@ export default function ScannerQR({ aoFechar }: { aoFechar: () => void }) {
         };
     }, [status]);
 
-    const executarAutorizacaoAutomatica = async (token: string) => {
+    const confirmarAcesso = async () => {
+        if (!tokenSessao) return;
         try {
-            await api.post('/api/auth/qr/identificar', { sessaoId: token });
-            await api.post('/api/auth/qr/autorizar', { sessaoId: token });
+            await api.post('/api/auth/qr/autorizar', { sessaoId: tokenSessao });
             setStatus('sucesso');
-            if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+            if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
             setTimeout(aoFechar, 1500);
         } catch (err: any) {
-            setMensagemErro(err.response?.data?.erro || 'Link inválido');
+            setMensagemErro(err.response?.data?.erro || 'Código inválido');
             setStatus('erro');
         }
     };
 
     return (
-        <div className="flex flex-col items-center p-0 overflow-hidden bg-slate-950 rounded-[2rem]">
-            {/* 🖥️ VISUAL BRIDGE */}
-            {status !== 'scaneando' && status !== 'sucesso' && (
-                <div className="w-full pt-10 pb-4 flex items-center justify-center gap-6 animate-in fade-in slide-in-from-top-4">
-                    <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/5">
-                        <Smartphone className="text-red-500" size={20} />
+        <div className="flex flex-col items-center p-0 overflow-hidden bg-white rounded-[2rem] shadow-2xl border border-slate-100 min-h-[500px]">
+            
+            {/* 🏷️ HEADER MINIMALISTA */}
+            <div className="w-full px-8 py-5 flex items-center justify-between border-b border-slate-50">
+                 <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center shadow-lg shadow-red-200">
+                        <Smartphone size={16} className="text-white" />
                     </div>
-                    <ArrowRight className="text-white/10" size={16} />
-                    <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/5">
-                        <Laptop className="text-slate-500" size={20} />
-                    </div>
+                    <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Login Seguro</span>
                 </div>
-            )}
+                <button onClick={aoFechar} className="p-2 text-slate-300 hover:text-slate-900 transition-colors">
+                    <X size={20} />
+                </button>
+            </div>
 
-            {/* 📸 SCANNER / CAMERA */}
-            <div className={`relative w-full ${status === 'scaneando' ? 'aspect-square' : 'aspect-square'} overflow-hidden transition-all duration-700`}>
+            {/* 📸 CAMERA VIEWPORT (MODERNIZADO) */}
+            <div className={`relative w-[280px] h-[280px] mt-8 rounded-[2.5rem] overflow-hidden bg-slate-100 ring-4 ring-slate-50 shadow-inner group transition-all duration-500`}>
                 
                 {status === 'ocioso' && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-[radial-gradient(circle_at_center,_#ef444410_0%,transparent_70%)]">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-10 text-center animate-in fade-in">
+                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-xl mb-4 text-red-600">
+                            <Camera size={28} />
+                        </div>
                         <button
                             onClick={() => setStatus('scaneando')}
-                            className="group relative px-10 py-5 bg-red-600 text-white text-[11px] font-black rounded-full hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-red-600/30 uppercase tracking-[0.2em] overflow-hidden"
+                            className="text-[10px] font-black text-red-600 uppercase tracking-widest hover:underline decoration-2"
                         >
-                            <span className="relative z-10 flex items-center gap-3">
-                                <Camera size={18} /> Iniciar Scanner
-                            </span>
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                            Permitir Câmera
                         </button>
                     </div>
                 )}
 
-                <div id="leitor-qr" className={`${status === 'scaneando' ? 'block' : 'hidden'} w-full h-full scale-110`} />
+                <div id="leitor-qr" className={`${status === 'scaneando' ? 'block' : 'hidden'} w-full h-full scale-110 object-cover`} />
 
+                {/* Overlays Visuais de Escaneamento */}
                 {status === 'scaneando' && (
-                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                        <div className="w-64 h-64 border-2 border-white/20 rounded-[2.5rem] relative">
-                             {/* Cantos Tech */}
-                            <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-red-600 rounded-tl-xl" />
-                            <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-red-600 rounded-tr-xl" />
-                            <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-red-600 rounded-bl-xl" />
-                            <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-red-600 rounded-br-xl" />
-                            
-                            <div className="w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent absolute top-0 animate-scan-line shadow-[0_0_15px_#ef4444]" />
-                        </div>
+                    <div className="absolute inset-0 pointer-events-none">
+                        {/* Máscara de foco */}
+                        <div className="absolute inset-0 bg-black/20" />
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-2 border-white/50 rounded-3xl shadow-[0_0_0_100vw_rgba(0,0,0,0.4)]" />
+                        
+                        {/* Linha de Scanner Animada */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-44 h-[2px] bg-red-600 shadow-[0_0_15px_#ef4444] animate-scan-line" />
+                        
+                        {/* Cantos Estilizados */}
+                        <div className="absolute top-[52px] left-[52px] w-6 h-6 border-t-4 border-l-4 border-red-600 rounded-tl-lg" />
+                        <div className="absolute top-[52px] right-[52px] w-6 h-6 border-t-4 border-r-4 border-red-600 rounded-tr-lg" />
+                        <div className="absolute bottom-[52px] left-[52px] w-6 h-6 border-b-4 border-l-4 border-red-600 rounded-bl-lg" />
+                        <div className="absolute bottom-[52px] right-[52px] w-6 h-6 border-b-4 border-r-4 border-red-600 rounded-br-lg" />
                     </div>
                 )}
 
-                {status === 'validando' && (
-                    <div className="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center space-y-6 animate-pulse">
-                        <div className="w-20 h-20 bg-red-600/5 rounded-full flex items-center justify-center border border-red-600/20">
-                            <RefreshCw className="w-10 h-10 text-red-600 animate-spin" />
-                        </div>
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Validando Acesso...</p>
-                    </div>
-                )}
-
+                {/* Sucesso / Erro (Transfere para o centro da câmera para impacto) */}
                 {status === 'sucesso' && (
-                    <div className="absolute inset-0 bg-emerald-600 flex flex-col items-center justify-center space-y-6 animate-in zoom-in duration-500">
-                        <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center shadow-inner">
-                            <CheckCircle className="w-12 h-12 text-white animate-bounce-short" />
-                        </div>
-                        <h2 className="text-white font-black uppercase tracking-[0.2em] text-[12px]">Conectado!</h2>
+                    <div className="absolute inset-0 bg-emerald-600 flex flex-col items-center justify-center animate-in zoom-in duration-300">
+                        <CheckCircle size={64} className="text-white mb-2" />
+                        <span className="text-white font-black text-[10px] uppercase tracking-widest">Confirmado</span>
                     </div>
                 )}
 
                 {status === 'erro' && (
-                    <div className="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center p-12 text-center space-y-6">
-                        <div className="w-16 h-16 bg-red-600/10 text-red-500 rounded-full flex items-center justify-center border border-red-600/20">
-                            <AlertCircle className="w-8 h-8" />
-                        </div>
-                        <p className="text-xs font-bold text-white tracking-tight leading-relaxed">{mensagemErro}</p>
-                        <button
-                            onClick={() => setStatus('ocioso')}
-                            className="px-8 py-3 bg-white/5 text-[10px] font-black text-white uppercase tracking-widest rounded-xl hover:bg-white/10 transition-all"
-                        >
-                            Tentar outro código
-                        </button>
+                    <div className="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center p-6 text-center animate-in fade-in">
+                        <AlertCircle size={48} className="text-red-500 mb-4" />
+                        <span className="text-white text-xs font-bold leading-tight">{mensagemErro}</span>
                     </div>
                 )}
             </div>
 
-            {/* 🏁 FOOTER DESC */}
-            <div className="w-full p-10 bg-white/[0.02] border-t border-white/5">
-                <p className="text-center text-[10px] text-slate-500 font-bold uppercase tracking-[0.15em] leading-relaxed">
-                    Apontou, Entrou. <br />
-                    <span className="text-slate-700">A transferência de sessão é criptografada de ponta-a-ponta.</span>
-                </p>
+            {/* 🏁 ACTIONS / FOOTER */}
+            <div className="flex-1 w-full flex flex-col items-center justify-center p-8 bg-[radial-gradient(ellipse_at_top,_#f8fafc_0%,white_100%)]">
+                
+                {status === 'validando' ? (
+                    <div className="flex flex-col items-center space-y-8 animate-in slide-in-from-bottom-5">
+                         <div className="text-center space-y-1">
+                            <h3 className="text-lg font-black text-slate-900 tracking-tight">Autorizar Login?</h3>
+                            <p className="text-[11px] text-slate-500 font-medium">Detectamos um pedido no computador.</p>
+                        </div>
+
+                        <div className="flex gap-8 items-center">
+                            <button
+                                onClick={aoFechar}
+                                className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-slate-400 border border-slate-100 shadow-xl shadow-slate-200/50 active:scale-95"
+                            >
+                                <X size={24} />
+                            </button>
+                            <button
+                                onClick={confirmarAcesso}
+                                className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center text-white shadow-2xl shadow-red-600/30 active:scale-95 transition-all outline outline-8 outline-red-50"
+                            >
+                                <Check size={32} strokeWidth={3} />
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="text-center space-y-4 max-w-[200px] opacity-40">
+                         <div className="flex justify-center">
+                            <Sparkles className="text-red-600" size={20} />
+                         </div>
+                         <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest leading-loose">
+                            APONTOU, ENTROU. <br />
+                            <span className="text-slate-400 font-bold">Transferência criptografada em tempo real.</span>
+                         </p>
+                    </div>
+                )}
             </div>
         </div>
     );

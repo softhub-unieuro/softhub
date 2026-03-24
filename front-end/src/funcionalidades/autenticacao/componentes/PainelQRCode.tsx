@@ -119,101 +119,76 @@ export default function PainelQRCode() {
                 <div className="h-[1px] w-8 bg-slate-200" />
             </div>
 
-            {/* Container Central - Estética Premium (Audit v4) */}
-            <div className="relative flex items-center justify-center p-6 bg-white/[0.03] backdrop-blur-xl border border-white/5 rounded-[3rem] min-w-[280px] min-h-[280px] shadow-2xl shadow-black/40">
+            {/* Apenas o QRCode (Remoção total de decorações conforme pedido) */}
+            <div className="relative flex items-center justify-center min-h-[180px]">
                 {status === 'gerando' && (
-                    <div className="flex flex-col items-center justify-center gap-5 p-12">
-                        <div className="w-12 h-12 border-2 border-red-600/10 border-t-red-600 rounded-full animate-spin" />
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] animate-pulse">Sincronizando</span>
-                    </div>
+                    <RefreshCw className="w-8 h-8 text-red-500 animate-spin opacity-20" />
                 )}
 
                 {status === 'pending' && sessao?.id && (
-                    <div className="relative animate-in zoom-in-95 fade-in duration-1000 p-6 bg-white rounded-[2.5rem] shadow-2xl ring-8 ring-white/5 border border-slate-100">
+                    <div className="animate-in fade-in duration-300 p-4 bg-white rounded-2xl">
                         <QRCodeSVG
                             value={`${window.location.origin}/auth/qr/${sessao.id}`}
-                            size={180}
-                            level="H"
+                            size={240}
+                            level="M"
                             marginSize={0}
                             fgColor="#000000"
                             bgColor="#ffffff"
-                            imageSettings={{
-                                src: "/logo-red.png", // Suposição de caminho da logo dark para fundo branco
-                                x: undefined,
-                                y: undefined,
-                                height: 40,
-                                width: 40,
-                                excavate: true,
-                            }}
                         />
-                         {/* Foco Visual Neon */}
-                        <div className="absolute -inset-1 border-2 border-red-600/10 rounded-[2.7rem] pointer-events-none" />
                     </div>
                 )}
 
                 {(status === 'expired' || status === 'erro') && (
-                    <div className="flex flex-col items-center justify-center gap-6 animate-in fade-in zoom-in-95 p-10">
-                        <div className="w-20 h-20 bg-red-600/5 text-red-600 rounded-full flex items-center justify-center border border-red-600/10">
-                            <RefreshCw className="w-8 h-8 opacity-50" />
-                        </div>
-                        <button 
-                            onClick={gerarNovoQR}
-                            className="px-8 py-3.5 bg-red-600 text-white text-[11px] font-black rounded-2xl hover:bg-red-500 hover:scale-[1.02] transition-all active:scale-95 shadow-lg shadow-red-600/20 uppercase tracking-widest"
-                        >
-                            Recarregar QR
-                        </button>
-                    </div>
+                    <button 
+                        onClick={gerarNovoQR}
+                        className="flex flex-col items-center gap-3 text-red-600 hover:text-red-500 transition-colors"
+                    >
+                        <RefreshCw className="w-8 h-8" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Recarregar</span>
+                    </button>
                 )}
 
                 {(status === 'scanned' || status === 'confirmed') && sessao?.usuario && (
-                    <div className="w-full flex flex-col items-center justify-center animate-in zoom-in-95 duration-700 py-6">
+                    <div className="flex flex-col items-center justify-center animate-in zoom-in-95 duration-500 py-4">
                         <div className="relative mb-6">
-                            <div className="w-28 h-28 p-1 bg-gradient-to-br from-red-600 to-amber-500 rounded-full animate-entry">
-                                <div className="w-full h-full bg-[#000a12] rounded-full p-1.5 overflow-hidden">
-                                     <Avatar 
-                                        nome={sessao.usuario.nome} 
-                                        fotoPerfil={sessao.usuario.foto_perfil} 
-                                        tamanho="lg"
-                                        className="w-full h-full rounded-full"
-                                    />
-                                </div>
-                            </div>
-                            <div className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full shadow-lg">
-                                <div className={`h-6 w-6 rounded-full flex items-center justify-center ${status === 'confirmed' ? 'bg-emerald-500' : 'bg-red-600 shadow-[0_0_10px_#ef4444] animate-pulse'}`}>
+                            <Avatar 
+                                nome={sessao.usuario.nome} 
+                                fotoPerfil={sessao.usuario.foto_perfil} 
+                                tamanho="2xl"
+                                className="ring-4 ring-white/10 shadow-2xl"
+                            />
+                            <div className="absolute -bottom-2 -right-2 bg-white p-1.5 rounded-full shadow-lg">
+                                <div className={`h-6 w-6 rounded-full flex items-center justify-center ${status === 'confirmed' ? 'bg-emerald-500' : 'bg-red-600 animate-pulse'}`}>
                                     <CheckCircle className="w-4 h-4 text-white" />
                                 </div>
                             </div>
                         </div>
                         <div className="text-center space-y-2">
-                            <span className="block text-xl font-black text-white tracking-tighter italic uppercase leading-none">
-                                {sessao.usuario.nome.split(' ')[0]}
+                            <span className="block text-2xl font-black text-white tracking-tight uppercase">
+                                {sessao.usuario.nome}
                             </span>
-                            <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] leading-none">
-                                {status === 'confirmed' ? 'Conectado!' : 'Aguardando Aprovação'}
-                            </span>
+                            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/5 rounded-full border border-white/10">
+                                <span className={`w-1.5 h-1.5 rounded-full ${status === 'confirmed' ? 'bg-emerald-500' : 'bg-red-600 animate-pulse'}`} />
+                                <span className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">
+                                    {status === 'confirmed' ? 'Acesso Confirmado!' : 'Aguardando Dispositivo'}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 )}
             </div>
 
-            <div className="mt-8 flex flex-col items-center gap-4">
+            <div className="mt-4">
                 {status === 'pending' && (
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="flex items-center gap-3 px-5 py-2.5 bg-white/[0.03] rounded-full border border-white/5 backdrop-blur-sm">
-                            <div className="w-1.5 h-1.5 rounded-full bg-red-600 shadow-[0_0_8px_#ef4444] animate-pulse" />
-                            <span className="text-[10px] font-black text-slate-400 tabular-nums uppercase tracking-[0.2em]">
-                                Expira em {Math.floor(segundosRestantes / 60)}:{(segundosRestantes % 60).toString().padStart(2, '0')}
-                            </span>
-                        </div>
-                        <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mt-2">{isMobile ? 'Use o app desktop' : 'Escaneie com o app no celular'}</p>
-                    </div>
+                    <span className="text-[10px] font-black text-slate-700 tabular-nums uppercase tracking-widest">
+                        Expira em {Math.floor(segundosRestantes / 60)}:{(segundosRestantes % 60).toString().padStart(2, '0')}
+                    </span>
                 )}
                 
                 {status === 'scanned' && (
-                    <div className="flex items-center gap-3 px-6 py-3 bg-red-600/10 text-red-500 rounded-full border border-red-600/20 animate-bounce-slow">
-                        <ShieldCheck className="w-4 h-4" />
-                        <span className="text-[11px] font-black uppercase tracking-widest">Confirme agora no seu celular</span>
-                    </div>
+                    <span className="text-[10px] font-black text-red-600 uppercase animate-pulse">
+                        Confirme no celular
+                    </span>
                 )}
             </div>
         </div>
