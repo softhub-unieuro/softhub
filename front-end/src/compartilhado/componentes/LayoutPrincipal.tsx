@@ -38,13 +38,23 @@ export function LayoutPrincipal({ children }: LayoutPrincipalProps) {
 
     // Trava de Scroll do Body quando a Sidebar Mobile está aberta
     useEffect(() => {
+        const root = document.documentElement;
         if (sidebarAberta) {
             document.body.style.overflow = 'hidden';
+            root.style.overflow = 'hidden';
+            document.body.style.height = '100dvh'; // Previne rolagem no mobile
+            root.style.overscrollBehavior = 'none'; // Previne efeito elástico (bounce) no iOS/Android
         } else {
-            document.body.style.overflow = 'unset';
+            document.body.style.overflow = '';
+            root.style.overflow = '';
+            document.body.style.height = '';
+            root.style.overscrollBehavior = '';
         }
         return () => {
-            document.body.style.overflow = 'unset';
+            document.body.style.overflow = '';
+            root.style.overflow = '';
+            document.body.style.height = '';
+            root.style.overscrollBehavior = '';
         };
     }, [sidebarAberta]);
 
@@ -73,15 +83,15 @@ export function LayoutPrincipal({ children }: LayoutPrincipalProps) {
                 {/* Mobile: Overlay & Drawer Sidebar */}
                 {sidebarAberta && (
                     <div
-                        className="fixed inset-0 z-50 lg:hidden"
+                        className="fixed inset-0 z-50 lg:hidden touch-none"
                         onClick={() => setSidebarAberta(false)}
                     >
                         {/* Backdrop com Blur e Fade In */}
-                        <div className="absolute inset-0 bg-background/60 animate-backdrop-in" />
+                        <div className="absolute inset-0 bg-background/60 animate-backdrop-in touch-none" />
 
                         {/* Drawer Content com Slide In */}
                         <div
-                            className="absolute inset-y-0 left-0 w-[280px] bg-sidebar border-r border-sidebar-border shadow-2xl animate-sidebar-in h-[100dvh]"
+                            className="absolute inset-y-0 left-0 w-[280px] bg-sidebar border-r border-sidebar-border shadow-2xl animate-sidebar-in h-[100dvh] touch-auto"
                             onClick={e => e.stopPropagation()}
                         >
                             <div className="flex flex-col h-full relative">
