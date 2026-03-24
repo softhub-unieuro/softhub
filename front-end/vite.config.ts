@@ -1,21 +1,24 @@
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
-export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, process.cwd(), '');
-    
+export default defineConfig(() => {
     return {
         plugins: [
             react(),
             tailwindcss(),
             VitePWA({
                 registerType: 'autoUpdate',
+                includeAssets: ['ICONE.png', 'icons/*.png'],
                 manifestFilename: 'manifest.json',
                 devOptions: {
                     enabled: true // Permite testar PWA em localhost
+                },
+                workbox: {
+                    globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+                    cleanupOutdatedCaches: true,
                 },
                 manifest: {
                     name: 'SoftHub - Fábrica de Software',

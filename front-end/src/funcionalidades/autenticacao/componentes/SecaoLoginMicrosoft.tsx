@@ -87,7 +87,7 @@ export const SecaoLoginMicrosoft = memo(({
                         </span>
                     </div>
 
-                    {isMobile && (
+                    {isMobile && (isIOS || deferredPrompt) && (
                         <div className="pt-8 border-t border-slate-100/50 space-y-4">
                             <div className="flex items-center justify-between">
                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Experiência Mobile</span>
@@ -110,34 +110,22 @@ export const SecaoLoginMicrosoft = memo(({
                             ) : (
                                 <button
                                     onClick={handleInstallClick}
-                                    className={`w-full flex items-center justify-center h-16 rounded-2xl transition-all active:scale-[0.95] group relative overflow-hidden ${
-                                        deferredPrompt 
-                                        ? 'bg-blue-600 shadow-lg shadow-blue-200 text-white' 
-                                        : 'bg-slate-50 border border-slate-100 text-slate-400 cursor-default'
-                                    }`}
+                                    className="w-full flex items-center justify-center h-16 rounded-2xl transition-all active:scale-[0.95] group relative overflow-hidden bg-blue-600 shadow-lg shadow-blue-200 text-white"
                                 >
                                     <div className="flex items-center gap-3 z-10">
-                                        <div className={`p-2.5 rounded-xl transition-all ${
-                                            deferredPrompt ? 'bg-white/20' : 'bg-slate-200/50'
-                                        }`}>
-                                            <Download size={18} className={deferredPrompt ? 'animate-bounce' : ''} />
+                                        <div className="p-2.5 rounded-xl transition-all bg-white/20">
+                                            <Download size={18} className="animate-bounce" />
                                         </div>
                                         <div className="text-left flex flex-col">
-                                            <span className={`text-[11px] font-black uppercase tracking-widest leading-none ${
-                                                deferredPrompt ? 'text-white' : 'text-slate-500'
-                                            }`}>
-                                                {deferredPrompt ? 'Baixar App Agora' : 'App Preparado'}
+                                            <span className="text-[11px] font-black uppercase tracking-widest leading-none text-white">
+                                                Baixar App Agora
                                             </span>
-                                            <span className={`text-[9px] mt-1 font-bold ${
-                                                deferredPrompt ? 'text-white/70' : 'text-slate-400'
-                                            }`}>
-                                                {deferredPrompt ? 'Instalação instantânea PWA' : 'Otimizando para seu dispositivo...'}
+                                            <span className="text-[9px] mt-1 font-bold text-white/70">
+                                                Instalação instantânea PWA
                                             </span>
                                         </div>
                                     </div>
-                                    {deferredPrompt && (
-                                        <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20 animate-pulse" />
-                                    )}
+                                    <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20 animate-pulse" />
                                 </button>
                             )}
                         </div>
