@@ -31,7 +31,7 @@ export const PainelMonitoramentoRealTime = memo(() => {
 
                 <div className="flex items-center gap-2 px-6 py-2 bg-slate-50 border border-slate-100 rounded-full">
                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{membrosOnline.length} Conectados</span>
+                    <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{membrosOnline.length} Em Turno</span>
                 </div>
             </div>
 
@@ -50,8 +50,10 @@ export const PainelMonitoramentoRealTime = memo(() => {
                         <div className="p-8 bg-slate-50/50 rounded-[2.5rem] border border-slate-100 text-slate-300 mb-6 group-hover:scale-110 transition-transform duration-700">
                             <Users size={56} strokeWidth={1} />
                         </div>
-                        <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Ambiente Vazio</h3>
-                        <p className="text-[10px] text-slate-400/60 mt-2 font-bold max-w-xs leading-relaxed">No momento não há registros de pontos abertos para monitoramento.</p>
+                        <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Pista Vazia</h3>
+                        <p className="text-[10px] text-slate-400/60 mt-2 font-bold max-w-xs leading-relaxed">
+                            A Fábrica está silenciosa. Membros aparecerão aqui assim que realizarem a batida de **ENTRADA** no sistema.
+                        </p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">

@@ -77,7 +77,17 @@ export const ModaisMembros = memo(({
             {/* Modal de Membros Online */}
             <Modal aberto={modalOnlineAberto} aoFechar={() => setModalOnlineAberto(false)} titulo="Membros Online Agora" largura="lg">
                 <div className="space-y-6">
-                    <div className="flex items-center gap-3 px-1 py-3 border-b border-border/10">
+                    <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-4 flex items-start gap-3">
+                        <Wifi className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                            <p className="text-[11px] font-black text-emerald-600 uppercase tracking-widest">Regra de Presença</p>
+                            <p className="text-[10px] text-emerald-600/70 font-medium leading-relaxed">
+                                Este hub exibe apenas membros que realizaram a batida de **ENTRADA** hoje e ainda não registraram a saída.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 px-1 py-1 border-b border-border/10">
                         <div className="flex -space-x-2">
                             {membrosOnline.slice(0, 3).map((m: any) => (
                                 <div key={m.id} className="w-8 h-8 rounded-full border-2 border-background ring-2 ring-emerald-500/20 overflow-hidden">
@@ -87,16 +97,19 @@ export const ModaisMembros = memo(({
                         </div>
                         <p className="text-[11px] text-muted-foreground font-medium">
                             {membrosOnline.length === 0
-                                ? "Nenhum membro ativo no momento."
-                                : `${membrosOnline.length} ${pluralizar(membrosOnline.length, 'membro está', 'membros estão')} operando agora.`}
+                                ? "Ninguém bateu ponto no momento."
+                                : `${membrosOnline.length} ${pluralizar(membrosOnline.length, 'membro está', 'membros estão')} em turno agora.`}
                         </p>
                     </div>
 
                     <div className="max-h-[450px] overflow-y-auto custom-scrollbar space-y-3 pr-2">
                         {membrosOnline.length === 0 ? (
-                            <div className="py-16 flex flex-col items-center justify-center gap-4 text-muted-foreground/30">
+                            <div className="py-16 flex flex-col items-center justify-center gap-4 text-muted-foreground/30 text-center">
                                 <Wifi size={48} strokeWidth={1} className="opacity-20 translate-y-2 animate-bounce" />
-                                <p className="text-[11px] font-black uppercase tracking-[0.2em]">Pista Vazia</p>
+                                <div className="space-y-2">
+                                    <p className="text-[11px] font-black uppercase tracking-[0.2em]">Pista Vazia</p>
+                                    <p className="text-[10px] font-bold max-w-[200px]">Os membros aparecerão aqui assim que registrarem o ponto de entrada.</p>
+                                </div>
                             </div>
                         ) : (
                             membrosOnline.map((m: any) => (
