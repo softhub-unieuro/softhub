@@ -3,6 +3,7 @@ import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 import { ambiente } from '@/configuracoes/ambiente';
 import { useQueryClient } from '@tanstack/react-query';
 import { api } from '@/compartilhado/servicos/api';
+import { logger } from '@/utilitarios/gerenciador-logs';
 import type { RegistroPonto } from './usarPonto';
 
 /**
@@ -37,7 +38,7 @@ export function usarSaidaAutomatica() {
                 return;
             }
 
-            console.log(`[Ponto] Registrando saída automática (${motivo})...`);
+            logger.info('Ponto', `Registrando saída automática (${motivo})...`);
 
             // Usamos keepalive=true para que a conexao continue apos fechar a pagina
             const url = `${ambiente.apiUrl}/api/ponto`;

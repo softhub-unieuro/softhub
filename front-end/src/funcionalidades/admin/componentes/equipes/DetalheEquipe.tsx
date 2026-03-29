@@ -248,19 +248,24 @@ export const DetalheEquipe = memo(({
                                                         />
                                                     </div>
                                                 ) : (
-                                                    <div className="flex items-center gap-2 group/title">
-                                                        <h5 className="text-xl font-black text-slate-900 tracking-tighter uppercase leading-none">{g.nome}</h5>
-                                                        {podeEditarGrupo && (
-                                                            <button 
-                                                                onClick={() => {
-                                                                    setEditandoId(g.id);
-                                                                    setNomeTemp(g.nome);
-                                                                }}
-                                                                className="opacity-0 group-hover/title:opacity-100 p-1 text-slate-300 hover:text-primary transition-all"
-                                                            >
-                                                                <Pencil size={14} />
-                                                            </button>
-                                                        )}
+                                                    <div className="flex flex-col gap-1 items-start group/title">
+                                                        <div className="flex items-center gap-2">
+                                                            <h5 className="text-xl font-black text-slate-900 tracking-tighter uppercase leading-none">{g.nome}</h5>
+                                                            {podeEditarGrupo && (
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        setEditandoId(g.id);
+                                                                        setNomeTemp(g.nome);
+                                                                    }}
+                                                                    className="opacity-0 group-hover/title:opacity-100 p-1 text-slate-300 hover:text-primary transition-all"
+                                                                >
+                                                                    <Pencil size={14} />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                                            <span className="text-primary/60">PRESENCIAL:</span> {g.escala_tipo === 'fixa' ? (g.escala_dias || 'Não definido') : (g.escala_dias || 'Alternada')}
+                                                        </span>
                                                     </div>
                                                 )}
                                             </div>

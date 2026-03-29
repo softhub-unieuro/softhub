@@ -4,6 +4,7 @@ import { startOfWeek } from 'date-fns';
 import { usarPonto } from '@/funcionalidades/ponto/hooks/usarPonto';
 import { usarJustificativas } from '@/funcionalidades/ponto/hooks/usarJustificativa';
 import { api } from '@/compartilhado/servicos/api';
+import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 import type { JustificativaPonto } from '@/funcionalidades/ponto/hooks/usarJustificativa';
 import type { RegistroPonto } from '@/funcionalidades/ponto/hooks/usarPonto';
 
@@ -11,6 +12,7 @@ import type { RegistroPonto } from '@/funcionalidades/ponto/hooks/usarPonto';
  * Hook para gerenciar a lógica da interface de Bater Ponto.
  */
 export function usarInterfacePonto() {
+    const { usuario } = usarAutenticacao();
     const { registrosHoje, historico, carregando, erro, baterPonto } = usarPonto();
     const { justificativas, enviarJustificativa, editarJustificativa, excluirJustificativa } = usarJustificativas();
 
@@ -24,7 +26,7 @@ export function usarInterfacePonto() {
     const [semanaSelecionada, setSemanaSelecionada] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }).getTime());
     const [tentativaBloqueada, setTentativaBloqueada] = useState(false);
     const [janelaTrabalho, setJanelaTrabalho] = useState({ inicio: '13:00', fim: '17:00' });
-    const [diasTrabalho, setDiasTrabalho] = useState<number[]>([1, 2, 3, 4, 5]);
+    const [diasTrabalhoFabrica, setDiasTrabalhoFabrica] = useState<number[]>([1, 2, 3, 4, 5]);
     const [agoraRelogio, setAgoraRelogio] = useState(new Date());
 
     const [searchParams] = useSearchParams();
@@ -49,7 +51,7 @@ export function usarInterfacePonto() {
                     });
                 }
                 if (Array.isArray(res.data.dias_trabalho)) {
-                    setDiasTrabalho(res.data.dias_trabalho);
+                    setDiasTrabalhoFabrica(res.data.dias_trabalho);
                 }
             } catch (e) {
                 console.error('Falha ao sincronizar governança de horário');
@@ -71,10 +73,22 @@ export function usarInterfacePonto() {
         return ultimo?.tipo === 'entrada' ? 'saida' : 'entrada';
     }, [registrosHoje]);
 
+    const diasTrabalho = useMemo(() => {
+        if (usuario?.escala_dias) {
+            return usuario.escala_dias.split(',').map(Number);
+        }
+        return diasTrabalhoFabrica;
+    }, [usuario, diasTrabalhoFabrica]);
+
     const foraDoDia = useMemo(() => {
         const diaHoje = agoraRelogio.getDay();
         return !diasTrabalho.includes(diaHoje);
     }, [agoraRelogio, diasTrabalho]);
+
+    const foraDaFabrica = useMemo(() => {
+        const diaHoje = agoraRelogio.getDay();
+        return !diasTrabalhoFabrica.includes(diaHoje);
+    }, [agoraRelogio, diasTrabalhoFabrica]);
 
     const foraDoHorario = useMemo(() => {
         const horaBrasiliaStr = agoraRelogio.toLocaleTimeString('pt-BR', { 
@@ -99,10 +113,9 @@ export function usarInterfacePonto() {
             return false;
         }
 
-        if (foraDoDia) return true;
-
+        // Regra Soft: Fora do dia não bloqueia o horário se houver permissão do backend
         return agoraMinutos < inicioMinutos || agoraMinutos > fimMinutos;
-    }, [agoraRelogio, janelaTrabalho, proximoTipo, registrosHoje, foraDoDia]);
+    }, [agoraRelogio, janelaTrabalho, proximoTipo, registrosHoje]);
 
     const semanasDisponiveis = useMemo(() => {
         const mapa = new Set<number>();
@@ -156,6 +169,7 @@ export function usarInterfacePonto() {
         agoraRelogio,
         foraDoHorario,
         foraDoDia,
+        foraDaFabrica,
         diasTrabalho,
         semanasDisponiveis,
         semanaSelecionada,

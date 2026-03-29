@@ -18,7 +18,7 @@ rotasGrupos.get('/', autenticacaoRequerida(), verificarPermissao('equipes:visual
         const grupos = await DB.prepare(`
             SELECT
                 g.id, g.nome, g.descricao, g.criado_em,
-                g.equipe_id,
+                g.equipe_id, g.escala_tipo, g.escala_dias,
                 e.nome AS equipe_nome,
                 ul.nome AS lider_nome,
                 us.nome AS sub_lider_nome,
@@ -44,10 +44,10 @@ rotasGrupos.post('/', autenticacaoRequerida(), verificarPermissao('equipes:criar
     const { DB } = c.env;
     const usuarioLogado = c.get('usuario') as any;
 
-    let nome: string, descricao: string | null, equipe_id: string | null;
+    let nome: string, descricao: string | null, equipe_id: string | null, escala_tipo: string, escala_dias: string | null;
     try {
         const json = await c.req.json();
-        ({ nome, descricao = null, equipe_id = null } = json);
+        ({ nome, descricao = null, equipe_id = null, escala_tipo = 'fixa', escala_dias = '' } = json);
     } catch (e: any) {
         return c.json({ erro: 'Corpo da requisição inválido.', detalhe: e.message }, 400);
     }
@@ -58,8 +58,8 @@ rotasGrupos.post('/', autenticacaoRequerida(), verificarPermissao('equipes:criar
     try {
         const id = crypto.randomUUID();
         await DB.prepare(
-            'INSERT INTO grupos (id, nome, descricao, equipe_id) VALUES (?, ?, ?, ?)'
-        ).bind(id, nome.trim(), descricao, equipe_id).run();
+            'INSERT INTO grupos (id, nome, descricao, equipe_id, escala_tipo, escala_dias) VALUES (?, ?, ?, ?, ?, ?)'
+        ).bind(id, nome.trim(), descricao, equipe_id, escala_tipo, escala_dias).run();
 
         await registrarLog(DB, {
             usuarioId: usuarioLogado.id,
@@ -69,7 +69,7 @@ rotasGrupos.post('/', autenticacaoRequerida(), verificarPermissao('equipes:criar
             ip: c.req.header('CF-Connecting-IP') ?? '',
             entidadeTipo: 'grupos',
             entidadeId: id,
-            dadosNovos: { nome, descricao, equipe_id },
+            dadosNovos: { nome, descricao, equipe_id, escala_tipo, escala_dias },
         });
 
         return c.json({ sucesso: true, id }, 201);
@@ -92,18 +92,20 @@ rotasGrupos.patch('/:id', autenticacaoRequerida(), verificarPermissao('equipes:e
     }
 
     try {
-        const atual = await DB.prepare('SELECT nome, descricao, equipe_id FROM grupos WHERE id = ?').bind(id).first() as any;
+        const atual = await DB.prepare('SELECT nome, descricao, equipe_id, escala_tipo, escala_dias FROM grupos WHERE id = ?').bind(id).first() as any;
         if (!atual) return c.json({ erro: 'Grupo não encontrado.' }, 404);
 
         const nome = (corpo.nome !== undefined ? corpo.nome : atual.nome)?.trim();
         const descricao = corpo.descricao !== undefined ? corpo.descricao : atual.descricao;
         const equipe_id = corpo.equipe_id !== undefined ? corpo.equipe_id : atual.equipe_id;
+        const escala_tipo = corpo.escala_tipo !== undefined ? corpo.escala_tipo : atual.escala_tipo;
+        const escala_dias = corpo.escala_dias !== undefined ? corpo.escala_dias : atual.escala_dias;
 
         if (!nome) return c.json({ erro: 'O nome do grupo é obrigatório.' }, 400);
 
         await DB.prepare(
-            'UPDATE grupos SET nome = ?, descricao = ?, equipe_id = ? WHERE id = ?'
-        ).bind(nome, descricao, equipe_id, id).run();
+            'UPDATE grupos SET nome = ?, descricao = ?, equipe_id = ?, escala_tipo = ?, escala_dias = ? WHERE id = ?'
+        ).bind(nome, descricao, equipe_id, escala_tipo, escala_dias, id).run();
 
         await registrarLog(DB, {
             usuarioId: usuarioLogado.id,
@@ -113,8 +115,8 @@ rotasGrupos.patch('/:id', autenticacaoRequerida(), verificarPermissao('equipes:e
             ip: c.req.header('CF-Connecting-IP') ?? '',
             entidadeTipo: 'grupos',
             entidadeId: id,
-            dadosAnteriores: { nome: atual.nome, descricao: atual.descricao, equipe_id: atual.equipe_id },
-            dadosNovos: { nome, descricao, equipe_id },
+            dadosAnteriores: { nome: atual.nome, descricao: atual.descricao, equipe_id: atual.equipe_id, escala_tipo: atual.escala_tipo, escala_dias: atual.escala_dias },
+            dadosNovos: { nome, descricao, equipe_id, escala_tipo, escala_dias },
         });
 
         return c.json({ sucesso: true });

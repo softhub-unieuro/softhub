@@ -7,7 +7,13 @@ import { log } from '../utilitarios/logger';
 /**
  * Valida o horário de batida do ponto conforme a jornada configurada.
  */
-export async function validarHorarioBatida(db: D1Database, kv: KVNamespace | undefined, tipo: string, ultimoTipo?: string) {
+export async function validarHorarioBatida(
+    db: D1Database, 
+    kv: KVNamespace | undefined, 
+    tipo: string, 
+    ultimoTipo?: string, 
+    escala?: { escala_dias: string | null, escala_tipo: string } | null
+) {
     // REGRA DE OURO: Se for SAÍDA e houver uma ENTRADA aberta, permitimos registrar MESMO fora do horário.
     if (tipo === 'saida' && ultimoTipo === 'entrada') {
         return { valido: true };
@@ -35,6 +41,15 @@ export async function validarHorarioBatida(db: D1Database, kv: KVNamespace | und
         return { valido: false, erro: 'Hoje não é dia de funcionamento da Fábrica.' };
     }
 
+    // Validação de Escala do Grupo (específica do usuário)
+    let aviso = undefined;
+    if (escala && escala.escala_dias) {
+        const diasSugeridos = escala.escala_dias.split(',').map(Number);
+        if (!diasSugeridos.includes(diaSemana)) {
+            aviso = 'FORA_DA_ESCALA';
+        }
+    }
+
     if (agoraMinutos < (inicioMinutos - TOLERANCIA) || agoraMinutos > (fimMinutos + TOLERANCIA)) {
         return { 
             valido: false, 
@@ -42,7 +57,7 @@ export async function validarHorarioBatida(db: D1Database, kv: KVNamespace | und
         };
     }
 
-    return { valido: true };
+    return { valido: true, aviso };
 }
 
 /**
@@ -67,8 +82,16 @@ export async function registrarPonto(env: { DB: D1Database, KV: KVNamespace | un
         }
     }
 
-    // 2. Validação de Horário
-    const validacao = await validarHorarioBatida(DB, KV, tipo, ultimo?.tipo);
+    // 2. Validação de Horário e Escala do Grupo
+    const escala = await DB.prepare(`
+        SELECT g.escala_dias, g.escala_tipo
+        FROM usuarios_organizacao uo
+        JOIN grupos g ON uo.grupo_id = g.id
+        WHERE uo.usuario_id = ?
+        LIMIT 1
+    `).bind(usuario.id).first() as { escala_dias: string | null, escala_tipo: string } | null;
+
+    const validacao = await validarHorarioBatida(DB, KV, tipo, ultimo?.tipo, escala);
     if (!validacao.valido) {
         throw new Error(validacao.erro);
     }
@@ -79,7 +102,8 @@ export async function registrarPonto(env: { DB: D1Database, KV: KVNamespace | un
         id: pontoId,
         usuario_id: usuario.id,
         tipo,
-        ip_origem: ipOrigem
+        ip_origem: ipOrigem,
+        aviso: validacao.aviso
     });
 
     // 4. Atualização de Presença (KV)

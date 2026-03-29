@@ -9,7 +9,9 @@ export interface Usuario {
     email: string;
     role: string;
     foto_perfil?: string;
-    ehDonoReal?: boolean; // 🛡️ Flag vinda do Backend (Bootstrap)
+    ehDonoReal?: boolean;
+    escala_tipo?: string;
+    escala_dias?: string | null;
 }
 
 export interface IConfiguracoesUX {
@@ -115,7 +117,9 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
                     email: data.perfil.email,
                     role: data.perfil.role,
                     foto_perfil: data.perfil.foto_perfil,
-                    ehDonoReal: data.perfil.role === 'ADMIN' && data.perfil.is_bootstrap !== false // Backend envia no /me
+                    ehDonoReal: data.perfil.role === 'ADMIN' && data.perfil.is_bootstrap !== false,
+                    escala_tipo: data.perfil.escala_tipo,
+                    escala_dias: data.perfil.escala_dias
                 };
                 setUsuarioOriginal(perfilAtualizado);
                 localStorage.setItem(CHAVE_USUARIO, JSON.stringify(perfilAtualizado));

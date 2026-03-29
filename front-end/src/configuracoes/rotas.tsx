@@ -45,6 +45,7 @@ const GerenciarEquipes = lazy(() => import('../funcionalidades/admin/componentes
 const GerenciarProjetos = lazy(() => import('../funcionalidades/admin/componentes/GerenciarProjetos'));
 const PaginaConfiguracoes = lazy(() => import('../funcionalidades/admin/componentes/PaginaConfiguracoes'));
 const ConfirmacaoLoginQR = lazy(() => import('../funcionalidades/autenticacao/componentes/ConfirmacaoLoginQR'));
+const Pagina404 = lazy(() => import('../compartilhado/componentes/Pagina404'));
 
 /**
  * Layout raiz — renderizado em TODAS as rotas.
@@ -141,7 +142,7 @@ export const rotas = createBrowserRouter([
             { path: '/app/admin/projetos', element: <RotaProtegida permissaoRequerida="projetos:visualizar"><LayoutPrincipal><GerenciarProjetos /></LayoutPrincipal></RotaProtegida> },
             { path: '/app/admin/configuracoes', element: <RotaProtegida permissaoRequerida="configuracoes:visualizar"><LayoutPrincipal><PaginaConfiguracoes /></LayoutPrincipal></RotaProtegida> },
             // Rota de fallback
-            { path: '*', element: <div className="p-6 text-destructive text-center text-xl font-bold">404 - Página não encontrada</div> },
+            { path: '*', element: <Pagina404 /> },
         ],
     },
 ]);

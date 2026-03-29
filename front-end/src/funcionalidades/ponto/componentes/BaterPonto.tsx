@@ -20,7 +20,7 @@ export const BaterPonto = memo(() => {
         salvando, erroPonto, proximoTipo, agoraRelogio, foraDoHorario,
         semanasDisponiveis, semanaSelecionada, setSemanaSelecionada,
         abaAtiva, setAbaAtiva, busca, setBusca, tentativaBloqueada, setTentativaBloqueada,
-        foraDoDia, diasTrabalho,
+        foraDoDia, foraDaFabrica, diasTrabalho,
         modalJustificativaAberto, setModalJustificativaAberto,
         justificativaEditando, setJustificativaEditando,
         idExcluindo, setIdExcluindo,
@@ -122,13 +122,14 @@ export const BaterPonto = memo(() => {
                         foraDaRede={foraDaRede}
                         foraDoHorario={foraDoHorario}
                         foraDoDia={foraDoDia}
+                        foraDaFabrica={foraDaFabrica}
                         podeRegistrar={podeRegistrar}
                         tentativaBloqueada={tentativaBloqueada}
                         salvando={salvando}
                         carregando={carregando}
                         proximoTipo={proximoTipo as 'entrada' | 'saida'}
                         aoTentarRegistrar={() => {
-                            if (foraDaRede || foraDoHorario || foraDoDia || !podeRegistrar) {
+                            if (foraDaRede || foraDoHorario || (foraDoDia && foraDaFabrica ) || !podeRegistrar) {
                                 setTentativaBloqueada(true);
                                 setTimeout(() => setTentativaBloqueada(false), 500);
                             }

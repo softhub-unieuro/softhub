@@ -7,6 +7,7 @@ interface PainelRelogioProps {
     foraDaRede?: boolean;
     foraDoHorario?: boolean;
     foraDoDia?: boolean;
+    foraDaFabrica?: boolean;
     podeRegistrar: boolean;
     tentativaBloqueada: boolean;
     salvando: boolean;
@@ -21,6 +22,7 @@ export const PainelRelogio = memo(({
     foraDaRede,
     foraDoHorario,
     foraDoDia,
+    foraDaFabrica,
     podeRegistrar,
     tentativaBloqueada,
     salvando,
@@ -76,8 +78,8 @@ export const PainelRelogio = memo(({
                 {/* Visual Shine Effect */}
                 <div className="animate-shine z-0" />
 
-                {/* Visual Security Overlay - Active when locked */}
-                {(foraDaRede || foraDoHorario || foraDoDia) && (
+                {/* Visual Security Overlay - Active when locked (Horário ou Rede) */}
+                {(foraDaRede || foraDoHorario || (foraDoDia && foraDaFabrica)) && (
                     <div className="absolute inset-0 bg-rose-500/5 animate-security pointer-events-none z-0" />
                 )}
 
@@ -89,15 +91,22 @@ export const PainelRelogio = memo(({
                         <div className="inline-flex items-center gap-3 px-5 py-2 bg-slate-950/[0.04] rounded-full border border-slate-900/5 mb-2 backdrop-blur-sm group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
                             <div className={`w-2 h-2 rounded-full ${foraDaRede || foraDoHorario ? 'bg-rose-500' : 'bg-primary animate-pulse'}`} />
                             <span className="text-[9px] sm:text-[11px] font-black uppercase tracking-[0.25em] text-slate-500 group-hover:text-primary transition-colors">
-                                {foraDaRede || foraDoHorario ? 'Acesso Restrito' : 'Horário de Brasília'}
+                                {foraDaRede || foraDoHorario || (foraDoDia && foraDaFabrica) ? 'Acesso Restrito' : 'Horário de Brasília'}
                             </span>
                         </div>
                         <div className="flex flex-col items-center">
-                            {/* Aviso de Fábrica Fechada (Dias não úteis) */}
-                            {foraDoDia && (
-                                <div className="mb-4 flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full animate-in fade-in zoom-in duration-500 shadow-sm shadow-amber-500/5">
+                            {/* Aviso de Fora de Escala (Soft) */}
+                            {foraDoDia && !foraDaFabrica && (
+                                <div className="mb-4 flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full animate-in fade-in zoom-in duration-500 shadow-sm shadow-amber-500/5 cursor-help" title="Você não está escalado para hoje, mas pode registrar se necessário.">
                                     <AlertTriangle className="w-3 h-3 text-amber-500" />
-                                    <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Atenção: Fábrica Fechada</span>
+                                    <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Fora da Escala Selecionada</span>
+                                </div>
+                            )}
+                            {/* Aviso de Fábrica Fechada (Hard) */}
+                            {foraDoDia && foraDaFabrica && (
+                                <div className="mb-4 flex items-center gap-2 px-3 py-1 bg-rose-500/10 border border-rose-500/20 rounded-full animate-in fade-in zoom-in duration-500 shadow-sm shadow-rose-500/5">
+                                    <AlertTriangle className="w-3 h-3 text-rose-500" />
+                                    <span className="text-[9px] font-black text-rose-600 uppercase tracking-widest">Atenção: Fábrica Fechada</span>
                                 </div>
                             )}
                             <h2 className="text-6xl sm:text-8xl font-black tracking-[-0.05em] text-foreground tabular-nums flex items-baseline justify-center drop-shadow-sm">
@@ -121,7 +130,7 @@ export const PainelRelogio = memo(({
                             <button
                                 onMouseDown={aoTentarRegistrar}
                                 onClick={aoBaterPonto}
-                                disabled={carregando || salvando || foraDaRede || foraDoHorario || foraDoDia}
+                                disabled={carregando || salvando || foraDaRede || foraDoHorario || (foraDoDia && foraDaFabrica)}
                                 className={`
                                     w-full py-3.5 sm:py-4 rounded-2xl sm:rounded-3xl text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] 
                                     transition-all active:scale-[0.97] border shadow-xl relative z-10
@@ -137,7 +146,7 @@ export const PainelRelogio = memo(({
                                     <Carregando Centralizar={false} tamanho="sm" className="border-t-white border-white/30" />
                                 ) : (
                                     <div className="flex items-center justify-center gap-2 sm:gap-3">
-                                        {foraDaRede || foraDoHorario || foraDoDia ? (
+                                        {foraDaRede || foraDoHorario || (foraDoDia && foraDaFabrica ) ? (
                                             <AlertTriangle size={14} className="sm:w-4 sm:h-4" strokeWidth={3} />
                                         ) : proximoTipo === 'entrada' ? (
                                             <LogIn size={14} className="sm:w-4 sm:h-4" strokeWidth={3} />
@@ -157,8 +166,8 @@ export const PainelRelogio = memo(({
                         {/* Locked State Tooltip-like hint */}
                         {(foraDaRede || foraDoHorario || foraDoDia) && tentativaBloqueada && (
                             <div className="absolute -bottom-14 inset-x-0 animate-bounce">
-                                <span className="bg-rose-600 text-white text-[9px] font-black py-1.5 px-4 rounded-full uppercase tracking-widest shadow-lg">
-                                    Acesso Negado: Fora da Rede/Dia/Horário
+                                <span className="bg-rose-600 text-white text-[9px] font-black py-1.5 px-4 rounded-full uppercase tracking-widest shadow-lg text-center">
+                                    {foraDaRede ? 'Fora da Rede UNIEURO' : (foraDoHorario ? 'Fora do Horário Permitido' : 'Fábrica Fechada Hoje')}
                                 </span>
                             </div>
                         )}

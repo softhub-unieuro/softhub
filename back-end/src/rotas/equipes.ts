@@ -49,7 +49,7 @@ rotasEquipes.post('/', autenticacaoRequerida(), verificarPermissao('equipes:cria
     const { DB } = c.env;
     const usuarioLogado = c.get('usuario') as any;
 
-    let nome: string, descricao: string | null, lider_id: string | null, sub_lider_id: string | null, grupos: string[] | null;
+    let nome: string, descricao: string | null, lider_id: string | null, sub_lider_id: string | null, grupos: any[] | null;
     try {
         const json = await c.req.json();
         ({ nome, descricao = null, lider_id = null, sub_lider_id = null, grupos = null } = json);
@@ -68,11 +68,15 @@ rotasEquipes.post('/', autenticacaoRequerida(), verificarPermissao('equipes:cria
         ];
 
         if (grupos && Array.isArray(grupos)) {
-            grupos.forEach(grupoNome => {
-                if (grupoNome.trim()) {
+            grupos.forEach(grupo => {
+                const gNome = typeof grupo === 'string' ? grupo : grupo.nome;
+                const gEscalaTipo = typeof grupo === 'object' && grupo.escala_tipo ? grupo.escala_tipo : 'fixa';
+                const gEscalaDias = typeof grupo === 'object' && grupo.escala_dias ? grupo.escala_dias : '';
+
+                if (gNome && gNome.trim()) {
                     commands.push(
-                        DB.prepare('INSERT INTO grupos (id, nome, equipe_id) VALUES (?, ?, ?)')
-                          .bind(crypto.randomUUID(), grupoNome.trim(), id)
+                        DB.prepare('INSERT INTO grupos (id, nome, equipe_id, escala_tipo, escala_dias) VALUES (?, ?, ?, ?, ?)')
+                          .bind(crypto.randomUUID(), gNome.trim(), id, gEscalaTipo, gEscalaDias)
                     );
                 }
             });

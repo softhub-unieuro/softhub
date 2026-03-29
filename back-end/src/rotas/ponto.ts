@@ -31,64 +31,39 @@ rotasPonto.get('/', autenticacaoRequerida(), async (c: Context) => {
 });
 
 /**
- * Registra uma entrada ou saída de ponto (Alias para /registrar).
- */
-rotasPonto.post('/',
-    autenticacaoRequerida(),
-    validarRedeLocal,
-    kvRateLimit({ windowMs: 15 * 1000, limit: 1, identifier: 'user', keyPrefix: 'ponto_registrar' }),
-    async (c: Context) => {
-        const { tipo } = await c.req.json();
-        const usuario = c.get('usuario');
-        const ipOrigem = c.req.header('CF-Connecting-IP') ?? '0.0.0.0';
-
-        if (!['entrada', 'saida'].includes(tipo)) {
-            return c.json({ erro: 'Tipo de registro inválido.' }, 400);
-        }
-
-        try {
-            const resultado = await servico.registrarPonto(
-                { DB: c.env.DB, KV: c.env.softhub_kv },
-                usuario,
-                tipo,
-                ipOrigem
-            );
-            return c.json(resultado);
-        } catch (e: any) {
-            return c.json({ erro: e.message }, 400);
-        }
-    }
-);
-
-/**
- * Registra uma entrada ou saída de ponto.
+ * Handler compartilhado para registrar entrada/saída de ponto.
  * Requer estar na rede da UNIEURO e autenticação válida.
  */
-rotasPonto.post('/registrar',
-    autenticacaoRequerida(),
-    validarRedeLocal,
-    kvRateLimit({ windowMs: 15 * 1000, limit: 1, identifier: 'user', keyPrefix: 'ponto_registrar' }),
-    async (c: Context) => {
-        const { tipo } = await c.req.json();
-        const usuario = c.get('usuario');
-        const ipOrigem = c.req.header('CF-Connecting-IP') ?? '0.0.0.0';
+async function handlerRegistrarPonto(c: Context) {
+    const { tipo } = await c.req.json();
+    const usuario = c.get('usuario');
+    const ipOrigem = c.req.header('CF-Connecting-IP') ?? '0.0.0.0';
 
-        if (!['entrada', 'saida'].includes(tipo)) {
-            return c.json({ erro: 'Tipo de registro inválido.' }, 400);
-        }
-
-        try {
-            const resultado = await servico.registrarPonto(
-                { DB: c.env.DB, KV: c.env.softhub_kv },
-                usuario,
-                tipo,
-                ipOrigem
-            );
-            return c.json(resultado);
-        } catch (e: any) {
-            return c.json({ erro: e.message }, 400);
-        }
+    if (!['entrada', 'saida'].includes(tipo)) {
+        return c.json({ erro: 'Tipo de registro inválido.' }, 400);
     }
+
+    try {
+        const resultado = await servico.registrarPonto(
+            { DB: c.env.DB, KV: c.env.softhub_kv },
+            usuario,
+            tipo,
+            ipOrigem
+        );
+        return c.json(resultado);
+    } catch (e: any) {
+        return c.json({ erro: e.message }, 400);
+    }
+}
+
+// POST / e POST /registrar apontam para o mesmo handler
+rotasPonto.post('/', autenticacaoRequerida(), validarRedeLocal,
+    kvRateLimit({ windowMs: 15 * 1000, limit: 1, identifier: 'user', keyPrefix: 'ponto_registrar' }),
+    handlerRegistrarPonto
+);
+rotasPonto.post('/registrar', autenticacaoRequerida(), validarRedeLocal,
+    kvRateLimit({ windowMs: 15 * 1000, limit: 1, identifier: 'user', keyPrefix: 'ponto_registrar' }),
+    handlerRegistrarPonto
 );
 
 /**

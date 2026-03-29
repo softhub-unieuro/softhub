@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
 
 CREATE INDEX IF NOT EXISTS idx_usuarios_azure_oid ON usuarios(azure_oid);
 CREATE INDEX IF NOT EXISTS idx_usuarios_email ON usuarios(email);
+CREATE INDEX IF NOT EXISTS idx_usuarios_nome ON usuarios(nome);
 
 -- ============================================================================
 -- 2. GESTÃO DE SESSÕES E DISPOSITIVOS (JWT + REFRESH TOKEN ROTATION)
@@ -71,6 +72,8 @@ CREATE TABLE IF NOT EXISTS grupos (
     nome TEXT NOT NULL,
     descricao TEXT,
     equipe_id TEXT REFERENCES equipes(id) ON DELETE CASCADE,
+    escala_tipo TEXT NOT NULL DEFAULT 'fixa',
+    escala_dias TEXT,
     arquivado INTEGER NOT NULL DEFAULT 0,
     criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
@@ -119,7 +122,7 @@ CREATE TABLE IF NOT EXISTS tarefas (
     projeto_id TEXT NOT NULL REFERENCES projetos(id) ON DELETE CASCADE,
     titulo TEXT NOT NULL,
     descricao TEXT,
-    status TEXT NOT NULL DEFAULT 'backlog', -- backlog, fazenda, teste, concluido
+    status TEXT NOT NULL DEFAULT 'backlog', -- backlog, todo, in_progress, em_revisao, concluida
     prioridade TEXT NOT NULL DEFAULT 'media', -- baixa, media, alta, urgente
     pontos INTEGER DEFAULT 1,
     modulo TEXT,                             -- Organização por módulo dentro do projeto
@@ -151,6 +154,9 @@ CREATE TABLE IF NOT EXISTS comentarios_tarefa (
     atualizado_em TEXT
 );
 
+CREATE INDEX IF NOT EXISTS idx_comentarios_tarefa_id ON comentarios_tarefa(tarefa_id);
+CREATE INDEX IF NOT EXISTS idx_comentarios_tarefa_data ON comentarios_tarefa(tarefa_id, criado_em DESC);
+
 CREATE TABLE IF NOT EXISTS checklist_tarefa (
     id TEXT NOT NULL PRIMARY KEY,
     tarefa_id TEXT NOT NULL REFERENCES tarefas(id) ON DELETE CASCADE,
@@ -159,6 +165,9 @@ CREATE TABLE IF NOT EXISTS checklist_tarefa (
     ordem INTEGER NOT NULL DEFAULT 0,
     criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
+
+CREATE INDEX IF NOT EXISTS idx_checklist_tarefa_id ON checklist_tarefa(tarefa_id);
+CREATE INDEX IF NOT EXISTS idx_checklist_tarefa_ordem ON checklist_tarefa(tarefa_id, ordem);
 
 -- ============================================================================
 -- 6. PONTO ELETRÔNICO (SÓ NA REDE UNIEURO)
@@ -169,8 +178,11 @@ CREATE TABLE IF NOT EXISTS ponto_registros (
     usuario_id TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
     tipo TEXT NOT NULL, -- 'ENTRADA', 'SAIDA'
     registrado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
-    ip_origem TEXT NOT NULL -- Validado no backend contra a rede da UNIEURO
+    ip_origem TEXT NOT NULL, -- Validado no backend contra a rede da UNIEURO
+    aviso TEXT               -- Opcional: Mensagem de aviso (ex: FORA_DA_ESCALA)
 );
+
+CREATE INDEX IF NOT EXISTS idx_ponto_registros_data ON ponto_registros(registrado_em DESC);
 
 CREATE TABLE IF NOT EXISTS justificativas_ponto (
     id TEXT NOT NULL PRIMARY KEY,
@@ -186,6 +198,7 @@ CREATE TABLE IF NOT EXISTS justificativas_ponto (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_justificativa_unica ON justificativas_ponto(usuario_id, data);
+CREATE INDEX IF NOT EXISTS idx_justificativas_status ON justificativas_ponto(status, data DESC);
 
 -- ============================================================================
 -- 7. COMUNICAÇÃO E NOTIFICAÇÕES
@@ -213,6 +226,9 @@ CREATE TABLE IF NOT EXISTS notificacoes (
     entidade_id TEXT, -- ID do projeto/tarefa/aviso relacionado
     criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
+
+CREATE INDEX IF NOT EXISTS idx_notificacoes_usuario_lida ON notificacoes(usuario_id, lida);
+CREATE INDEX IF NOT EXISTS idx_notificacoes_usuario_data ON notificacoes(usuario_id, criado_em DESC);
 
 -- ============================================================================
 -- 8. AUDITORIA E LOGS GLOBAIS
@@ -243,8 +259,40 @@ CREATE TABLE IF NOT EXISTS tarefa_historico (
     alterado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 
+CREATE INDEX IF NOT EXISTS idx_tarefa_historico_tarefa_id ON tarefa_historico(tarefa_id);
+CREATE INDEX IF NOT EXISTS idx_tarefa_historico_data ON tarefa_historico(tarefa_id, alterado_em DESC);
+
 -- ============================================================================
--- 9. CONFIGURAÇÕES DINÂMICAS DO SISTEMA
+-- 9. CONTROLE DE ACESSO AVANÇADO (RATE LIMIT E QR)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS rate_limits (
+    chave TEXT PRIMARY KEY,
+    hits INTEGER NOT NULL DEFAULT 0,
+    janela_inicio INTEGER NOT NULL, -- Unix Timestamp (ms)
+    expira_em INTEGER NOT NULL      -- Unix Timestamp (ms) para limpeza
+);
+
+CREATE INDEX IF NOT EXISTS idx_rate_limits_expira ON rate_limits(expira_em);
+
+CREATE TABLE IF NOT EXISTS tokens_qr (
+    id TEXT PRIMARY KEY, -- Hash do Token
+    status TEXT NOT NULL DEFAULT 'pending', -- pending, scanned, confirmed, used, expired
+    user_id TEXT REFERENCES usuarios(id) ON DELETE SET NULL,
+    jwt_token TEXT,
+    refresh_token TEXT,
+    ip_origem TEXT,
+    user_agent TEXT,
+    payload_json TEXT,  -- Campo genérico para dados extras
+    expira_em TEXT NOT NULL,
+    criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_tokens_qr_status ON tokens_qr(status);
+CREATE INDEX IF NOT EXISTS idx_tokens_qr_expira ON tokens_qr(expira_em);
+
+-- ============================================================================
+-- 10. CONFIGURAÇÕES DINÂMICAS DO SISTEMA
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS configuracoes_sistema (
@@ -254,7 +302,7 @@ CREATE TABLE IF NOT EXISTS configuracoes_sistema (
 );
 
 -- ============================================================================
--- 10. SEED DE CONFIGURAÇÃO BASE (Obrigatório para o sistema bootar)
+-- 11. SEED DE CONFIGURAÇÃO BASE (Obrigatório para o sistema bootar)
 -- ============================================================================
 
 -- Projeto de Backlog Geral (Exigido pelo sistema)

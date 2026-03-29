@@ -1,7 +1,15 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { rateLimiter } from 'hono-rate-limiter';
 import { obterConfiguracao } from './servicos/servico-configuracoes';
+import { log } from './utilitarios/logger';
+import { lidarExcecao } from './middleware/erros';
+import { kvRateLimit } from './middleware/rate-limit';
+import { processarFechamentoAutomatico, enviarLembreteSaida } from './servicos/servico-ponto-auto';
+
+// ─── Rotas ────────────────────────────────────────────────────────────────────
+import rotasAuth from './rotas/auth';
+import rotasAuthQr from './rotas/auth-qr';
+import rotasSessoes from './rotas/auth-sessions';
 import rotasUsuarios from './rotas/usuarios';
 import rotasUsuariosAdmin from './rotas/usuarios-admin';
 import rotasProjetos from './rotas/projetos';
@@ -15,10 +23,6 @@ import rotasPontoJustificativasAdmin from './rotas/ponto-justificativas-admin';
 import rotasAvisos from './rotas/avisos';
 import rotasDashboard from './rotas/dashboard';
 import rotasLogs from './rotas/logs';
-import rotasAuth from './rotas/auth';
-import rotasAuthQr from './rotas/auth-qr';
-import rotasSessoes from './rotas/auth-sessions';
-
 import rotasConfiguracoes from './rotas/configuracoes';
 import rotasRelatorios from './rotas/relatorios';
 import rotasEquipes from './rotas/equipes';
@@ -27,8 +31,6 @@ import rotasEquipesAlocacao from './rotas/equipes-alocacao';
 import rotasNotificacoes from './rotas/notificacoes';
 import rotasIA from './rotas/ia';
 import rotasPerfil from './rotas/perfil';
-import { lidarExcecao } from './middleware/erros';
-import { kvRateLimit } from './middleware/rate-limit';
 
 export type Env = {
     DB: D1Database;
@@ -43,21 +45,6 @@ export type Env = {
 };
 
 const app = new Hono<{ Bindings: Env }>({ strict: false });
-
-import { log } from './utilitarios/logger';
-
-// ─── Middleware Global de Erros (CODE-003) ──────────────────────────────────
-app.onError((err, c) => {
-    log('error', '[APP] Erro não tratado', {
-        message: err.message,
-        stack: err.stack,
-        path: c.req.path,
-        method: c.req.method,
-        timestamp: new Date().toISOString()
-    });
-    return c.json({ erro: 'Erro interno do servidor.', detalhe: err.message }, 500);
-});
-
 
 // 1. CORS (DEVE ser o primeiro)
 app.use('*', cors({
@@ -77,7 +64,6 @@ app.use("*", kvRateLimit({ windowMs: 60 * 1000, limit: 120, keyPrefix: 'global' 
 
 // 3. Modo de Manutenção (Regra de Governança)
 app.use('*', async (c, next) => {
-    const { DB, softhub_kv } = c.env;
     const path = c.req.path;
 
     // Ignora checks para rotas essenciais
@@ -178,7 +164,7 @@ app.get('/', (c) => c.json({
     timestamp: new Date().toISOString(),
 }));
 
-import { processarFechamentoAutomatico, enviarLembreteSaida } from './servicos/servico-ponto-auto';
+
 
 export { app };
 

@@ -22,7 +22,9 @@ rotasPerfil.get('/me', autenticacaoRequerida(), async (c: Context) => {
             DB.prepare(`
                 SELECT 
                     GROUP_CONCAT(e.nome, ', ') as equipe_nome, 
-                    GROUP_CONCAT(g.nome, ', ') as grupo_nome 
+                    GROUP_CONCAT(g.nome, ', ') as grupo_nome,
+                    g.escala_tipo,
+                    g.escala_dias
                 FROM usuarios_organizacao uo 
                 LEFT JOIN equipes e ON e.id = uo.equipe_id 
                 LEFT JOIN grupos g ON g.id = uo.grupo_id 
@@ -56,6 +58,8 @@ rotasPerfil.get('/me', autenticacaoRequerida(), async (c: Context) => {
                 is_bootstrap: usuarioLogado.ehDonoSistema, // Informa se é um admin de segurança
                 equipe_nome: organizacao?.equipe_nome || 'S/ Equipe',
                 grupo_nome: organizacao?.grupo_nome || 'S/ Grupo',
+                escala_tipo: organizacao?.escala_tipo || 'fixa',
+                escala_dias: organizacao?.escala_dias || null,
                 esta_em_expediente: ultimoPonto?.tipo === 'entrada'
             },
             stats: {

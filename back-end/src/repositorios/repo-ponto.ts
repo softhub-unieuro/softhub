@@ -9,6 +9,7 @@ export interface PontoRegistro {
     tipo: 'entrada' | 'saida';
     registrado_em: string;
     ip_origem: string;
+    aviso?: string;
 }
 
 /**
@@ -16,7 +17,7 @@ export interface PontoRegistro {
  */
 export async function buscarRegistrosHoje(db: D1Database, usuarioId: string) {
     return await db.prepare(`
-        SELECT id, tipo, registrado_em, ip_origem 
+        SELECT id, tipo, registrado_em, ip_origem, aviso 
         FROM ponto_registros 
         WHERE usuario_id = ? 
         AND DATE(registrado_em, '-3 hours') = DATE('now', '-3 hours') 
@@ -29,7 +30,7 @@ export async function buscarRegistrosHoje(db: D1Database, usuarioId: string) {
  */
 export async function buscarHistoricoPonto(db: D1Database, usuarioId: string, limit: number = 50) {
     return await db.prepare(`
-        SELECT id, tipo, registrado_em, ip_origem 
+        SELECT id, tipo, registrado_em, ip_origem, aviso 
         FROM ponto_registros 
         WHERE usuario_id = ? 
         ORDER BY registrado_em DESC 
@@ -55,9 +56,9 @@ export async function buscarUltimoRegistroHoje(db: D1Database, usuarioId: string
  */
 export async function inserirPonto(db: D1Database, dados: Omit<PontoRegistro, 'registrado_em'>) {
     return await db.prepare(`
-        INSERT INTO ponto_registros (id, usuario_id, tipo, ip_origem) 
-        VALUES (?, ?, ?, ?)
-    `).bind(dados.id, dados.usuario_id, dados.tipo, dados.ip_origem).run();
+        INSERT INTO ponto_registros (id, usuario_id, tipo, ip_origem, aviso) 
+        VALUES (?, ?, ?, ?, ?)
+    `).bind(dados.id, dados.usuario_id, dados.tipo, dados.ip_origem, dados.aviso || null).run();
 }
 
 /**

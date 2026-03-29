@@ -5,7 +5,7 @@
 
 export const logger = {
   sucesso: (modulo: string, mensagem: string, dados?: any) => {
-    console.log(`%c[${modulo}] SUCCESSO: ${mensagem}`, 'color: #10b981; font-weight: bold;', dados || '');
+    console.log(`%c[${modulo}] SUCESSO: ${mensagem}`, 'color: #10b981; font-weight: bold;', dados || '');
   },
   erro: (modulo: string, mensagem: string, erro?: any) => {
     console.error(`%c[${modulo}] ERRO: ${mensagem}`, 'color: #ef4444; font-weight: bold;', erro || '');

@@ -10,6 +10,8 @@ export interface Grupo {
     equipe_nome: string | null;
     lider_nome: string | null;
     sub_lider_nome: string | null;
+    escala_tipo?: 'fixa' | 'alternada' | string;
+    escala_dias?: string;
     total_membros: number;
     criado_em: string;
 }
