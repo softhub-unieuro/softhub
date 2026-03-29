@@ -121,7 +121,7 @@ export async function registrarPonto(env: { DB: D1Database, KV: KVNamespace | un
                 await KV.delete(`presenca:${usuario.id}`);
             }
         } catch (e: any) {
-            log('error', '[SERVICO-PONTO] Falha ao atualizar presença no KV', { erro: e.message, email: usuario.email });
+            log('error', '[SERVICO-PONTO] Falha ao atualizar presença no KV', { erro: e.message, usuarioId: usuario.id });
         }
     }
 

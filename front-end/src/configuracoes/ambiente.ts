@@ -11,7 +11,6 @@ if (!url) {
 
 interface ConfiguracoesAmbiente {
     apiUrl: string;
-    VITE_API: string; // Mantido para compatibilidade se necessário
     msalClientId: string;
     msalTenantId: string;
     IS_DEV: boolean;
@@ -21,7 +20,6 @@ interface ConfiguracoesAmbiente {
 
 export const ambiente: ConfiguracoesAmbiente = {
     apiUrl: url,
-    VITE_API: url,
     msalClientId: import.meta.env.VITE_MSAL_CLIENT_ID || '',
     msalTenantId: import.meta.env.VITE_MSAL_TENANT_ID || '',
     IS_DEV: !!import.meta.env.DEV,

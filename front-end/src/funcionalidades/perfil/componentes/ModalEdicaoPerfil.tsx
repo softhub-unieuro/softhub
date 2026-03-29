@@ -45,7 +45,7 @@ export const ModalEdicaoPerfil = memo(({ aberto, aoFechar }: ModalEdicaoPerfilPr
                 github_url: githubUrl, linkedin_url: linkedinUrl, website_url: websiteUrl
             });
             setEditando(false);
-        } catch (e) {}
+        } catch (e) { /* Silencioso: erro já tratado pelo hook/toast */ }
     };
 
     const aproveitamento = stats?.tarefas?.aproveitamento || 0;

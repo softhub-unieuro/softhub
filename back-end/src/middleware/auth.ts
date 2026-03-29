@@ -127,12 +127,12 @@ export function autenticacaoRequerida(roleMinima?: string) {
 
         // Validação de Logout Remoto (Versão do Token) (SEC-004)
         if (payload.versao_token === undefined) {
-             log('warn', '[AUTH] Token sem versão rejeitado', { email: resUsuario.email });
+             log('warn', '[AUTH] Token sem versão rejeitado', { usuarioId: resUsuario.id });
              return c.json({ erro: 'Token inválido ou obsoleto.' }, 401);
         }
 
         if (resUsuario.versao_token !== payload.versao_token) {
-            log('info', '[AUTH] Sessão encerrada por nova versão', { email: resUsuario.email });
+            log('info', '[AUTH] Sessão encerrada por nova versão', { usuarioId: resUsuario.id });
             return c.json({ erro: 'Sua sessão foi encerrada.' }, 401);
         }
 
@@ -187,7 +187,7 @@ export function autenticacaoRequerida(roleMinima?: string) {
             const idxReq = hierarquia.indexOf(roleMinima);
             
             if (idxUser === -1 || idxReq === -1 || idxUser < idxReq) {
-                log('warn', '[AUTH] Bloqueio Hierarquia', { email: resUsuario.email, roleEfetiva, roleMinima });
+                log('warn', '[AUTH] Bloqueio Hierarquia', { usuarioId: resUsuario.id, roleEfetiva, roleMinima });
                 return c.json({ erro: 'Acesso restrito a cargos superiores.' }, 403);
             }
         }
@@ -216,7 +216,7 @@ export async function verificarPermissaoManual(c: Context<any>, permissao: strin
             const res = await DB.prepare('SELECT valor FROM configuracoes_sistema WHERE chave = ?').bind('permissoes_roles').first<{ valor: string }>();
             if (res?.valor) matriz = JSON.parse(res.valor);
         }
-    } catch (e) {}
+    } catch (e) { /* Silencioso: usará a matriz padrão */ }
 
     const m = matriz || PERMISSOES_PADRAO;
     const [modulo, acao] = permissao.split(':');
@@ -267,7 +267,7 @@ export function verificarPermissao(permissaoRequerida: string | string[]) {
 
         if (temAcesso) return await next();
 
-        log('warn', '[AUTH] Bloqueio Permissão', { email: usuario.email, role: usuario.role, permissaoRequerida });
+        log('warn', '[AUTH] Bloqueio Permissão', { usuarioId: usuario.id, role: usuario.role, permissaoRequerida });
         return c.json({ erro: 'Você não tem permissão para realizar esta ação.' }, 403);
     };
 }

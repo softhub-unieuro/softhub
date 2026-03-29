@@ -50,7 +50,7 @@ async function doFetch(method: string, url: string, data?: any, config?: any): P
     const res = await fetch(fullUrl, fetchOptions);
 
     const isAuthRoute = url.includes('/api/auth') || url.includes('/api/configuracoes/publico');
-    const isNoLogin = typeof window !== 'undefined' && window.location.pathname === '/login';
+    const isNoLogin = window.location.pathname === '/login';
 
     if (res.status === 401 && !isAuthRoute && !isNoLogin) {
         const refreshToken = localStorage.getItem('softhub_refresh_token');
@@ -118,7 +118,7 @@ function tratarLogout() {
     localStorage.removeItem('softhub_token');
     localStorage.removeItem('softhub_refresh_token');
     localStorage.removeItem('softhub_usuario');
-    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+    if (window.location.pathname !== '/login') {
         window.location.href = '/login';
     }
 }

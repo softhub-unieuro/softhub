@@ -64,7 +64,7 @@ rotasRelatorios.get('/frequencia/geral', autenticacaoRequerida(), verificarPermi
         if (softhub_kv) {
             const cached = await softhub_kv.get(cacheKey);
             if (cached) {
-                try { return c.json(JSON.parse(cached)); } catch(e) {}
+                try { return c.json(JSON.parse(cached)); } catch(e) { /* Silencioso: ignorar erro de cache */ }
             }
         }
 

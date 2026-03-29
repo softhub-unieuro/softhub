@@ -159,7 +159,7 @@ rotasPonto.get('/online', autenticacaoRequerida(), async (c: Context) => {
             if (val) {
                 try {
                     membros.push(JSON.parse(val));
-                } catch (e) { }
+                } catch (e) { /* Silencioso: ignora valor malformado no cache */ }
             }
         }
         return c.json({ online: membros });

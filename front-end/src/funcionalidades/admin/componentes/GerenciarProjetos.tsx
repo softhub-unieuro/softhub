@@ -111,7 +111,7 @@ export default function GerenciarProjetos() {
             await excluirProjeto(projetoExcluindo.id);
             setProjetoExcluindo(null);
             setExcluirRepoGithub(false);
-        } catch (e) {} finally {
+        } catch (e) { /* Silencioso: erro já tratado pelo hook/toast */ } finally {
             setProcessando(false);
         }
     };

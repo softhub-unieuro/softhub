@@ -98,7 +98,7 @@ rotasProjetos.get('/equipe-publica', async (c) => {
         if (softhub_kv) {
             try {
                 await softhub_kv.put(cacheKey, JSON.stringify(response), { expirationTtl: 3600 }); // 1h de cache
-            } catch (kvError: any) {}
+            } catch (kvError: any) { /* Silencioso: falha no cache não deve quebrar a request */ }
         }
 
         return c.json(response);

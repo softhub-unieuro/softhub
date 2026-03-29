@@ -230,7 +230,7 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
             sair, // Unificado
             sincronizarPerfil,
             atualizarUsuarioLocalmente,
-        } as any}>
+        }}>
             {children}
         </ContextoAutenticacao.Provider>
     );

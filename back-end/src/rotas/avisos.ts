@@ -101,7 +101,7 @@ rotasAvisos.get('/', autenticacaoRequerida(), verificarPermissao('avisos:visuali
                 resClone.headers.set('Cache-Control', 's-maxage=600');
                 await (await cache).put(new URL(cacheKey, c.req.url).toString(), resClone);
             }
-        } catch (e) {}
+        } catch (e) { /* Silencioso: falha no cache da API nativa */ }
 
         return resposta;
     } catch (erro: any) {
