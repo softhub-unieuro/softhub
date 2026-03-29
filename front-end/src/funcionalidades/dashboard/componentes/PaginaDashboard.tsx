@@ -14,6 +14,7 @@ import { CabecalhoDashboard } from './CabecalhoDashboard';
 import { ModalEdicaoPerfil } from '@/funcionalidades/perfil/componentes/ModalEdicaoPerfil';
 import { usarPerfil } from '@/funcionalidades/perfil/hooks/usarPerfil';
 import { Avatar } from '@/compartilhado/componentes/Avatar';
+import { Botao } from '@/compartilhado/componentes/ui/Botao';
 import { 
     LayoutPanelLeft, 
     Zap, 
@@ -156,7 +157,8 @@ export const PaginaDashboard = memo(() => {
                     <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 border-t border-white/[0.04] pt-6 sm:pt-4">
                         
                         {/* CARD PERFIL */}
-                        <button 
+                        <Botao 
+                            variante="fantasma"
                             onClick={() => setModalPerfilAberto(true)}
                             className="group/card w-full sm:w-auto flex items-center gap-3.5 py-2 pl-2 pr-5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 hover:border-primary/20 transition-all duration-300 active:scale-[0.97]"
                         >
@@ -177,7 +179,7 @@ export const PaginaDashboard = memo(() => {
                                 <span className="text-[10px] text-muted-foreground/40 truncate">{perfil?.email || 'Ver Perfil'}</span>
                             </div>
                             <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/20 group-hover/card:text-primary group-hover/card:translate-x-0.5 transition-all ml-1" />
-                        </button>
+                        </Botao>
 
                         {/* CARD EQUIPE */}
                         <div className="flex w-full sm:w-auto items-center gap-3 py-2 pl-2.5 pr-5 rounded-full bg-white/[0.04] border border-white/5">

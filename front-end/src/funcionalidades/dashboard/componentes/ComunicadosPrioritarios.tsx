@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { formatarTempoAtras } from '@/utilitarios/formatadores';
 import { AlertTriangle, Info, Bell, ChevronRight } from 'lucide-react';
 
+import { Botao } from '@/compartilhado/componentes/ui/Botao';
+
 interface ComunicadosProps {
     avisos: any[];
 }
@@ -52,8 +54,9 @@ export const ComunicadosPrioritarios = memo(({ avisos }: ComunicadosProps) => {
                 const Icone = config.icone;
 
                 return (
-                    <button 
+                    <Botao 
                         key={aviso.id}
+                        variante="fantasma"
                         onClick={() => navegar(`/app/avisos?destaque=${aviso.id}`)}
                         className="w-full text-left group bg-card/30 hover:bg-card/50 border border-white/[0.06] hover:border-white/10 rounded-2xl p-4 transition-all duration-300 active:scale-[0.98]"
                     >
@@ -81,7 +84,7 @@ export const ComunicadosPrioritarios = memo(({ avisos }: ComunicadosProps) => {
                             {/* Seta */}
                             <ChevronRight className="w-4 h-4 text-muted-foreground/15 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
                         </div>
-                    </button>
+                    </Botao>
                 );
             })}
         </div>

@@ -21,6 +21,7 @@ import { Avatar } from '@/compartilhado/componentes/Avatar';
 import { useState, useCallback, memo } from 'react';
 import { ModalCriarTarefa } from './ModalCriarTarefa';
 import { BarraFiltros, FiltroPills } from '@/compartilhado/componentes/BarraFiltros';
+import { Botao } from '@/compartilhado/componentes/ui/Botao';
 import { LinhaTarefaBacklog } from './LinhaTarefaBacklog';
 import { CardTarefaBacklogMobile } from './CardTarefaBacklogMobile';
 import { BacklogVazioProjetos } from './BacklogVazioProjetos';
@@ -91,13 +92,13 @@ const PaginaBacklog = memo(() => {
             >
                 <div className="flex items-center gap-4">
                     {podeCriar && (
-                        <button
+                        <Botao
+                            variante="primario"
                             onClick={() => setModalCriarAberto(true)}
-                            className="h-11 px-6 bg-primary text-primary-foreground rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all"
-                        >
-                            <Plus size={18} strokeWidth={3} />
-                            <span>Nova Tarefa</span>
-                        </button>
+                            className="h-11 px-6 rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all"
+                            icone={<Plus size={18} strokeWidth={3} />}
+                            rotulo="Nova Tarefa"
+                        />
                     )}
                 </div>
             </CabecalhoFuncionalidade>
@@ -170,19 +171,19 @@ const PaginaBacklog = memo(() => {
                     </div>
 
                     {/* VISÃO DESKTOP — Tabela Operacional */}
-                    <div className="hidden lg:block bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden animar-entrada atraso-2">
+                    <div className="hidden lg:block bg-card/40 backdrop-blur-2xl border border-border/50 rounded-2xl shadow-xl overflow-hidden animar-entrada atraso-2">
                         <div className="overflow-x-auto">
                             <table className="w-full border-collapse">
                                 <thead>
-                                    <tr className="border-b border-white/5 bg-white/[0.02]">
-                                        <th className="px-8 py-6 text-left text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">Nome da Tarefa</th>
-                                        <th className="px-4 py-6 text-center text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">Prioridade</th>
-                                        <th className="px-4 py-6 text-center text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">Status</th>
-                                        <th className="px-4 py-6 text-center text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">Responsáveis</th>
-                                        <th className="px-8 py-6 text-right text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">Ações</th>
+                                    <tr className="border-b border-border/50 bg-muted/20">
+                                        <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Nome da Tarefa</th>
+                                        <th className="px-4 py-4 text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Prioridade</th>
+                                        <th className="px-4 py-4 text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Status</th>
+                                        <th className="px-4 py-4 text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Responsáveis</th>
+                                        <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Ações</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-white/5">
+                                <tbody className="divide-y divide-border/20">
                                     {tarefas.map(tarefa => (
                                         <LinhaTarefaBacklog key={tarefa.id} tarefa={tarefa} />
                                     ))}

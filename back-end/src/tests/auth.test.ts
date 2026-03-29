@@ -42,17 +42,51 @@ describe('Auth middleware', () => {
         expect(resposta.data.erro).toBe('Sessão expirada ou inválida.');
     });
 
-    it('rejeita JTI revogado no KV', async () => {
-        // mock KV para retornar "revogado"
-        const kvMock = {
+    it('rejeita Sessão Encerrada por Nova Versão de Token (Logouts Globais)', async () => {
+        // Simulando Payload com um token velho (versao 1) mas BD com versao 2
+        const c = criarContextoMock('Bearer mock_jwt');
+        c.env.DB.prepare = () => ({ bind: () => ({ first: async () => ({
+            id: 'mock-id',
+            role: 'MEMBRO',
+            versao_token: 2 // O servidor já subiu a versão, token velho vai cair
+        }) }) });
+
+        // Mock para pular o verify do JWT
+        vi.mock('hono/jwt', () => ({ verify: vi.fn().mockResolvedValue({ id: 'mock-id', versao_token: 1 }) }));
+
+        const next = vi.fn();
+        const { autenticacaoRequerida } = await import('../middleware/auth');
+        const middleware = autenticacaoRequerida();
+        
+        const resposta = await middleware(c, next) as any;
+        expect(resposta.status).toBe(401);
+        expect(resposta.data.erro).toContain('encerrada');
+        expect(next).not.toHaveBeenCalled();
+    });
+
+    it('rejeita JTI revogado no KV (Logout Individual)', async () => {
+        const c = criarContextoMock('Bearer mock_jwt');
+        c.env.DB.prepare = () => ({ bind: () => ({ first: async () => ({
+            id: 'mock-id', role: 'MEMBRO', versao_token: 1
+        }) }) });
+        
+        c.env.softhub_kv = {
             get: async (key: string) => {
-                if (key.startsWith('revoked:')) return 'true';
+                if (key === 'revoked:meu-jti-123') return 'true';
                 return null;
-            }
+            },
+            put: vi.fn()
         };
-        // Para mockar a rejeição de JTI, precisaríamos também mockar o jsonwebtoken verification 
-        // ou abstrair a validação p/ um serviço que injeta tokens mock.
-        // Fica aqui o esqueleto para o projeto real (exigiria mock de hono/jwt)
-        expect(true).toBe(true);
+
+        vi.mock('hono/jwt', () => ({ verify: vi.fn().mockResolvedValue({ id: 'mock-id', versao_token: 1, jti: 'meu-jti-123' }) }));
+        
+        const next = vi.fn();
+        const { autenticacaoRequerida } = await import('../middleware/auth');
+        const middleware = autenticacaoRequerida();
+        
+        const resposta = await middleware(c, next) as any;
+        expect(resposta.status).toBe(401);
+        expect(resposta.data.erro).toContain('revogada');
+        expect(next).not.toHaveBeenCalled();
     });
 });

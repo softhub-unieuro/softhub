@@ -3,6 +3,7 @@ import { Trash2, Megaphone } from 'lucide-react';
 import { Avatar } from '@/compartilhado/componentes/Avatar';
 import { formatarDataHora } from '@/utilitarios/formatadores';
 import { Emblema } from '@/compartilhado/componentes/Emblema';
+import { Botao } from '@/compartilhado/componentes/ui/Botao';
 
 interface CardAvisoProps {
     aviso: any;
@@ -54,13 +55,14 @@ export const CardAviso = memo(({ aviso, podeDeletar, aoRemover, index }: CardAvi
                 {/* Lixeira */}
                 <div className="order-2 sm:order-1 flex justify-end min-h-[32px]">
                     {podeDeletar && (
-                        <button 
+                        <Botao 
+                            variante="fantasma"
+                            tamanho="icone"
                             onClick={() => aoRemover(aviso.id)}
                             className="p-2 sm:-mt-2 sm:-mr-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-2xl transition-colors sm:opacity-0 group-hover:opacity-100 focus:opacity-100 outline-none"
+                            icone={<Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />}
                             title="Apagar Aviso"
-                        >
-                            <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
-                        </button>
+                        />
                     )}
                 </div>
 

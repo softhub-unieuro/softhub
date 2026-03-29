@@ -19,6 +19,7 @@ import { StatsMembros } from '@/funcionalidades/admin/componentes/membros/StatsM
 import { TabelaMembros } from '@/funcionalidades/admin/componentes/membros/TabelaMembros';
 import { BarraAcoesLote } from '@/funcionalidades/admin/componentes/membros/BarraAcoesLote';
 import { ModaisMembros } from '@/funcionalidades/admin/componentes/membros/ModaisMembros';
+import { Botao } from '@/compartilhado/componentes/ui/Botao';
 
 /**
  * Página de Administração de Membros.
@@ -155,21 +156,22 @@ export const GerenciarMembros = memo(() => {
 
                     {usarPermissaoAcesso('membros:gerenciar') && (
                         <div className="flex items-center gap-2">
-                            <button
+                            <Botao
+                                variante="primario"
                                 onClick={() => { setModoModal('individual'); setModalAberto(true); }}
-                                className="h-11 px-4 sm:px-6 bg-primary text-white rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                            >
-                                <Plus size={18} strokeWidth={3} />
-                                <span className="hidden xs:inline">Adicionar Pessoa</span>
-                            </button>
+                                className="h-11 px-4 sm:px-6 rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                icone={<Plus size={18} strokeWidth={3} />}
+                                rotulo={window.innerWidth > 480 ? "Adicionar Pessoa" : undefined}
+                            />
 
                             <Tooltip texto="Adicionar Vários">
-                                <button
+                                <Botao
+                                    variante="fantasma"
+                                    tamanho="icone"
                                     onClick={() => { setModoModal('lote'); setModalAberto(true); }}
                                     className="h-11 w-11 bg-muted/30 text-muted-foreground rounded-2xl flex items-center justify-center hover:bg-muted/50 active:scale-95 transition-all border border-border/40"
-                                >
-                                    <LayersPlus size={18} strokeWidth={3} />
-                                </button>
+                                    icone={<LayersPlus size={18} strokeWidth={3} />}
+                                />
                             </Tooltip>
                         </div>
                     )}

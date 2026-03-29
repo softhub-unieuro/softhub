@@ -1,4 +1,5 @@
 import { D1Database } from '@cloudflare/workers-types';
+import { ProjetoDB, UsuarioDB } from '../modelos/tipagem-banco';
 
 /**
  * Busca projetos visíveis para um usuário.
@@ -21,7 +22,7 @@ export async function buscarProjetosVisiveis(DB: D1Database, usuarioId: string, 
         ORDER BY p.criado_em DESC
     `;
     const { results } = await DB.prepare(query).bind(podeVerTudo ? 1 : 0, usuarioId).all();
-    return results || [];
+    return (results || []) as unknown as (ProjetoDB & { equipes_json?: string })[];
 }
 
 /**
@@ -62,7 +63,7 @@ export async function buscarDetalhesPublicos(DB: D1Database, id: string) {
  * Busca um projeto pelo ID.
  */
 export async function buscarPorId(DB: D1Database, id: string) {
-    return await DB.prepare('SELECT id, nome, descricao, publico, github_repo, documentacao_url, figma_url, setup_url, arquivado, criado_em FROM projetos WHERE id = ?').bind(id).first() as any;
+    return await DB.prepare('SELECT id, nome, descricao, publico, github_repo, documentacao_url, figma_url, setup_url, arquivado, criado_em FROM projetos WHERE id = ?').bind(id).first() as ProjetoDB | null;
 }
 
 /**

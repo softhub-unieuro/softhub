@@ -3,11 +3,14 @@
  * Regra: Admin tem GESTAO total. Outros dependem do vínculo da equipe no projeto.
  * Se o projeto for público e não houver vínculo, o acesso é LEITURA.
  */
-export async function obterAcessoEquipeNoProjeto(DB: any, projetoId: string, usuario: any): Promise<'GESTAO' | 'EDICAO' | 'LEITURA' | 'NENHUM'> {
+import { D1Database, KVNamespace } from '@cloudflare/workers-types';
+import { UsuarioDB, ProjetoDB } from '../modelos/tipagem-banco';
+
+export async function obterAcessoEquipeNoProjeto(DB: D1Database, projetoId: string, usuario: UsuarioDB): Promise<'GESTAO' | 'EDICAO' | 'LEITURA' | 'NENHUM'> {
     if (usuario.role === 'ADMIN') return 'GESTAO';
     
-    // Removido o generic <{ publico: number }> para evitar erro de 'Untyped function call' já que DB é 'any'
-    const p = await DB.prepare('SELECT publico FROM projetos WHERE id = ?').bind(projetoId).first() as { publico: number } | null;
+    // Removido o generic <{ publico: number }> para evitar erro de 'Untyped function call'
+    const p = await DB.prepare('SELECT publico FROM projetos WHERE id = ?').bind(projetoId).first() as ProjetoDB | null;
     if (!p) return 'NENHUM';
 
     const { results } = await DB.prepare(`
@@ -21,7 +24,7 @@ export async function obterAcessoEquipeNoProjeto(DB: any, projetoId: string, usu
         return p.publico === 1 ? 'LEITURA' : 'NENHUM';
     }
 
-    const acessos = results.map((r: any) => r.acesso);
+    const acessos = (results as { acesso: string }[]).map(r => r.acesso);
     if (acessos.includes('GESTAO')) return 'GESTAO';
     if (acessos.includes('EDICAO')) return 'EDICAO';
     if (acessos.includes('LEITURA')) return 'LEITURA';
@@ -33,7 +36,7 @@ export async function obterAcessoEquipeNoProjeto(DB: any, projetoId: string, usu
  * Invalida a sessão em cache de um usuário no KV.
  * Útil para aplicar alterações de role ou permissão instantaneamente.
  */
-export async function invalidarSessaoCache(kv: any, usuarioId: string): Promise<void> {
+export async function invalidarSessaoCache(kv: KVNamespace | undefined, usuarioId: string): Promise<void> {
     if (kv) {
         try {
             await kv.delete(`sessao:${usuarioId}`);
@@ -52,7 +55,7 @@ export async function invalidarSessaoCache(kv: any, usuarioId: string): Promise<
  * @param usuarioId ID do usuário que detém o lock.
  * @param ttl Segundos que o lock dura (padrão 5 minutos).
  */
-export async function prenderTrava(kv: any, entidadeTipo: string, entidadeId: string, usuarioId: string, ttl: number = 300): Promise<boolean> {
+export async function prenderTrava(kv: KVNamespace | undefined, entidadeTipo: string, entidadeId: string, usuarioId: string, ttl: number = 300): Promise<boolean> {
     if (!kv) return true;
     const chave = `trava:${entidadeTipo}:${entidadeId}`;
     const atual = await kv.get(chave);
@@ -74,7 +77,7 @@ export async function prenderTrava(kv: any, entidadeTipo: string, entidadeId: st
 /**
  * Libera a trava de concorrência manualmente.
  */
-export async function soltarTrava(kv: any, entidadeTipo: string, entidadeId: string, usuarioId: string): Promise<void> {
+export async function soltarTrava(kv: KVNamespace | undefined, entidadeTipo: string, entidadeId: string, usuarioId: string): Promise<void> {
     if (!kv) return;
     const chave = `trava:${entidadeTipo}:${entidadeId}`;
     const atual = await kv.get(chave);

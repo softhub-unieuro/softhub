@@ -4,6 +4,7 @@ import type { JustificativaPonto } from '@/funcionalidades/ponto/hooks/usarJusti
 import { EstadoVazio } from '@/compartilhado/componentes/EstadoVazio';
 import { Pencil, Trash2 } from 'lucide-react';
 import { Tooltip } from '@/compartilhado/componentes/Tooltip';
+import { Botao } from '@/compartilhado/componentes/ui/Botao';
 
 interface ListaJustificativasProps {
     justificativas: JustificativaPonto[];
@@ -101,20 +102,22 @@ export function ListaJustificativas({ justificativas, aoEditar, aoExcluir }: Lis
                                 {just.status === 'pendente' ? (
                                     <div className="flex items-center justify-center gap-2">
                                         <Tooltip texto="Editar" posicao="top">
-                                            <button 
+                                            <Botao 
+                                                variante="fantasma"
+                                                tamanho="icone"
                                                 onClick={() => aoEditar(just)}
-                                                className="p-1.5 rounded-2xl text-slate-400 hover:text-primary hover:bg-primary/5 transition-colors"
-                                            >
-                                                <Pencil className="w-4 h-4" />
-                                            </button>
+                                                className="h-8 w-8 rounded-2xl text-slate-400 hover:text-primary hover:bg-primary/5 transition-colors"
+                                                icone={<Pencil className="w-4 h-4" />}
+                                            />
                                         </Tooltip>
                                         <Tooltip texto="Excluir" posicao="top">
-                                            <button 
+                                            <Botao 
+                                                variante="fantasma"
+                                                tamanho="icone"
                                                 onClick={() => aoExcluir(just.id)}
-                                                className="p-1.5 rounded-2xl text-slate-400 hover:text-destructive hover:bg-destructive/5 transition-colors"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                                className="h-8 w-8 rounded-2xl text-slate-400 hover:text-destructive hover:bg-destructive/5 transition-colors"
+                                                icone={<Trash2 className="w-4 h-4" />}
+                                            />
                                         </Tooltip>
                                     </div>
                                 ) : (

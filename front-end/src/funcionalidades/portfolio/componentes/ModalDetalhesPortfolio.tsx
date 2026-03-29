@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Modal } from '@/compartilhado/componentes/Modal';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
 import { api } from '@/compartilhado/servicos/api';
+import { servicoGithub } from '@/compartilhado/servicos/github';
 import { Github, Figma, BookText, Users, Code2, ExternalLink, Calendar, Info } from 'lucide-react';
 import { Avatar } from '@/compartilhado/componentes/Avatar';
 
@@ -58,11 +59,8 @@ export function ModalDetalhesPortfolio({ projetoId, aberto, aoFechar }: ModalDet
             // Tenta buscar o README do GitHub se houver repositório
             if (res.data.github_repo) {
                 try {
-                    // Nota: Assume-se que o repositório é público e está sob a organização padrão ou usuário.
-                    // Se precisar de auth, usaríamos o octokit configurado no backend.
-                    const readmeRes = await fetch(`https://raw.githubusercontent.com/${GITHUB_USUARIO}/${res.data.github_repo}/main/README.md`);
-                    if (readmeRes.ok) {
-                        const texto = await readmeRes.text();
+                    const texto = await servicoGithub.buscarReadmeRaw(GITHUB_USUARIO, res.data.github_repo);
+                    if (texto) {
                         setReadme(texto);
                     }
                 } catch (e) {

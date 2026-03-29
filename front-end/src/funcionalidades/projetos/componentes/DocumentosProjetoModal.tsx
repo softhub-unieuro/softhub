@@ -1,220 +1,108 @@
-import { useState, useEffect } from 'react';
+import { memo } from 'react';
+import { ExternalLink, FileText, Github, X } from 'lucide-react';
 import { Modal } from '@/compartilhado/componentes/Modal';
-import { Alerta } from '@/compartilhado/componentes/Alerta';
-import { Carregando } from '@/compartilhado/componentes/Carregando';
-import { githubStorage, ArquivoGithub } from '../servicos/github-storage';
-import { logger } from '@/utilitarios/gerenciador-logs';
-import { Projeto } from '../hooks/usarProjetos';
-import { FolderKanban, FileText, Download, Trash2, UploadCloud, Github, AlertCircle } from 'lucide-react';
-import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
-import { ConfirmacaoExclusao } from '@/compartilhado/componentes/ConfirmacaoExclusao';
+import { Botao } from '@/compartilhado/componentes/ui/Botao';
 
 interface DocumentosProjetoModalProps {
-    projeto: Projeto | null;
+    projeto: {
+        id: string;
+        nome: string;
+        github_repo?: string | null;
+    };
     aberto: boolean;
     aoFechar: () => void;
 }
 
-export function DocumentosProjetoModal({ projeto, aberto, aoFechar }: DocumentosProjetoModalProps) {
-    const [arquivos, setArquivos] = useState<ArquivoGithub[]>([]);
-    const [carregando, setCarregando] = useState(false);
-    const [erro, setErro] = useState<string | null>(null);
-    const [fazendoUpload, setFazendoUpload] = useState(false);
-    const [arquivoExcluindo, setArquivoExcluindo] = useState<ArquivoGithub | null>(null);
+/**
+ * Modal para visualizar e acessar documentos do projeto.
+ * Integração com o repositório GitHub para centralização de artefatos.
+ */
+export const DocumentosProjetoModal = memo(({ projeto, aberto, aoFechar }: DocumentosProjetoModalProps) => {
+    const urlGithub = projeto.github_repo 
+        ? `https://github.com/${import.meta.env.VITE_GITHUB_STORAGE_OWNER}/${projeto.github_repo}`
+        : null;
 
-    const podeEditarProjeto = usarPermissaoAcesso('projetos:editar');
-    const githubEnabled = !!projeto?.github_repo;
-
-    useEffect(() => {
-        if (aberto && projeto?.github_repo) {
-            carregarDocumentos();
-        } else {
-            setArquivos([]);
-            setErro(null);
-        }
-    }, [aberto, projeto]);
-
-    const carregarDocumentos = async () => {
-        if (!projeto?.github_repo) return;
-        setCarregando(true);
-        setErro(null);
-        try {
-            const docs = await githubStorage.listarDocumentos(projeto.id);
-            setArquivos(docs);
-        } catch (e: any) {
-            setErro(e.message || 'Falha ao carregar documentos do GitHub.');
-        } finally {
-            setCarregando(false);
-        }
-    };
-
-    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file || !projeto?.github_repo) return;
-
-        // Limita a 10MB (API do Octokit sem split tem limites, 10-20MB costuma ser o max prático por API síncrona real)
-        if (file.size > 10 * 1024 * 1024) {
-             setErro('O arquivo é muito grande (Limite de 10MB para upload via Token).');
-             return;
-        }
-
-        setFazendoUpload(true);
-        setErro(null);
-        try {
-            await githubStorage.fazerUploadDocumento(projeto.id, file);
-            logger.sucesso('Documentos', `Arquivo ${file.name} enviado para o GitHub com sucesso.`);
-            await carregarDocumentos();
-        } catch (err: any) {
-            setErro(err.message || 'Falha no upload.');
-        } finally {
-            setFazendoUpload(false);
-            e.target.value = ''; // Reset input
-        }
-    };
-
-    const confirmarExclusao = async () => {
-        if (!arquivoExcluindo || !projeto?.github_repo) return;
-        setCarregando(true);
-        try {
-            await githubStorage.deletarDocumento(projeto.id, arquivoExcluindo.path, arquivoExcluindo.sha);
-            logger.sucesso('Documentos', `Documento ${arquivoExcluindo.name} removido do repositório.`);
-            await carregarDocumentos();
-        } catch (e: any) {
-             setErro(e.message || 'Não foi possível remover o documento.');
-        } finally {
-            setArquivoExcluindo(null);
-            setCarregando(false);
-        }
-    };
-
-    if (!projeto) return null;
-
-    const formatBytes = (bytes: number) => {
-        if (bytes === 0) return '0 B';
-        const k = 1024;
-        const sizes = ['B', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    };
+    const urlDocs = urlGithub ? `${urlGithub}/tree/main/docs/softhub` : null;
 
     return (
-        <>
-            <Modal aberto={aberto} aoFechar={aoFechar} titulo={`Documentos: ${projeto.nome}`} largura="lg">
-                <div className="flex flex-col gap-6 pt-4">
-                    
-                    {/* Removido alerta de token pois o gerenciamento é via Backend */}
+        <Modal
+            aberto={aberto}
+            aoFechar={aoFechar}
+            titulo={`Documentos: ${projeto.nome}`}
+            largura="md"
+        >
+            <div className="space-y-6 py-2">
+                <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                        <FileText size={20} />
+                    </div>
+                    <div>
+                        <h4 className="text-sm font-bold text-foreground mb-1">Repositório de Artefatos</h4>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                            Todos os documentos, diagramas e especificações técnicas deste projeto são versionados e armazenados no GitHub para garantir a integridade e histórico.
+                        </p>
+                    </div>
+                </div>
 
-                    {!projeto.github_repo && githubEnabled && (
-                        <div className="bg-destructive/10 border border-destructive/20 rounded-2xl p-6 text-center">
-                            <AlertCircle className="w-10 h-10 text-destructive mx-auto mb-3" />
-                            <h3 className="text-foreground font-black uppercase tracking-widest text-[11px] mb-1">Repositório não vinculado</h3>
-                            <p className="text-muted-foreground text-xs">Vincule um repositório GitHub nas configurações deste projeto para gerenciar arquivos.</p>
+                <div className="space-y-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-1">Links Rápidos</p>
+                    
+                    {projeto.github_repo ? (
+                        <div className="grid grid-cols-1 gap-3">
+                            <a 
+                                href={urlDocs || '#'} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="group flex items-center justify-between p-4 bg-card border border-border rounded-2xl hover:border-primary/30 hover:shadow-md transition-all"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
+                                        <FileText size={18} />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-bold text-foreground">Pasta de Documentação</span>
+                                        <span className="text-[10px] text-muted-foreground uppercase font-medium tracking-tight">docs/softhub</span>
+                                    </div>
+                                </div>
+                                <ExternalLink size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
+                            </a>
+
+                            <a 
+                                href={urlGithub || '#'} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="group flex items-center justify-between p-4 bg-card border border-border rounded-2xl hover:border-primary/30 hover:shadow-md transition-all"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
+                                        <Github size={18} />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-bold text-foreground">Repositório Principal</span>
+                                        <span className="text-[10px] text-muted-foreground uppercase font-medium tracking-tight">GitHub Code & Docs</span>
+                                    </div>
+                                </div>
+                                <ExternalLink size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
+                            </a>
+                        </div>
+                    ) : (
+                        <div className="py-12 border-2 border-dashed border-border/40 rounded-3xl flex flex-col items-center justify-center gap-3 opacity-40">
+                            <Github size={32} strokeWidth={1} />
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em]">Sem vínculo com GitHub</p>
                         </div>
                     )}
-
-                    {projeto.github_repo && githubEnabled && (
-                        <>
-                            {/* Área de Upload e Infos */}
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border border-border rounded-2xl bg-muted/20">
-                                <div>
-                                    <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-                                        <Github size={16} className="text-muted-foreground" />
-                                        {projeto.github_repo}
-                                    </div>
-                                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
-                                        Armazenado em /docs/softhub/
-                                    </span>
-                                </div>
-                                {podeEditarProjeto && (
-                                    <div className="shrink-0 relative">
-                                        <input 
-                                            type="file" 
-                                            id="file-upload" 
-                                            className="hidden" 
-                                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.png,.zip" 
-                                            onChange={handleUpload}
-                                            disabled={fazendoUpload || carregando}
-                                        />
-                                        <label 
-                                            htmlFor="file-upload" 
-                                            className="h-10 px-4 bg-primary text-primary-foreground rounded-2xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {fazendoUpload ? <Carregando tamanho="sm" Centralizar={false} /> : <><UploadCloud size={14} /> Fazer Upload</>}
-                                        </label>
-                                    </div>
-                                )}
-                            </div>
-
-                            {erro && <Alerta tipo="erro" mensagem={erro} />}
-
-                            {/* Lista de Arquivos */}
-                            <div className="border border-border rounded-2xl bg-card overflow-hidden">
-                                {carregando && !fazendoUpload ? (
-                                    <div className="p-12 flex justify-center"><Carregando /></div>
-                                ) : arquivos.length === 0 ? (
-                                    <div className="p-12 flex flex-col items-center justify-center text-center opacity-60">
-                                        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                                            <FileText size={24} className="text-muted-foreground" />
-                                        </div>
-                                        <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Repositório Vazio</p>
-                                        <p className="text-[11px] text-muted-foreground mt-1">Nenhum documento encontrado na pasta docs.</p>
-                                    </div>
-                                ) : (
-                                    <div className="divide-y divide-border max-h-[40vh] overflow-y-auto custom-scrollbar">
-                                        {arquivos.map((arq) => (
-                                            <div key={arq.sha} className="flex items-center justify-between p-3 hover:bg-muted/30 transition-colors group">
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                                                        <FileText size={16} />
-                                                    </div>
-                                                    <div className="flex flex-col min-w-0">
-                                                        <span className="text-xs font-bold text-foreground truncate">{arq.name}</span>
-                                                        <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.1em]">
-                                                            {formatBytes(arq.size)}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <a 
-                                                        href={arq.download_url} 
-                                                        target="_blank" 
-                                                        rel="noreferrer" 
-                                                        className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
-                                                        title="Baixar Arquivo via Raw"
-                                                    >
-                                                        <Download size={14} />
-                                                    </a>
-                                                    {podeEditarProjeto && (
-                                                        <button 
-                                                            onClick={() => setArquivoExcluindo(arq)}
-                                                            className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-all"
-                                                            title="Excluir Permanentemente"
-                                                        >
-                                                            <Trash2 size={14} />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </>
-                    )}
                 </div>
-            </Modal>
 
-            {arquivoExcluindo && (
-                <ConfirmacaoExclusao
-                    aberto={!!arquivoExcluindo}
-                    aoFechar={() => setArquivoExcluindo(null)}
-                    aoConfirmar={confirmarExclusao}
-                    titulo="Excluir Documento"
-                    descricao={`Tem certeza que deseja remover permanentemente o arquivo "${arquivoExcluindo?.name}" do repositório no GitHub? O Commit será feito imediatamente.`}
-                    carregando={carregando}
-                />
-            )}
-        </>
+                <div className="pt-4 flex justify-end gap-3 border-t border-border/40">
+                    <Botao
+                        variante="secundario"
+                        onClick={aoFechar}
+                        rotulo="Fechar"
+                    />
+                </div>
+            </div>
+        </Modal>
     );
-}
+});
+
+DocumentosProjetoModal.displayName = 'DocumentosProjetoModal';

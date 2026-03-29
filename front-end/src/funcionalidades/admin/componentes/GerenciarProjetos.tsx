@@ -12,6 +12,7 @@ import { usarProjetos, Projeto } from '@/funcionalidades/projetos/hooks/usarProj
 import { usarEquipes } from '@/funcionalidades/admin/hooks/usarEquipes';
 import { CardProjeto } from '@/funcionalidades/admin/componentes/projetos/CardProjeto';
 import { ModalFormularioProjeto, FormProjeto } from '@/funcionalidades/admin/componentes/projetos/ModalFormularioProjeto';
+import { Botao } from '@/compartilhado/componentes/ui/Botao';
 
 import { SubmitHandler } from 'react-hook-form';
 
@@ -125,13 +126,13 @@ export default function GerenciarProjetos() {
                     icone={FolderKanban}
                 >
                     {podeCriar && (
-                        <button 
+                        <Botao 
+                            variante="primario"
                             onClick={handleAbrirCriar}
-                            className="h-11 px-6 bg-primary text-primary-foreground rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all"
-                        >
-                            <Plus size={18} strokeWidth={3} />
-                            <span>Novo Projeto</span>
-                        </button>
+                            className="h-11 px-6 rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all"
+                            icone={<Plus size={18} strokeWidth={3} />}
+                            rotulo="Novo Projeto"
+                        />
                     )}
                 </CabecalhoFuncionalidade>
 
@@ -149,12 +150,12 @@ export default function GerenciarProjetos() {
                         <h3 className="text-foreground font-black uppercase tracking-widest mb-2">Sem Projetos</h3>
                         <p className="text-muted-foreground text-sm mb-6">Comece criando o primeiro projeto da sua fábrica.</p>
                         {podeCriar && (
-                            <button 
+                            <Botao 
+                                variante="primario"
                                 onClick={handleAbrirCriar}
-                                className="px-6 py-2.5 bg-primary text-primary-foreground rounded-2xl text-[10px] font-black uppercase tracking-widest"
-                            >
-                                Criar Primeiro Projeto
-                            </button>
+                                className="px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest"
+                                rotulo="Criar Primeiro Projeto"
+                            />
                         )}
                     </div>
                 ) : (

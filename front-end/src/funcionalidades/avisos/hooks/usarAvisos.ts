@@ -39,7 +39,7 @@ export function usarAvisos() {
     });
 
     const avisos: Aviso[] = Array.isArray(data) ? data : (data as any)?.dados || [];
-    const meta = (data as any)?.meta || null;
+    const meta = (data as { meta?: any })?.meta || null;
 
     const erro = error ? (error as any).response?.data?.erro || 'Erro ao carregar avisos' : null;
 
@@ -52,15 +52,16 @@ export function usarAvisos() {
     });
 
     // Mutação para remover aviso (Optimistic Update adaptado para paginação)
-    const mutacaoRemover = useMutation({
+    const mutacaoRemover = useMutation<void, any, string, { estadoAnterior?: Aviso[] | { dados: Aviso[]; meta: any } }>({
         mutationFn: (id: string) => api.delete(`/api/avisos/${id}`),
         onMutate: async (id) => {
             await queryClient.cancelQueries({ queryKey });
-            const estadoAnterior = queryClient.getQueryData<any>(queryKey);
+            const estadoAnterior = queryClient.getQueryData<Aviso[] | { dados: Aviso[]; meta: any }>(queryKey);
             
-            queryClient.setQueryData<any>(queryKey, (antigo: any) => {
-                if (Array.isArray(antigo)) return antigo.filter((a: any) => a.id !== id);
-                if (antigo?.dados) return { ...antigo, dados: antigo.dados.filter((a: any) => a.id !== id) };
+            queryClient.setQueryData<Aviso[] | { dados: Aviso[]; meta: any }>(queryKey, (antigo) => {
+                if (!antigo) return antigo;
+                if (Array.isArray(antigo)) return antigo.filter((a) => a.id !== id);
+                if (antigo.dados) return { ...antigo, dados: antigo.dados.filter((a) => a.id !== id) };
                 return antigo;
             });
 
@@ -82,7 +83,7 @@ export function usarAvisos() {
         carregando, 
         erro, 
         recarregar: () => queryClient.invalidateQueries({ queryKey }), 
-        criarAviso: (dados: any) => mutacaoCriar.mutateAsync(dados), 
+        criarAviso: (dados: Omit<Aviso, 'id' | 'criado_por' | 'criado_em'>) => mutacaoCriar.mutateAsync(dados), 
         removerAviso: (id: string) => mutacaoRemover.mutateAsync(id) 
     };
 }

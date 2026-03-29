@@ -1,17 +1,15 @@
-import { useState } from 'react';
 import { CabecalhoFuncionalidade } from '@/compartilhado/componentes/CabecalhoFuncionalidade';
 import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 import { usarProjetos } from '@/funcionalidades/projetos/hooks/usarProjetos';
-import { FolderKanban, Globe, Lock, Github, FileText, BarChart3, Layers } from 'lucide-react';
-import { DocumentosProjetoModal } from './DocumentosProjetoModal';
+import { FolderKanban, Globe, Lock, Github, FileText, BarChart3, Layers, ExternalLink } from 'lucide-react';
 import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
 import { formatarDataHora } from '@/utilitarios/formatadores';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
+import { Botao } from '@/compartilhado/componentes/ui/Botao';
 
 export default function PaginaVisaoProjeto() {
     const { projetoAtivoId } = usarAutenticacao();
     const { projetos, carregando } = usarProjetos();
-    const [modalDocsAberto, setModalDocsAberto] = useState(false);
     
     const podeVerDocumentos = usarPermissaoAcesso('projetos:documentos');
 
@@ -33,6 +31,8 @@ export default function PaginaVisaoProjeto() {
         );
     }
 
+    const urGitHubDocs = projeto.github_repo ? `https://github.com/${import.meta.env.VITE_GITHUB_STORAGE_OWNER}/${projeto.github_repo}/tree/main/docs/softhub` : '#';
+
     return (
         <div className="flex flex-col gap-6 animar-entrada">
             <CabecalhoFuncionalidade
@@ -41,14 +41,14 @@ export default function PaginaVisaoProjeto() {
                 icone={FolderKanban}
             >
                 <div className="flex gap-2">
-                    {podeVerDocumentos && (
-                        <button 
-                            onClick={() => setModalDocsAberto(true)}
-                            className="h-11 px-6 bg-primary text-primary-foreground rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all"
-                        >
-                            <FileText size={18} strokeWidth={3} />
-                            <span>Arquivos e Docs</span>
-                        </button>
+                    {podeVerDocumentos && projeto.github_repo && (
+                        <Botao 
+                            variante="primario"
+                            onClick={() => window.open(urGitHubDocs, '_blank')}
+                            className="h-11 px-6 rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all"
+                            icone={<FileText size={18} strokeWidth={3} />}
+                            rotulo="Documentos no GitHub"
+                        />
                     )}
                 </div>
             </CabecalhoFuncionalidade>
@@ -82,29 +82,32 @@ export default function PaginaVisaoProjeto() {
                 <div className="flex flex-col gap-6">
                     
                     {/* Github Repo */}
-                    <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
-                        <h3 className="text-sm font-black text-foreground uppercase tracking-widest flex items-center gap-2 mb-4">
+                    <div className="bg-card border border-border rounded-3xl p-6 shadow-sm flex flex-col items-start gap-4 hover:shadow-md transition-shadow">
+                        <h3 className="text-sm font-black text-foreground uppercase tracking-widest flex items-center gap-2">
                             <Github size={16} className="text-muted-foreground" />
-                            Repositório
+                            Repositório GitHub
                         </h3>
                         {projeto.github_repo ? (
-                            <div>
+                            <div className="w-full">
                                 <a 
                                     href={`https://github.com/${import.meta.env.VITE_GITHUB_STORAGE_OWNER}/${projeto.github_repo}`} 
                                     target="_blank" 
                                     rel="noreferrer" 
-                                    className="text-primary hover:underline font-bold text-sm block mb-1 break-all"
+                                    className="px-4 py-3 bg-muted hover:bg-muted/80 w-full rounded-2xl flex items-center justify-between group transition-colors"
                                 >
-                                    {projeto.github_repo}
+                                    <span className="text-primary font-bold text-sm truncate">{projeto.github_repo}</span>
+                                    <ExternalLink size={16} className="text-muted-foreground group-hover:text-primary shrink-0" />
                                 </a>
-                                <p className="text-xs text-muted-foreground">Repositório vinculado para armazenamento de documentos.</p>
+                                <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
+                                    Acesse o repositório externo onde os código fontes e PDFs do projeto são versionados.
+                                </p>
                             </div>
                         ) : (
                             <p className="text-xs text-muted-foreground/60 italic">Nenhum repositório GitHub vinculado a este projeto.</p>
                         )}
                     </div>
 
-                    {/* Stats (Pode ser estendido no futuro) */}
+                    {/* Stats */}
                     <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
                         <h3 className="text-sm font-black text-foreground uppercase tracking-widest flex items-center gap-2 mb-4">
                             <BarChart3 size={16} className="text-muted-foreground" />
@@ -120,12 +123,6 @@ export default function PaginaVisaoProjeto() {
 
                 </div>
             </div>
-
-            <DocumentosProjetoModal
-                projeto={projeto}
-                aberto={modalDocsAberto}
-                aoFechar={() => setModalDocsAberto(false)}
-            />
         </div>
     );
 }

@@ -17,7 +17,13 @@ export async function listarTarefas(env: Env, usuario: any, projetoId: string, f
         throw new Error('Você não tem acesso a este projeto.');
     }
 
-    // 2. Busca tarefas
+    // 2. Filtro de exclusividade (MEMBRO vê apenas suas próprias tarefas)
+    const podeVerTodasTarefas = await verificarPermissaoManual(c, 'tarefas:visualizar_todas');
+    if (!podeVerTodasTarefas) {
+        filtros.responsavelId = usuario.id;
+    }
+
+    // 3. Busca tarefas
     const tarefas = await repo.buscarTarefas(DB, { ...filtros, projetoId });
 
     if (tarefas.length === 0) return [];

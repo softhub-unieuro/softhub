@@ -5,6 +5,7 @@ import { Avatar } from '@/compartilhado/componentes/Avatar';
 import type { Comentario } from '@/funcionalidades/kanban/hooks/usarComentarios';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/compartilhado/componentes/ui/dropdown-menu';
 import { ConfirmacaoExclusao } from '@/compartilhado/componentes/ConfirmacaoExclusao';
+import { Botao } from '@/compartilhado/componentes/ui/Botao';
 
 interface CartaoComentarioProps {
     comentario: Comentario;
@@ -100,20 +101,21 @@ export function CartaoComentario({ comentario, usuarioLogadoId, ehLider, aoExclu
                             className="w-full bg-background border border-input rounded-2xl p-3 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary min-h-[80px]"
                         />
                         <div className="flex items-center gap-2 justify-end">
-                            <button
+                            <Botao
                                 onClick={() => { setEditando(false); setNovoConteudo(comentario.conteudo); }}
-                                className="text-xs font-medium px-3 py-1.5 rounded-2xl hover:bg-accent text-muted-foreground transition-colors"
                                 disabled={salvando}
-                            >
-                                Cancelar
-                            </button>
-                            <button
+                                variante="fantasma"
+                                tamanho="pequeno"
+                                rotulo="Cancelar"
+                            />
+                            <Botao
                                 onClick={handleSalvarEdicao}
                                 disabled={salvando || !novoConteudo.trim()}
-                                className="text-xs font-medium px-3 py-1.5 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground transition-colors disabled:opacity-50"
-                            >
-                                {salvando ? 'Salvando...' : 'Atualizar'}
-                            </button>
+                                carregando={salvando}
+                                variante="primario"
+                                tamanho="pequeno"
+                                rotulo={salvando ? 'Salvando...' : 'Atualizar'}
+                            />
                         </div>
                     </div>
                 ) : (

@@ -176,50 +176,7 @@ rotasProjetos.delete('/:id', autenticacaoRequerida(), verificarPermissao('projet
     }
 });
 
-/**
- * GET /api/projetos/:id/arquivos
- * Lista arquivos do repositório GitHub vinculado (pasta /docs/softhub).
- */
-rotasProjetos.get('/:id/arquivos', autenticacaoRequerida(), async (c) => {
-    try {
-        const id = c.req.param('id');
-        const pasta = c.req.query('pasta') || 'docs/softhub';
-        const res = await servico.gerenciarArquivosGitHub(c.env, id!, 'get', { pasta });
-        return c.json(res);
-    } catch (e: any) {
-        return c.json({ erro: 'Falha ao buscar arquivos do GitHub.', detalhe: e.message }, 500);
-    }
-});
 
-/**
- * POST /api/projetos/:id/arquivos
- * Upload de arquivo para o repositório GitHub.
- */
-rotasProjetos.post('/:id/arquivos', autenticacaoRequerida(), verificarPermissao('projetos:editar'), async (c) => {
-    try {
-        const id = c.req.param('id');
-        const payload = await c.req.json();
-        const res = await servico.gerenciarArquivosGitHub(c.env, id!, 'upload', payload);
-        return c.json(res);
-    } catch (e: any) {
-        return c.json({ erro: 'Falha no upload para o GitHub.', detalhe: e.message }, 500);
-    }
-});
-
-/**
- * DELETE /api/projetos/:id/arquivos
- * Remove arquivo do repositório GitHub.
- */
-rotasProjetos.delete('/:id/arquivos', autenticacaoRequerida(), verificarPermissao('projetos:editar'), async (c) => {
-    try {
-        const id = c.req.param('id');
-        const payload = await c.req.json();
-        const res = await servico.gerenciarArquivosGitHub(c.env, id!, 'delete', payload);
-        return c.json(res);
-    } catch (e: any) {
-        return c.json({ erro: 'Falha ao deletar arquivo no GitHub.', detalhe: e.message }, 500);
-    }
-});
 
 /**
  * DELETE /api/projetos/:id/repositorio

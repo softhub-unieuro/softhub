@@ -7,11 +7,19 @@ import { log } from '../utilitarios/logger';
 import { registrarLog } from '../servicos/servico-logs';
 import { criarNotificacoes } from '../servicos/servico-notificacoes';
 import { obterAcessoEquipeNoProjeto } from '../servicos/servico-acesso';
+import { Roles, StatusTarefa } from '../utilitarios/constantes';
+import { UsuarioDB, TarefaDB } from '../modelos/tipagem-banco';
 
-const rotasMovimentacao = new Hono<{ Bindings: Env, Variables: { usuario: any } }>();
+const rotasMovimentacao = new Hono<{ Bindings: Env, Variables: { usuario: UsuarioDB } }>();
 
 const MoverTarefaSchema = z.object({
-    status: z.enum(['backlog', 'todo', 'in_progress', 'em_revisao', 'concluida']),
+    status: z.enum([
+        StatusTarefa.BACKLOG, 
+        StatusTarefa.TODO, 
+        StatusTarefa.EM_PROGRESSO, 
+        StatusTarefa.EM_REVISAO, 
+        StatusTarefa.CONCLUIDA
+    ]),
 });
 
 /**
@@ -28,8 +36,8 @@ rotasMovimentacao.patch('/:id/mover',
     const { status: colunaDestino } = (c.req as any).valid('json');
 
     try {
-        const usuario = c.get('usuario') as any;
-        const tarefa = await DB.prepare('SELECT titulo, status, projeto_id FROM tarefas WHERE id = ?').bind(id).first() as any;
+        const usuario = c.get('usuario');
+        const tarefa = await DB.prepare('SELECT titulo, status, projeto_id FROM tarefas WHERE id = ?').bind(id).first() as TarefaDB | null;
 
         if (!tarefa) return c.json({ erro: 'Tarefa não encontrada' }, 404);
 
@@ -40,7 +48,7 @@ rotasMovimentacao.patch('/:id/mover',
         }
 
         // Validação de quem pode mover (Responsáveis ou Líderes)
-        const ehAdminOuLider = ['ADMIN', 'COORDENADOR', 'GESTOR', 'LIDER', 'SUBLIDER'].includes(usuario.role);
+        const ehAdminOuLider = [Roles.ADMIN, Roles.COORDENADOR, Roles.GESTOR, Roles.LIDER, Roles.SUBLIDER].includes(usuario.role);
         let podeMover = ehAdminOuLider;
         if (!podeMover) {
             const resp = await DB.prepare('SELECT usuario_id FROM tarefas_responsaveis WHERE tarefa_id = ? AND usuario_id = ?').bind(id, usuario.id).first();
@@ -51,8 +59,8 @@ rotasMovimentacao.patch('/:id/mover',
 
         // 🛡️ NOVO: Trava de Checklist (Fluxo 31)
         // Bloqueia a conclusão (ou envio para revisão) se houver itens pendentes no checklist
-        if (colunaDestino === 'concluida' || colunaDestino === 'em_revisao') {
-            const pendentes = await DB.prepare('SELECT COUNT(*) as total FROM checklist_tarefa WHERE tarefa_id = ? AND concluido = 0').bind(id).first() as any;
+        if (colunaDestino === StatusTarefa.CONCLUIDA || colunaDestino === StatusTarefa.EM_REVISAO) {
+            const pendentes = await DB.prepare('SELECT COUNT(*) as total FROM checklist_tarefa WHERE tarefa_id = ? AND concluido = 0').bind(id).first() as { total: number } | null;
             if (pendentes && pendentes.total > 0) {
                 return c.json({ 
                     erro: 'Checklist Pendente', 
@@ -63,7 +71,7 @@ rotasMovimentacao.patch('/:id/mover',
 
         if (tarefa.status !== colunaDestino) {
             const agora = new Date().toISOString();
-            const dataConclusao = colunaDestino === 'concluida' ? agora : null;
+            const dataConclusao = colunaDestino === StatusTarefa.CONCLUIDA ? agora : null;
             
             await DB.prepare('UPDATE tarefas SET status = ?, data_conclusao = ?, atualizado_em = ? WHERE id = ?')
                 .bind(colunaDestino, dataConclusao, agora, id).run();
@@ -85,11 +93,11 @@ rotasMovimentacao.patch('/:id/mover',
             });
 
             // Notificações de fluxo
-            if (colunaDestino === 'em_revisao') {
-                const { results: lideres } = await DB.prepare("SELECT id FROM usuarios WHERE role IN ('SUBLIDER', 'LIDER', 'GESTOR')").all();
+            if (colunaDestino === StatusTarefa.EM_REVISAO) {
+                const { results: lideres } = await DB.prepare("SELECT id FROM usuarios WHERE role IN ('SUBLIDER', 'LIDER', 'GESTOR')").all() as { results: Pick<UsuarioDB, 'id'>[] };
                 if (lideres.length) {
                     await criarNotificacoes(DB, {
-                        usuariosIds: lideres.map((l: any) => l.id),
+                        usuariosIds: lideres.map(l => l.id),
                         tipo: 'tarefa',
                         titulo: 'Revisão Necessária',
                         mensagem: `A tarefa "${tarefa.titulo}" aguarda revisão.`,

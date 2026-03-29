@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { AlertTriangle, LogIn, LogOut } from 'lucide-react';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
+import { Botao } from '@/compartilhado/componentes/ui/Botao';
 
 interface PainelRelogioProps {
     agoraRelogio: Date;
@@ -127,10 +128,11 @@ export const PainelRelogio = memo(({
 
                     <div className="relative w-full max-w-sm mx-auto">
                         {podeRegistrar ? (
-                            <button
+                            <Botao
                                 onMouseDown={aoTentarRegistrar}
                                 onClick={aoBaterPonto}
                                 disabled={carregando || salvando || foraDaRede || foraDoHorario || (foraDoDia && foraDaFabrica)}
+                                carregando={salvando}
                                 className={`
                                     w-full py-3.5 sm:py-4 rounded-2xl sm:rounded-3xl text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] 
                                     transition-all active:scale-[0.97] border shadow-xl relative z-10
@@ -141,22 +143,17 @@ export const PainelRelogio = memo(({
                                     }
                                     ${(foraDaRede || foraDoHorario || foraDoDia) ? 'saturate-[0.2] opacity-80' : ''}
                                 `}
-                            >
-                                {salvando ? (
-                                    <Carregando Centralizar={false} tamanho="sm" className="border-t-white border-white/30" />
-                                ) : (
-                                    <div className="flex items-center justify-center gap-2 sm:gap-3">
-                                        {foraDaRede || foraDoHorario || (foraDoDia && foraDaFabrica ) ? (
-                                            <AlertTriangle size={14} className="sm:w-4 sm:h-4" strokeWidth={3} />
-                                        ) : proximoTipo === 'entrada' ? (
-                                            <LogIn size={14} className="sm:w-4 sm:h-4" strokeWidth={3} />
-                                        ) : (
-                                            <LogOut size={14} className="sm:w-4 sm:h-4" strokeWidth={3} />
-                                        )}
-                                        <span>Registrar {proximoTipo}</span>
-                                    </div>
-                                )}
-                            </button>
+                                icone={
+                                    foraDaRede || foraDoHorario || (foraDoDia && foraDaFabrica) ? (
+                                        <AlertTriangle size={14} className="sm:w-4 sm:h-4" strokeWidth={3} />
+                                    ) : proximoTipo === 'entrada' ? (
+                                        <LogIn size={14} className="sm:w-4 sm:h-4" strokeWidth={3} />
+                                    ) : (
+                                        <LogOut size={14} className="sm:w-4 sm:h-4" strokeWidth={3} />
+                                    )
+                                }
+                                rotulo={`Registrar ${proximoTipo}`}
+                            />
                         ) : (
                             <div className="p-4 bg-muted/20 border border-dashed border-border rounded-2xl text-center">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/30 italic">Função de Ponto Restrita</p>

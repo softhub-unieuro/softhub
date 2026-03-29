@@ -10,6 +10,7 @@ import { Modal } from '@/compartilhado/componentes/Modal';
 import { ConfirmacaoExclusao } from '@/compartilhado/componentes/ConfirmacaoExclusao';
 import { CabecalhoFuncionalidade } from '@/compartilhado/componentes/CabecalhoFuncionalidade';
 import { EstadoVazio } from '@/compartilhado/componentes/EstadoVazio';
+import { Botao } from '@/compartilhado/componentes/ui/Botao';
 
 import { DetalheEquipe } from '@/funcionalidades/admin/componentes/equipes/DetalheEquipe';
 import { FormGrupoEquipe } from '@/funcionalidades/admin/componentes/equipes/FormGrupoEquipe';
@@ -31,7 +32,7 @@ export const GerenciarEquipes = memo(() => {
     const podeEditarEquipe = usarPermissaoAcesso('equipes:editar_equipe');
 
     const [idEquipeAtiva, setIdEquipeAtiva] = useState<string | null>(null);
-    const [modalOrg, setModalOrg] = useState<{ aberto: boolean; tipo: 'equipe' | 'grupo'; dados?: any } | null>(null);
+    const [modalOrg, setModalOrg] = useState<{ aberto: boolean; tipo: 'equipe' | 'grupo'; dados?: { equipe_id?: string | null } } | null>(null);
     const [confirmacaoExclusao, setConfirmacaoExclusao] = useState<{ id: string; nome: string; tipo: 'equipe' | 'grupo' } | null>(null);
     const [modalAlocacao, setModalAlocacao] = useState<{ grupoId: string; equipeId: string } | null>(null);
     const [modalMover, setModalMover] = useState<{ membroId: string; grupoOrigemId: string; equipeId: string } | null>(null);
@@ -42,11 +43,11 @@ export const GerenciarEquipes = memo(() => {
 
     // Otimização: Memoização de dados derivados
     const equipeAtiva = useMemo(() => 
-        equipesAtivas.find((e: any) => e.id === idEquipeAtiva),
+        equipesAtivas.find((e: Equipe) => e.id === idEquipeAtiva),
     [equipesAtivas, idEquipeAtiva]);
 
     const gruposDaEquipe = useMemo(() => 
-        grupos.filter((g: any) => g.equipe_id === idEquipeAtiva),
+        grupos.filter((g: Grupo) => g.equipe_id === idEquipeAtiva),
     [grupos, idEquipeAtiva]);
 
     const handleSalvarOrg = useCallback(async (dados: any) => {
@@ -150,22 +151,22 @@ export const GerenciarEquipes = memo(() => {
             >
                 <div className="flex items-center gap-3">
                     {/* Botão Voltar para Mobile quando há equipe selecionada */}
-                    <button
+                    <Botao
+                        variante="fantasma"
                         onClick={() => setIdEquipeAtiva(null)}
                         className={`lg:hidden h-11 px-4 bg-muted/20 text-foreground rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest transition-all ${!idEquipeAtiva ? 'opacity-0 pointer-events-none w-0 truncate' : 'opacity-100'}`}
-                    >
-                        <Trash2 size={16} className="rotate-45" />
-                        <span>Voltar</span>
-                    </button>
+                        icone={<Trash2 size={16} className="rotate-45" />}
+                        rotulo="Voltar"
+                    />
 
                     {podeCriarEquipe && (
-                        <button
+                        <Botao
+                            variante="primario"
                             onClick={() => setModalOrg({ aberto: true, tipo: 'equipe' })}
-                            className={`h-11 px-6 bg-primary text-primary-foreground rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all ${idEquipeAtiva ? 'hidden lg:flex' : 'flex'}`}
-                        >
-                            <Plus size={18} strokeWidth={3} />
-                            <span>Nova Equipe</span>
-                        </button>
+                            className={`h-11 px-6 rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all ${idEquipeAtiva ? 'hidden lg:flex' : 'flex'}`}
+                            icone={<Plus size={18} strokeWidth={3} />}
+                            rotulo="Nova Equipe"
+                        />
                     )}
                 </div>
             </CabecalhoFuncionalidade>
@@ -232,7 +233,7 @@ export const GerenciarEquipes = memo(() => {
                     <FormGrupoEquipe
                         titulo={modalOrg.tipo === 'equipe' ? 'Equipe' : 'Grupo'}
                         tipo={modalOrg.tipo}
-                        equipeAtivaId={modalOrg.dados?.equipe_id}
+                        equipeAtivaId={modalOrg.dados?.equipe_id ?? undefined}
                         equipes={equipesAtivas.map((e: Equipe) => ({ id: e.id, nome: e.nome }))}
                         aoSalvar={handleSalvarOrg}
                         aoFechar={() => setModalOrg(null)}

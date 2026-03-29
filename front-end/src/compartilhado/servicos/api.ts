@@ -34,6 +34,7 @@ async function doFetch(method: string, url: string, data?: any, config?: any): P
         method,
         headers: getHeaders(),
         body: data ? JSON.stringify(data) : undefined,
+        keepalive: config?.keepalive,
     };
 
     let fullUrl = url.startsWith('http') ? url : `${ambiente.apiUrl}${url}`;

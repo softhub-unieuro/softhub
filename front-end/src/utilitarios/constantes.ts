@@ -55,6 +55,29 @@ export const VARIANTE_COR_ROLES = {
     MEMBRO: 'verde',
 } as const;
 
+// Status Canônico de Tarefas
+export const StatusTarefa = {
+    BACKLOG: 'backlog',
+    TODO: 'todo',
+    IN_PROGRESS: 'in_progress',
+    EM_REVISAO: 'em_revisao',
+    CONCLUIDA: 'concluida',
+} as const;
+
+export type StatusTarefaType = typeof StatusTarefa[keyof typeof StatusTarefa];
+
+// Cargos Canônicos do Sistema
+export const Roles = {
+    ADMIN: 'ADMIN',
+    COORDENADOR: 'COORDENADOR',
+    GESTOR: 'GESTOR',
+    LIDER: 'LIDER',
+    SUBLIDER: 'SUBLIDER',
+    MEMBRO: 'MEMBRO',
+} as const;
+
+export type RoleType = typeof Roles[keyof typeof Roles];
+
 // Configurações do GitHub (Utilizado no Portfólio Público)
 export const GITHUB_USUARIO = 'madebycotrim'; 
 

@@ -24,6 +24,7 @@ import { usarRelatorios } from '@/funcionalidades/admin/hooks/usarRelatorios';
 import { Alerta } from '@/compartilhado/componentes/Alerta';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
 import { CabecalhoFuncionalidade } from '@/compartilhado/componentes/CabecalhoFuncionalidade';
+import { Botao } from '@/compartilhado/componentes/ui/Botao';
 
 import { RelatorioPresenca } from '@/funcionalidades/admin/componentes/relatorios/RelatorioPresenca';
 import { RelatorioAusencias } from '@/funcionalidades/admin/componentes/relatorios/RelatorioAusencias';
@@ -82,13 +83,13 @@ const PaginaRelatorios = memo(() => {
                 {/* Ações Dinâmicas no Cabeçalho */}
                 <div className="flex items-center gap-3">
                     {abaAtiva && (
-                        <button 
+                        <Botao 
+                            variante="fantasma"
                             onClick={() => setAbaAtiva(null)}
                             className="h-11 px-4 bg-muted/30 text-muted-foreground border border-border/40 rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-muted/50 transition-all"
-                        >
-                            <ArrowLeft size={16} />
-                            <span>HUB</span>
-                        </button>
+                            icone={<ArrowLeft size={16} />}
+                            rotulo="HUB"
+                        />
                     )}
 
                     {(abaAtiva === 'desempenho') && (
@@ -103,14 +104,14 @@ const PaginaRelatorios = memo(() => {
                         </div>
                     )}
 
-                    <button 
+                    <Botao 
+                        variante="primario"
                         onClick={recarregar} 
                         disabled={carregando}
-                        className="h-11 px-6 bg-primary text-white rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
-                    >
-                        <Activity size={18} className={carregando ? 'animate-spin' : ''} />
-                        <span>{carregando ? 'GERANDO...' : 'ATUALIZAR'}</span>
-                    </button>
+                        className="h-11 px-6 rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                        icone={<Activity size={18} className={carregando ? 'animate-spin' : ''} />}
+                        rotulo={carregando ? 'GERANDO...' : 'ATUALIZAR'}
+                    />
                 </div>
             </CabecalhoFuncionalidade>
 
@@ -151,8 +152,9 @@ const PaginaRelatorios = memo(() => {
                     {/* Grid de Dimensões Acadêmicas */}
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                         {DIMENSOES.map((dim, index) => (
-                            <button
+                            <Botao
                                 key={dim.id}
+                                variante="fantasma"
                                 onClick={() => setAbaAtiva(dim.id as any)}
                                 className={`flex flex-col p-8 bg-white border border-border/40 rounded-[2rem] text-left transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 group animar-entrada atraso-${index + 1}`}
                             >
@@ -162,7 +164,7 @@ const PaginaRelatorios = memo(() => {
                                 <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">{dim.titulo}</h3>
                                 <h4 className="text-xl font-bold text-foreground mb-2">{dim.subtitulo}</h4>
                                 <p className="text-xs text-muted-foreground/60 leading-relaxed line-clamp-2">{dim.info}</p>
-                            </button>
+                            </Botao>
                         ))}
                     </div>
                 </div>
@@ -206,29 +208,30 @@ const PaginaRelatorios = memo(() => {
 
                         <div className="flex items-center gap-2">
                             {abaAtiva === 'presenca' && (
-                                <button 
+                                <Botao 
+                                    variante="fantasma"
                                     onClick={exportarPonto}
                                     className="h-10 px-5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all"
-                                >
-                                    <Download size={16} />
-                                    <span>Ponto</span>
-                                </button>
+                                    icone={<Download size={16} />}
+                                    rotulo="Ponto"
+                                />
                             )}
                             {abaAtiva === 'grade' && (
-                                <button 
+                                <Botao 
+                                    variante="fantasma"
                                     onClick={exportarMapaSemestral}
                                     className="h-10 px-5 bg-teal-50 text-teal-600 border border-teal-100 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-teal-100 transition-all"
-                                >
-                                    <FileSpreadsheet size={16} />
-                                    <span>Grade Completa</span>
-                                </button>
+                                    icone={<FileSpreadsheet size={16} />}
+                                    rotulo="Grade Completa"
+                                />
                             )}
-                            <button 
+                            <Botao 
+                                variante="fantasma"
+                                tamanho="icone"
                                 onClick={() => window.print()}
                                 className="h-10 w-10 bg-background border border-border rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground transition-all"
-                            >
-                                <Printer size={16} />
-                            </button>
+                                icone={<Printer size={16} />}
+                            />
                         </div>
                     </div>
 

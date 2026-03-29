@@ -28,6 +28,7 @@ import { PainelFiltrosKanban } from './PainelFiltrosKanban';
 import { ModalDetalhesTarefa } from './ModalDetalhesTarefa';
 import { ModalCriarTarefa } from '@/funcionalidades/backlog/componentes/ModalCriarTarefa';
 import { DocumentosProjetoModal } from '@/funcionalidades/projetos/componentes/DocumentosProjetoModal';
+import { Botao } from '@/compartilhado/componentes/ui/Botao';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
 import { EstadoVazio } from '@/compartilhado/componentes/EstadoVazio';
 import { EstadoErro } from '@/compartilhado/componentes/EstadoErro';
@@ -169,22 +170,22 @@ export const QuadroKanban = memo(() => {
             >
                 <div className="flex gap-2.5">
                     {podeVerDocumentos && (
-                        <button
+                        <Botao
+                            variante="fantasma"
                             onClick={() => setModalDocsAberto(true)}
                             className="h-11 px-6 bg-primary/5 text-primary border border-primary/20 hover:bg-primary/10 rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest hover:-translate-y-0.5 active:scale-95 transition-all"
-                        >
-                            <FileText size={18} strokeWidth={2} />
-                            <span>Arquivos e Docs</span>
-                        </button>
+                            icone={<FileText size={18} strokeWidth={2} />}
+                            rotulo="Arquivos e Docs"
+                        />
                     )}
                     {podeCriar && (
-                        <button
+                        <Botao
+                            variante="primario"
                             onClick={handleAbrirCriar}
-                            className="h-11 px-6 bg-primary text-primary-foreground rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all"
-                        >
-                            <Plus size={18} strokeWidth={3} />
-                            <span>Nova Tarefa</span>
-                        </button>
+                            className="h-11 px-6 rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all"
+                            icone={<Plus size={18} strokeWidth={3} />}
+                            rotulo="Nova Tarefa"
+                        />
                     )}
                 </div>
             </CabecalhoFuncionalidade>
@@ -195,17 +196,17 @@ export const QuadroKanban = memo(() => {
             {/* Seletor de Colunas Mobile */}
             <div className="lg:hidden flex overflow-x-auto scroll-none gap-2 px-6 py-4 -mx-6 mb-2 snap-x">
                 {COLUNAS_KANBAN.map((coluna) => (
-                    <button
+                    <Botao
                         key={coluna}
+                        variante={colunaAtiva === coluna ? 'primario' : 'fantasma'}
                         onClick={() => setColunaAtiva(coluna)}
                         className={`shrink-0 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all snap-center border ${
                             colunaAtiva === coluna 
-                                ? 'bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20' 
+                                ? 'border-primary shadow-lg shadow-primary/20' 
                                 : 'bg-card/40 text-muted-foreground/60 border-border/40'
                         }`}
-                    >
-                        {LABELS_COLUNAS[coluna]}
-                    </button>
+                        rotulo={LABELS_COLUNAS[coluna]}
+                    />
                 ))}
             </div>
 

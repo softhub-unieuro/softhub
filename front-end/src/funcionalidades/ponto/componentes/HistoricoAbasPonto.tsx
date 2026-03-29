@@ -1,5 +1,6 @@
 import { memo, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Botao } from '@/compartilhado/componentes/ui/Botao';
 import { isSameDay, startOfWeek, isToday, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { BarraBusca } from '@/compartilhado/componentes/BarraBusca';
@@ -57,13 +58,14 @@ export const HistoricoAbasPonto = memo(({
                 <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full sm:w-auto">
                     {abaAtiva === 'registro' && semanasDisponiveis.length > 1 && (
                         <div className="flex items-center justify-between sm:justify-start gap-2 bg-slate-950/[0.03] p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-slate-950/5 backdrop-blur-sm w-full sm:w-auto">
-                            <button 
+                            <Botao 
+                                variante="fantasma"
+                                tamanho="icone"
                                 onClick={onSemanaAnterior}
                                 disabled={indiceSemanaAtual <= 0}
-                                className="p-1.5 hover:bg-white hover:shadow-sm rounded-lg sm:rounded-xl transition-all disabled:opacity-20 disabled:cursor-not-allowed text-slate-600"
-                            >
-                                <ChevronLeft className="w-4 h-4 sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
-                            </button>
+                                className="h-8 w-8 hover:bg-white hover:shadow-sm rounded-lg sm:rounded-xl transition-all disabled:opacity-20 disabled:cursor-not-allowed text-slate-600"
+                                icone={<ChevronLeft className="w-4 h-4 sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />}
+                            />
                             <div className="px-2 sm:px-3 flex-1 sm:flex-none sm:min-w-[120px] text-center">
                                 <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap">
                                     {isSameDay(new Date(semanaSelecionada), startOfWeek(new Date(), { weekStartsOn: 1 })) 
@@ -71,13 +73,14 @@ export const HistoricoAbasPonto = memo(({
                                         : format(new Date(semanaSelecionada), "'Semana' dd/MM", { locale: ptBR })}
                                 </span>
                             </div>
-                            <button 
+                            <Botao 
+                                variante="fantasma"
+                                tamanho="icone"
                                 onClick={onSemanaProxima}
                                 disabled={indiceSemanaAtual >= semanasDisponiveis.length - 1}
-                                className="p-1.5 hover:bg-white hover:shadow-sm rounded-lg sm:rounded-xl transition-all disabled:opacity-20 disabled:cursor-not-allowed text-slate-600"
-                            >
-                                <ChevronRight className="w-4 h-4 sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
-                            </button>
+                                className="h-8 w-8 hover:bg-white hover:shadow-sm rounded-lg sm:rounded-xl transition-all disabled:opacity-20 disabled:cursor-not-allowed text-slate-600"
+                                icone={<ChevronRight className="w-4 h-4 sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />}
+                            />
                         </div>
                     )}
 

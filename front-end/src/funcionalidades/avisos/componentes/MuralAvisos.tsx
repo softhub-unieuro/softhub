@@ -11,6 +11,7 @@ import { CabecalhoFuncionalidade } from '@/compartilhado/componentes/CabecalhoFu
 import { EstadoVazio } from '@/compartilhado/componentes/EstadoVazio';
 import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 import { CardAviso } from './CardAviso';
+import { Botao } from '@/compartilhado/componentes/ui/Botao';
 
 export const MuralAvisos = memo(() => {
     const { avisos, carregando, erro, removerAviso } = usarAvisos();
@@ -57,13 +58,13 @@ export const MuralAvisos = memo(() => {
             >
                 <div className="flex items-center gap-4">
                     {podeCriar && (
-                        <button
+                        <Botao
+                            variante="primario"
                             onClick={() => setModalAberto(true)}
-                            className="h-11 px-6 bg-primary text-primary-foreground rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all"
-                        >
-                            <Plus size={18} strokeWidth={3} />
-                            <span>Criar Aviso</span>
-                        </button>
+                            className="h-11 px-6 rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all"
+                            icone={<Plus size={18} strokeWidth={3} />}
+                            rotulo="Criar Aviso"
+                        />
                     )}
                 </div>
             </CabecalhoFuncionalidade>

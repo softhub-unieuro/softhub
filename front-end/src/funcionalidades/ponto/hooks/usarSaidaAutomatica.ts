@@ -40,18 +40,10 @@ export function usarSaidaAutomatica() {
 
             logger.info('Ponto', `Registrando saída automática (${motivo})...`);
 
-            // Usamos keepalive=true para que a conexao continue apos fechar a pagina
-            const url = `${ambiente.apiUrl}/api/ponto`;
             try {
-                await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ tipo: 'saida' }),
-                    keepalive: true
-                });
+                // api.post do axios nativo não intercepta Unload Events com 'keepalive' de forma estável,
+                // mas nosso api.ts (que implementa um wrapper manual por cima do Fetch) agora aceita o parâmetro keepalive.
+                await api.post('/api/ponto', { tipo: 'saida' }, { keepalive: true });
                 
                 // Se for por expediente, invalidamos o cache para atualizar a UI
                 if (motivo === 'expediente') {

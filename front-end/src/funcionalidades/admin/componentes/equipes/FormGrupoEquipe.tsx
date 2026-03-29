@@ -2,6 +2,7 @@ import { useState, memo } from 'react';
 import { Users, Plus, Trash2, CalendarDays } from 'lucide-react';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
 import { SeletorBuscavel } from './SeletorBuscavel';
+import { Botao } from '@/compartilhado/componentes/ui/Botao';
 
 interface GrupoConfig {
     nome: string;
@@ -94,33 +95,33 @@ export const FormGrupoEquipe = memo(({ titulo, tipo, equipes, equipeAtivaId, aoS
             </div>
             
             <div className="grid grid-cols-2 gap-2 mb-3">
-                <button
+                <Botao
                     type="button"
+                    variante={escalaTipo === 'fixa' ? 'primario' : 'fantasma'}
                     onClick={() => setEscalaTipo('fixa')}
                     className={`h-10 rounded-xl text-[11px] font-bold transition-all border ${escalaTipo === 'fixa' ? 'bg-primary/10 border-primary text-primary' : 'bg-transparent border-border text-muted-foreground hover:bg-muted/10'}`}
-                >
-                    Dias Fixos
-                </button>
-                <button
+                    rotulo="Dias Fixos"
+                />
+                <Botao
                     type="button"
+                    variante={escalaTipo === 'alternada' ? 'primario' : 'fantasma'}
                     onClick={() => setEscalaTipo('alternada')}
                     className={`h-10 rounded-xl text-[11px] font-bold transition-all border ${escalaTipo === 'alternada' ? 'bg-primary/10 border-primary text-primary' : 'bg-transparent border-border text-muted-foreground hover:bg-muted/10'}`}
-                >
-                    Escala Alternada
-                </button>
+                    rotulo="Escala Alternada"
+                />
             </div>
 
             {escalaTipo === 'fixa' ? (
                 <div className="flex flex-wrap gap-2">
                     {DIAS_SEMANA.map(dia => (
-                        <button
+                        <Botao
                             key={dia.id}
                             type="button"
+                            variante={diasFixos.includes(dia.id) ? 'primario' : 'fantasma'}
                             onClick={() => toggleDia(dia.id)}
                             className={`flex-1 h-9 rounded-lg text-xs font-bold transition-all border ${diasFixos.includes(dia.id) ? 'bg-primary text-primary-foreground border-primary' : 'bg-transparent border-border text-muted-foreground hover:bg-muted/10'}`}
-                        >
-                            {dia.label}
-                        </button>
+                            rotulo={dia.label}
+                        />
                     ))}
                 </div>
             ) : (
@@ -195,13 +196,13 @@ export const FormGrupoEquipe = memo(({ titulo, tipo, equipes, equipeAtivaId, aoS
                                     {renderCamposEscala("space-y-2 pt-2 border-t border-border/40")}
                                     
                                     <div className="flex justify-end mt-4">
-                                        <button
+                                        <Botao
                                             type="button"
+                                            variante="primario"
                                             onClick={handleAdicionarGrupo}
-                                            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-primary/90 transition-colors"
-                                        >
-                                            Adicionar ao Grupo
-                                        </button>
+                                            className="px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-primary/90 transition-colors"
+                                            rotulo="Adicionar ao Grupo"
+                                        />
                                     </div>
                                 </div>
                             )}
@@ -231,13 +232,14 @@ export const FormGrupoEquipe = memo(({ titulo, tipo, equipes, equipeAtivaId, aoS
                                                     </span>
                                                 </div>
                                             </div>
-                                            <button
+                                            <Botao
+                                                variante="fantasma"
+                                                tamanho="icone"
                                                 type="button"
                                                 onClick={() => handleRemoverGrupo(idx)}
                                                 className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground/30 hover:text-rose-500 hover:bg-rose-500/10 transition-all opacity-0 group-hover/item:opacity-100"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
+                                                icone={<Trash2 size={14} />}
+                                            />
                                         </div>
                                     </div>
                                 ))
@@ -248,20 +250,21 @@ export const FormGrupoEquipe = memo(({ titulo, tipo, equipes, equipeAtivaId, aoS
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-border">
-                <button 
+                <Botao 
                     type="button" 
+                    variante="fantasma"
                     onClick={aoFechar} 
                     className="h-12 px-6 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/20 rounded-xl transition-all"
-                >
-                    Descartar
-                </button>
-                <button
+                    rotulo="Descartar"
+                />
+                <Botao
                     type="submit"
+                    variante="primario"
                     disabled={salvando || !nome.trim()}
-                    className="flex-1 h-12 bg-primary text-primary-foreground rounded-xl text-[10px] font-black shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all disabled:opacity-30 flex items-center justify-center uppercase tracking-widest"
-                >
-                    {salvando ? <Carregando /> : `Confirmar Cadastro`}
-                </button>
+                    className="flex-1 h-12 rounded-xl text-[10px] font-black shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all disabled:opacity-30 flex items-center justify-center uppercase tracking-widest"
+                    carregando={salvando}
+                    rotulo="Confirmar Cadastro"
+                />
             </div>
         </form>
     );

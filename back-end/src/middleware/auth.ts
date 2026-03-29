@@ -2,6 +2,8 @@ import { Context, Next } from 'hono';
 import { verify } from 'hono/jwt';
 import { Env } from '../index';
 import { log } from '../utilitarios/logger';
+import { Roles } from '../utilitarios/constantes';
+import { UsuarioDB, ConfigSistemaDB } from '../modelos/tipagem-banco';
 
 /**
  * 🛠️ POLÍTICA DE SEGURANÇA PADRÃO (FALLBACK)
@@ -9,8 +11,8 @@ import { log } from '../utilitarios/logger';
  * essas permissões garantem que o sistema continue funcional e seguro.
  */
 export const PERMISSOES_PADRAO: Record<string, any> = {
-    'ADMIN': { '*': true }, // Admin tem acesso TOTAL sempre
-    'GESTOR': {
+    [Roles.ADMIN]: { '*': true }, // Admin tem acesso TOTAL sempre
+    [Roles.GESTOR]: {
         'usuarios:*': true,
         'equipes:*': true,
         'projetos:*': true,
@@ -20,14 +22,14 @@ export const PERMISSOES_PADRAO: Record<string, any> = {
         'dashboard:*': true,
         'logs:visualizar': true
     },
-    'LIDER': {
+    [Roles.LIDER]: {
         'tarefas:*': true,
         'equipes:visualizar': true,
         'ponto:visualizar': true,
         'avisos:criar': true,
         'dashboard:visualizar': true
     },
-    'MEMBRO': {
+    [Roles.MEMBRO]: {
         'tarefas:visualizar': true,
         'tarefas:mover': true,
         'ponto:registrar': true,
@@ -40,7 +42,7 @@ export const PERMISSOES_PADRAO: Record<string, any> = {
     }
 };
 
-export const HIERARQUIA_PADRAO = ['MEMBRO', 'SUBLIDER', 'LIDER', 'GESTOR', 'COORDENADOR', 'ADMIN'];
+export const HIERARQUIA_PADRAO = [Roles.MEMBRO, Roles.SUBLIDER, Roles.LIDER, Roles.GESTOR, Roles.COORDENADOR, Roles.ADMIN];
 
 export interface UsuarioAutenticado {
     id: string;
@@ -62,7 +64,7 @@ async function carregarHierarquia(c: Context<HonoEnv>): Promise<string[]> {
         const cache = softhub_kv ? await softhub_kv.get('hierarquia_roles') : null;
         if (cache) return JSON.parse(cache);
         
-        const res = await DB.prepare('SELECT valor FROM configuracoes_sistema WHERE chave = ?').bind('hierarquia_roles').first<{ valor: string }>();
+        const res = await DB.prepare('SELECT valor FROM configuracoes_sistema WHERE chave = ?').bind('hierarquia_roles').first() as ConfigSistemaDB | null;
         if (res?.valor) {
             const h = JSON.parse(res.valor);
             if (softhub_kv) await softhub_kv.put('hierarquia_roles', res.valor, { expirationTtl: 3600 });
@@ -78,7 +80,7 @@ async function carregarMatrizPermissoes(c: Context<HonoEnv>): Promise<Record<str
         const cache = softhub_kv ? await softhub_kv.get('permissoes_roles') : null;
         if (cache) return JSON.parse(cache);
         
-        const res = await DB.prepare('SELECT valor FROM configuracoes_sistema WHERE chave = ?').bind('permissoes_roles').first<{ valor: string }>();
+        const res = await DB.prepare('SELECT valor FROM configuracoes_sistema WHERE chave = ?').bind('permissoes_roles').first<ConfigSistemaDB>();
         if (res?.valor) {
             const m = JSON.parse(res.valor);
             if (softhub_kv) await softhub_kv.put('permissoes_roles', res.valor, { expirationTtl: 3600 });
@@ -107,14 +109,14 @@ export function autenticacaoRequerida(roleMinima?: string) {
 
         // Busca usuário (D1 ou KV)
         const chaveCache = `sessao:${payload.id}`;
-        let resUsuario: any;
+        let resUsuario: UsuarioDB | null = null;
         if (c.env.softhub_kv) {
             const cache = await c.env.softhub_kv.get(chaveCache);
             if (cache) resUsuario = JSON.parse(cache);
         }
 
         if (!resUsuario) {
-            resUsuario = await c.env.DB.prepare('SELECT id, nome, email, role, versao_token FROM usuarios WHERE id = ?').bind(payload.id).first<any>();
+            resUsuario = await c.env.DB.prepare('SELECT id, nome, email, role, versao_token FROM usuarios WHERE id = ?').bind(payload.id).first() as UsuarioDB | null;
             if (!resUsuario) return c.json({ erro: 'Perfil não encontrado.' }, 401);
             if (c.env.softhub_kv) {
                 try {
@@ -158,15 +160,15 @@ export function autenticacaoRequerida(roleMinima?: string) {
         const ehMembroBootstrap = listaBootstrap.includes(resUsuario.email.toLowerCase());
 
         // A Role Real considera o override de Bootstrap
-        const roleReal = ehMembroBootstrap ? 'ADMIN' : resUsuario.role;
+        const roleReal = ehMembroBootstrap ? Roles.ADMIN : resUsuario.role;
 
         // Lógica de Simulação
         let roleEfetiva = roleReal;
         let isSimulacao = false;
 
-        if (roleReal === 'ADMIN' && roleSimuladaHeader && roleSimuladaHeader.trim() !== '') {
+        if (roleReal === Roles.ADMIN && roleSimuladaHeader && roleSimuladaHeader.trim() !== '') {
             const desejada = roleSimuladaHeader.toUpperCase();
-            if (desejada !== 'ADMIN') {
+            if (desejada !== Roles.ADMIN) {
                 roleEfetiva = desejada;
                 isSimulacao = true;
             }
@@ -187,7 +189,7 @@ export function autenticacaoRequerida(roleMinima?: string) {
         c.set('usuario', usuarioCtx);
 
         // Bypass total se for ADMIN/DONO real e não estiver simulando
-        if (roleReal === 'ADMIN' && !isSimulacao) return await next();
+        if (roleReal === Roles.ADMIN && !isSimulacao) return await next();
 
         // Check de hierarquia se solicitado
         if (roleMinima) {
@@ -213,7 +215,7 @@ export async function verificarPermissaoManual(c: Context<any>, permissao: strin
     if (!usuario) return false;
 
     // 🚨 BYPASS ABSOLUTO
-    if (usuario.roleReal === 'ADMIN' && !usuario.isSimulacao) return true;
+    if (usuario.roleReal === Roles.ADMIN && !usuario.isSimulacao) return true;
 
     const { DB, softhub_kv } = c.env as Env;
     
@@ -222,7 +224,7 @@ export async function verificarPermissaoManual(c: Context<any>, permissao: strin
         const cache = softhub_kv ? await softhub_kv.get('permissoes_roles') : null;
         if (cache) matriz = JSON.parse(cache);
         else {
-            const res = await DB.prepare('SELECT valor FROM configuracoes_sistema WHERE chave = ?').bind('permissoes_roles').first<{ valor: string }>();
+            const res = await DB.prepare('SELECT valor FROM configuracoes_sistema WHERE chave = ?').bind('permissoes_roles').first() as ConfigSistemaDB | null;
             if (res?.valor) matriz = JSON.parse(res.valor);
         }
     } catch (e) { /* Silencioso: usará a matriz padrão */ }
@@ -248,7 +250,7 @@ export function verificarPermissao(permissaoRequerida: string | string[]) {
         if (!usuario) return c.json({ erro: 'Não autorizado.' }, 401);
 
         // 🚨 BYPASS ABSOLUTO: Admins sem simulação têm acesso a TUDO.
-        if (usuario.roleReal === 'ADMIN' && !usuario.isSimulacao) return await next();
+        if (usuario.roleReal === Roles.ADMIN && !usuario.isSimulacao) return await next();
 
         const matriz = await carregarMatrizPermissoes(c);
         const permissoes = Array.isArray(permissaoRequerida) ? permissaoRequerida : [permissaoRequerida];

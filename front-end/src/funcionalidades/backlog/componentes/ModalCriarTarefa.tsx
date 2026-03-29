@@ -9,6 +9,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { LABELS_PRIORIDADE } from '@/utilitarios/constantes';
 import { servicoIA } from '@/compartilhado/servicos/servico-ia';
 import { Avatar } from '@/compartilhado/componentes/Avatar';
+import { Botao } from '@/compartilhado/componentes/ui/Botao';
 
 const esquemaTarefa = z.object({
     titulo: z.string().min(3, 'Mínimo 3 caracteres').max(100),
@@ -337,21 +338,22 @@ export function ModalCriarTarefa({ aberto, aoFechar, aoCriar }: ModalCriarTarefa
                 </div>
 
                 <div className="pt-4 flex gap-3 border-t border-border/50">
-                    <button
+                    <Botao
                         type="button"
                         onClick={aoFechar}
-                        className="flex-1 h-12 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-border hover:bg-muted transition-all"
-                    >
-                        Cancelar
-                    </button>
-                    <button
+                        variante="contorno"
+                        className="flex-1 h-12 rounded-2xl text-[10px] font-black uppercase tracking-widest"
+                        rotulo="Cancelar"
+                    />
+                    <Botao
                         type="submit"
                         disabled={carregandoCriacao}
-                        className="flex-[2] h-12 bg-primary text-primary-foreground rounded-2xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
-                    >
-                        {carregandoCriacao ? <Carregando tamanho="sm" Centralizar={false} /> : <Plus size={14} />}
-                        Criar Tarefa
-                    </button>
+                        variante="primario"
+                        className="flex-[2] h-12 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20"
+                        carregando={carregandoCriacao}
+                        icone={!carregandoCriacao ? <Plus size={14} /> : undefined}
+                        rotulo="Criar Tarefa"
+                    />
                 </div>
             </form>
         </Modal>

@@ -5,6 +5,7 @@ import { log } from '../utilitarios/logger';
 import { Octokit } from '@octokit/rest';
 import { verificarPermissaoManual } from '../middleware/auth';
 import { sanitizarHTML } from '../utilitarios/limpeza';
+import { ProjetoDB } from '../modelos/tipagem-banco';
 
 /**
  * Lista projetos para o usuário logado com métricas.
@@ -15,7 +16,7 @@ export async function listarProjetos(env: Env, usuario: any, c: any) {
     
     const projetos = await repo.buscarProjetosVisiveis(DB, usuario.id, podeVerTudo);
 
-    for (const p of (projetos as any[])) {
+    for (const p of (projetos as (ProjetoDB & { equipes_json?: string, equipes?: any[] })[])) {
         p.equipes = p.equipes_json ? JSON.parse(p.equipes_json) : [];
         delete p.equipes_json;
     }
@@ -55,70 +56,7 @@ export async function criarProjeto(env: Env, usuario: any, dados: any, ip: strin
     return { id, sucesso: true };
 }
 
-/**
- * Gerencia arquivos no GitHub para um projeto.
- */
-export async function gerenciarArquivosGitHub(env: Env, projetoId: string, acao: 'get' | 'upload' | 'delete', payload: any) {
-    const { DB, GITHUB_TOKEN, GITHUB_OWNER } = env;
-    
-    const projeto = await repo.buscarPorId(DB, projetoId);
-    if (!projeto?.github_repo) {
-        if (acao === 'get') return { arquivos: [] };
-        throw new Error('Projeto não configurado com repositório GitHub.');
-    }
 
-    const octokit = new Octokit({ auth: GITHUB_TOKEN });
-
-    if (acao === 'get') {
-        try {
-            const response = await octokit.repos.getContent({
-                owner: GITHUB_OWNER,
-                repo: projeto.github_repo,
-                path: payload.pasta || 'docs/softhub',
-            });
-            if (Array.isArray(response.data)) {
-                return {
-                    arquivos: response.data
-                        .filter((file: any) => file.type === 'file')
-                        .map((file: any) => ({
-                            name: file.name,
-                            path: file.path,
-                            sha: file.sha,
-                            size: file.size,
-                            download_url: file.download_url
-                        }))
-                };
-            }
-            return { arquivos: [] };
-        } catch (e: any) {
-            if (e.status === 404) return { arquivos: [] };
-            throw e;
-        }
-    }
-
-    if (acao === 'upload') {
-        const pasta = payload.pathFolder || 'docs/softhub';
-        await octokit.repos.createOrUpdateFileContents({
-            owner: GITHUB_OWNER,
-            repo: projeto.github_repo,
-            path: `${pasta}/${payload.nome}`,
-            message: `Upload: ${payload.nome} via SoftHub`,
-            content: payload.conteudo,
-        });
-        return { sucesso: true };
-    }
-
-    if (acao === 'delete') {
-        await octokit.repos.deleteFile({
-            owner: GITHUB_OWNER,
-            repo: projeto.github_repo,
-            path: payload.path,
-            sha: payload.sha,
-            message: `Remoção: ${payload.path.split('/').pop()} via SoftHub`,
-        });
-        return { sucesso: true };
-    }
-}
 
 /**
  * Atualiza um projeto com validações de permissão granulares.
