@@ -49,10 +49,20 @@ const app = new Hono<{ Bindings: Env }>({ strict: false });
 // 1. CORS (DEVE ser o primeiro)
 app.use('*', cors({
     origin: (origin) => {
-        if (!origin || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || origin.includes('softhub') || origin.includes('pages.dev') || origin.includes('cloudworkstations.dev')) {
+        const ALLOWED = [
+            'https://softhub.pages.dev',
+            'https://app.softhub.com.br'
+        ];
+        
+        if (!origin || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || origin.includes('cloudworkstations.dev')) {
             return origin;
         }
-        return null; // Bloqueia outros
+
+        if (ALLOWED.includes(origin)) {
+            return origin;
+        }
+        
+        return null;
     },
     allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization', 'x-role-simulada'],

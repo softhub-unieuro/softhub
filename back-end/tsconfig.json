@@ -15,7 +15,8 @@
         "baseUrl": ".",
         "paths": {
             "*": ["node_modules/*"]
-        }
+        },
+        "noEmit": true
     },
     "include": [
         "src/**/*"

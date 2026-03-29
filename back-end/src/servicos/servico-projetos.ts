@@ -16,7 +16,8 @@ export async function listarProjetos(env: Env, usuario: any, c: any) {
     const projetos = await repo.buscarProjetosVisiveis(DB, usuario.id, podeVerTudo);
 
     for (const p of (projetos as any[])) {
-        p.equipes = await repo.buscarEquipesDoProjeto(DB, p.id);
+        p.equipes = p.equipes_json ? JSON.parse(p.equipes_json) : [];
+        delete p.equipes_json;
     }
 
     return projetos;

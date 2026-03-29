@@ -88,6 +88,9 @@ CREATE TABLE IF NOT EXISTS usuarios_organizacao (
     UNIQUE(usuario_id, equipe_id, grupo_id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_usuarios_org_equipe ON usuarios_organizacao(equipe_id);
+CREATE INDEX IF NOT EXISTS idx_usuarios_org_grupo ON usuarios_organizacao(grupo_id);
+
 -- ============================================================================
 -- 4. GESTÃO DE PROJETOS E PORTFÓLIO
 -- ============================================================================
@@ -112,6 +115,8 @@ CREATE TABLE IF NOT EXISTS projetos_equipes (
     acesso TEXT NOT NULL DEFAULT 'EDICAO', -- 'LEITURA', 'EDICAO', 'GESTAO'
     PRIMARY KEY (projeto_id, equipe_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_projetos_equipes_equipe ON projetos_equipes(equipe_id);
 
 -- ============================================================================
 -- 5. KANBAN E TAREFAS (FLUXO CONTÍNUO)
@@ -199,6 +204,7 @@ CREATE TABLE IF NOT EXISTS justificativas_ponto (
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_justificativa_unica ON justificativas_ponto(usuario_id, data);
 CREATE INDEX IF NOT EXISTS idx_justificativas_status ON justificativas_ponto(status, data DESC);
+CREATE INDEX IF NOT EXISTS idx_ponto_registros_usuario ON ponto_registros(usuario_id);
 
 -- ============================================================================
 -- 7. COMUNICAÇÃO E NOTIFICAÇÕES
@@ -290,6 +296,12 @@ CREATE TABLE IF NOT EXISTS tokens_qr (
 
 CREATE INDEX IF NOT EXISTS idx_tokens_qr_status ON tokens_qr(status);
 CREATE INDEX IF NOT EXISTS idx_tokens_qr_expira ON tokens_qr(expira_em);
+
+CREATE TABLE IF NOT EXISTS tokens_revogados (
+    jti TEXT PRIMARY KEY,
+    motivo TEXT,
+    revogado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
 
 -- ============================================================================
 -- 10. CONFIGURAÇÕES DINÂMICAS DO SISTEMA

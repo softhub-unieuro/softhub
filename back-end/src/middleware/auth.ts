@@ -59,13 +59,13 @@ type HonoEnv = { Bindings: Env; Variables: { usuario: UsuarioAutenticado } };
 async function carregarHierarquia(c: Context<HonoEnv>): Promise<string[]> {
     const { DB, softhub_kv } = c.env;
     try {
-        const cache = await softhub_kv.get('hierarquia_roles');
+        const cache = softhub_kv ? await softhub_kv.get('hierarquia_roles') : null;
         if (cache) return JSON.parse(cache);
         
         const res = await DB.prepare('SELECT valor FROM configuracoes_sistema WHERE chave = ?').bind('hierarquia_roles').first<{ valor: string }>();
         if (res?.valor) {
             const h = JSON.parse(res.valor);
-            await softhub_kv.put('hierarquia_roles', res.valor, { expirationTtl: 3600 });
+            if (softhub_kv) await softhub_kv.put('hierarquia_roles', res.valor, { expirationTtl: 3600 });
             return h;
         }
     } catch (e: any) { log('error', '[AUTH] Erro ao carregar hierarquia', { erro: e.message }); }
@@ -75,13 +75,13 @@ async function carregarHierarquia(c: Context<HonoEnv>): Promise<string[]> {
 async function carregarMatrizPermissoes(c: Context<HonoEnv>): Promise<Record<string, any>> {
     const { DB, softhub_kv } = c.env;
     try {
-        const cache = await softhub_kv.get('permissoes_roles');
+        const cache = softhub_kv ? await softhub_kv.get('permissoes_roles') : null;
         if (cache) return JSON.parse(cache);
         
         const res = await DB.prepare('SELECT valor FROM configuracoes_sistema WHERE chave = ?').bind('permissoes_roles').first<{ valor: string }>();
         if (res?.valor) {
             const m = JSON.parse(res.valor);
-            await softhub_kv.put('permissoes_roles', res.valor, { expirationTtl: 3600 });
+            if (softhub_kv) await softhub_kv.put('permissoes_roles', res.valor, { expirationTtl: 3600 });
             return m;
         }
     } catch (e: any) { log('error', '[AUTH] Erro ao carregar matriz', { erro: e.message }); }
@@ -137,8 +137,17 @@ export function autenticacaoRequerida(roleMinima?: string) {
         }
 
         // Validação de JTI individual (SEC-002)
-        if (payload.jti && c.env.softhub_kv) {
-            const isRevoked = await c.env.softhub_kv.get(`revoked:${payload.jti}`);
+        if (payload.jti) {
+            let isRevoked = null;
+            if (c.env.softhub_kv) {
+                isRevoked = await c.env.softhub_kv.get(`revoked:${payload.jti}`);
+            } else {
+                // Fallback: consultar tabela de tokens revogados no D1
+                try {
+                    const r = await c.env.DB.prepare('SELECT 1 FROM tokens_revogados WHERE jti = ?1').bind(payload.jti).first();
+                    isRevoked = r ? 'revogado' : null;
+                } catch { /* tabela pode não existir na migração */ }
+            }
             if (isRevoked) {
                 return c.json({ erro: 'Sessão revogada ou deslogada.' }, 401);
             }
@@ -210,7 +219,7 @@ export async function verificarPermissaoManual(c: Context<any>, permissao: strin
     
     let matriz: Record<string, any> | null = null;
     try {
-        const cache = await softhub_kv.get('permissoes_roles');
+        const cache = softhub_kv ? await softhub_kv.get('permissoes_roles') : null;
         if (cache) matriz = JSON.parse(cache);
         else {
             const res = await DB.prepare('SELECT valor FROM configuracoes_sistema WHERE chave = ?').bind('permissoes_roles').first<{ valor: string }>();

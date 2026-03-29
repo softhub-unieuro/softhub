@@ -30,32 +30,41 @@ export async function processarFechamentoAutomatico(DB: any, KV: any) {
         if (!pendentes || pendentes.length === 0) return;
 
         const agora = new Date().toISOString();
-        
+        const stmts: any[] = [];
+        const idsToNotify: string[] = [];
+
         for (const p of pendentes as any) {
             const idSaida = crypto.randomUUID();
             
-            // 1. Inserir batida de saída automática
-            await DB.prepare(`
+            // 1. Prepara a inserção da batida de saída automática
+            stmts.push(DB.prepare(`
                 INSERT INTO ponto_registros (id, usuario_id, tipo, registrado_em, ip_origem)
                 VALUES (?, ?, 'saida', ?, 'SISTEMA-AUTOMATICO')
-            `).bind(idSaida, p.usuario_id, agora).run();
+            `).bind(idSaida, p.usuario_id, agora));
 
-            // 2. Notificar o usuário
+            // 2. Prepara o Log correspondente
+            stmts.push(DB.prepare(`
+                INSERT INTO logs (id, usuario_id, acao, modulo, descricao, ip, entidade_tipo)
+                VALUES (?, ?, 'PONTO_SAIDA_AUTO', 'ponto', ?, '127.0.0.1', 'ponto_registros')
+            `).bind(crypto.randomUUID(), p.usuario_id, `Fechamento automático (esquecimento detectado).`));
+
+            idsToNotify.push(p.usuario_id);
+
+            // 3. KV Delete pode continuar um por um (é muito rápido e não conta como Query de Relacional)
+            if (KV) await KV.delete(`presenca:${p.usuario_id}`);
+        }
+
+        if (stmts.length > 0) {
+            await DB.batch(stmts);
+        }
+
+        if (idsToNotify.length > 0) {
             await criarNotificacoes(DB, {
-                usuarioId: p.usuario_id,
+                usuariosIds: idsToNotify,
                 titulo: 'Checkout Automático',
                 mensagem: 'Seu ponto foi fechado automaticamente pelo sistema ao final do dia. Se houve erro, procure seu líder.',
                 tipo: 'ponto'
             }, KV);
-
-            // 3. Registrar Log
-            await DB.prepare(`
-                INSERT INTO logs (id, usuario_id, acao, modulo, descricao, ip, entidade_tipo)
-                VALUES (?, ?, 'PONTO_SAIDA_AUTO', 'ponto', ?, '127.0.0.1', 'ponto_registros')
-            `).bind(crypto.randomUUID(), p.usuario_id, `Fechamento automático (esquecimento detectado).`).run();
-
-            // 4. Limpar presença no KV se existir
-            if (KV) await KV.delete(`presenca:${p.usuario_id}`);
         }
 
     } catch (error: any) {
@@ -85,17 +94,20 @@ export async function enviarLembreteSaida(DB: any, KV: any) {
 
         if (!results || results.length === 0) return;
 
+        const idsToNotify: string[] = [];
         for (const r of results as any) {
             // Verifica se está online (heartbeat)
             const online = await KV?.get(`online:${r.usuario_id}`);
-            if (online) {
-                await criarNotificacoes(DB, {
-                    usuarioId: r.usuario_id,
-                    titulo: 'Expediente Quase Fim',
-                    mensagem: 'O horário regular encerra em 15 minutos. Não esqueça de registrar seu checkout!',
-                    tipo: 'ponto'
-                }, KV);
-            }
+            if (online) idsToNotify.push(r.usuario_id);
+        }
+
+        if (idsToNotify.length > 0) {
+            await criarNotificacoes(DB, {
+                usuariosIds: idsToNotify,
+                titulo: 'Expediente Quase Fim',
+                mensagem: 'O horário regular encerra em 15 minutos. Não esqueça de registrar seu checkout!',
+                tipo: 'ponto'
+            }, KV);
         }
     } catch (e: any) {
         log('error', '[AUTO-PONTO] Erro ao enviar lembretes', { erro: e.message });

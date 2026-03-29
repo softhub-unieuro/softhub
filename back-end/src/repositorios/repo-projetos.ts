@@ -6,14 +6,19 @@ import { D1Database } from '@cloudflare/workers-types';
 export async function buscarProjetosVisiveis(DB: D1Database, usuarioId: string, podeVerTudo: boolean) {
     const query = `
         SELECT p.*, 
-               (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id) as total_tarefas
+               (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id) as total_tarefas,
+               (
+                   SELECT JSON_GROUP_ARRAY(JSON_OBJECT('equipe_id', pe.equipe_id, 'acesso', pe.acesso))
+                   FROM projetos_equipes pe
+                   WHERE pe.projeto_id = p.id
+               ) as equipes_json
         FROM projetos p 
         WHERE p.arquivado = 0 AND (? = 1 OR p.publico = 1 OR NOT EXISTS (SELECT 1 FROM projetos_equipes WHERE projeto_id = p.id) OR EXISTS (
             SELECT 1 FROM projetos_equipes pe
             JOIN usuarios_organizacao uo ON uo.equipe_id = pe.equipe_id
             WHERE pe.projeto_id = p.id AND uo.usuario_id = ?
         ))
-        ORDER BY criado_em DESC
+        ORDER BY p.criado_em DESC
     `;
     const { results } = await DB.prepare(query).bind(podeVerTudo ? 1 : 0, usuarioId).all();
     return results || [];
@@ -57,7 +62,7 @@ export async function buscarDetalhesPublicos(DB: D1Database, id: string) {
  * Busca um projeto pelo ID.
  */
 export async function buscarPorId(DB: D1Database, id: string) {
-    return await DB.prepare('SELECT * FROM projetos WHERE id = ?').bind(id).first() as any;
+    return await DB.prepare('SELECT id, nome, descricao, publico, github_repo, documentacao_url, figma_url, setup_url, arquivado, criado_em FROM projetos WHERE id = ?').bind(id).first() as any;
 }
 
 /**

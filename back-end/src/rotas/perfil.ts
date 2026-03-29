@@ -204,10 +204,17 @@ rotasPerfil.get('/:id', autenticacaoRequerida(), async (c: Context) => {
 rotasPerfil.get('/:id/radar', autenticacaoRequerida(), async (c: Context) => {
     const { DB } = c.env;
     const usuarioLogado = c.get('usuario');
-    let id = c.req.param('id');
+    let id: string = c.req.param('id') || '';
+    
+    if (!id) return c.json({ erro: 'ID inválido.' }, 400);
 
     if (id === 'me') {
         id = usuarioLogado.id;
+    }
+
+    if (usuarioLogado.id !== id && usuarioLogado.role !== 'ADMIN') {
+        const eLideranca = await verificarLideranca(DB, usuarioLogado.id, id);
+        if (!eLideranca) return c.json({ erro: 'Acesso negado. Apenas a liderança do usuário possui permissão para visualizar seu radar de competências.' }, 403);
     }
 
     try {
@@ -240,5 +247,17 @@ rotasPerfil.get('/:id/radar', autenticacaoRequerida(), async (c: Context) => {
         return c.json({ erro: 'Falha ao gerar radar de competências' }, 500);
     }
 });
+
+async function verificarLideranca(DB: any, liderId: string, membroId: string): Promise<boolean> {
+    const res = await DB.prepare(`
+        SELECT COUNT(*) as total 
+        FROM usuarios_organizacao uo
+        JOIN equipes e ON e.id = uo.equipe_id
+        WHERE uo.usuario_id = ? 
+        AND (e.lider_id = ? OR e.sub_lider_id = ?)
+    `).bind(membroId, liderId, liderId).first() as any;
+    
+    return Number(res?.total || 0) > 0;
+}
 
 export default rotasPerfil;
