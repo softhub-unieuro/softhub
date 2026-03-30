@@ -1,259 +1,221 @@
-import { useState, useMemo, memo } from 'react';
+import { memo, useState } from 'react';
 import { 
-    Calendar,
-    Activity,
-    ClipboardList,
-    Printer,
-    FileSearch,
-    BarChart4,
-    UserCheck,
-    Map,
-    Download,
-    LayoutGrid,
-    Zap,
-    Search,
-    ArrowLeft,
+    TrendingUp, 
+    ClipboardList, 
+    LayoutGrid, 
+    Trophy, 
+    User, 
+    Calendar, 
+    CalendarDays, 
     ChevronRight,
-    TrendingUp,
-    ShieldCheck,
-    Grid3X3,
-    Table,
-    FileSpreadsheet
+    ArrowLeft,
+    BarChart3,
+    Zap,
+    Sparkles,
+    Shield,
+    Download
 } from 'lucide-react';
 import { usarRelatorios } from '@/funcionalidades/admin/hooks/usarRelatorios';
-import { Alerta } from '@/compartilhado/componentes/Alerta';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
-import { CabecalhoFuncionalidade } from '@/compartilhado/componentes/CabecalhoFuncionalidade';
-import { Botao } from '@/compartilhado/componentes/ui/Botao';
 
-import { RelatorioPresenca } from '@/funcionalidades/admin/componentes/relatorios/RelatorioPresenca';
-import { RelatorioAusencias } from '@/funcionalidades/admin/componentes/relatorios/RelatorioAusencias';
-import { RelatorioProjetos } from '@/funcionalidades/admin/componentes/relatorios/RelatorioProjetos';
-import { RelatorioDesempenho } from '@/funcionalidades/admin/componentes/relatorios/RelatorioDesempenho';
-import { RelatorioIndividual } from '@/funcionalidades/admin/componentes/relatorios/RelatorioIndividual';
-import { RelatorioGradeSemestral } from '@/funcionalidades/admin/componentes/relatorios/RelatorioGradeSemestral';
+// Importação dos sub-relatórios individuais
+import { RelatorioPresenca } from './relatorios/RelatorioPresenca';
+import { RelatorioIndividual } from './relatorios/RelatorioIndividual';
+import { RelatorioGradeSemestral } from './relatorios/RelatorioGradeSemestral';
+import { RelatorioDesempenho } from './relatorios/RelatorioDesempenho';
+import { RelatorioProjetos } from './relatorios/RelatorioProjetos';
+import { RelatorioAusencias } from './relatorios/RelatorioAusencias';
 
-/**
- * HUB DE INTELIGÊNCIA - Central de Relatórios
- * Integrado à identidade visual padrão do sistema com estilo premium.
- */
-const PaginaRelatorios = memo(() => {
-    // SEMESTRES (Ref DX-005)
+type TipoRelatorio = 'presenca' | 'individual' | 'grade' | 'desempenho' | 'projeto' | 'ausencias';
+
+export default function PaginaRelatorios() {
+    const [hoje] = useState(new Date().toISOString().split('T')[0]);
     const [dataInicio, setDataInicio] = useState('2025-01-01');
-    const [dataFim, setDataFim] = useState('2025-06-30');
-    const [abaAtiva, setAbaAtiva] = useState<null | 'presenca' | 'justificativas' | 'individual' | 'projetos' | 'desempenho' | 'grade'>(null);
-    
+    const [dataFim, setDataFim] = useState(hoje);
+    const [relatorioAtivo, setRelatorioAtivo] = useState<TipoRelatorio | null>(null);
+
     const { 
         frequenciaGeral, 
         frequenciaMembros, 
-        projetosRelatorio,
+        projetosRelatorio, 
         desempenhoRelatorio,
         carregando, 
-        erro,
         exportarPonto,
-        exportarMapaSemestral,
-        recarregar 
+        exportarMapaSemestral 
     } = usarRelatorios(dataInicio, dataFim);
 
-    const [busca, setBusca] = useState('');
+    const menuRelatorios = [
+        { 
+            id: 'presenca' as TipoRelatorio, 
+            titulo: 'Presença Coletiva', 
+            subtitulo: 'Frequência Geral da Equipe',
+            icone: <TrendingUp size={24} />, 
+            cor: 'bg-blue-600',
+            descricao: 'Visão macro do registro de ponto dos membros.'
+        },
+        { 
+            id: 'individual' as TipoRelatorio, 
+            titulo: 'Extrato Individual', 
+            subtitulo: 'Relatório por Membro',
+            icone: <User size={24} />, 
+            cor: 'bg-indigo-600',
+            descricao: 'Histórico completo de um colaborador específico.'
+        },
+        { 
+            id: 'projeto' as TipoRelatorio, 
+            titulo: 'Saúde de Projetos', 
+            subtitulo: 'Status de Desenvolvimento',
+            icone: <LayoutGrid size={24} />, 
+            cor: 'bg-emerald-600',
+            descricao: 'Métricas de entrega e backlog de cada projeto.'
+        },
+        { 
+            id: 'grade' as TipoRelatorio, 
+            titulo: 'Grade Semestral', 
+            subtitulo: 'Acompanhamento do Ciclo',
+            icone: <CalendarDays size={24} />, 
+            cor: 'bg-amber-600',
+            descricao: 'Mapa visual de assiduidade ao longo do semestre.'
+        },
+        { 
+            id: 'desempenho' as TipoRelatorio, 
+            titulo: 'Ranking de Entregas', 
+            subtitulo: 'Volume de Produção',
+            icone: <Trophy size={24} />, 
+            cor: 'bg-purple-600',
+            descricao: 'Membros com maior volume de tarefas concluídas.'
+        },
+        { 
+            id: 'ausencias' as TipoRelatorio, 
+            titulo: 'Justificativas', 
+            subtitulo: 'Auditoria de Faltas',
+            icone: <ClipboardList size={24} />, 
+            cor: 'bg-rose-600',
+            descricao: 'Controle de abonos e declarações de ausência.'
+        }
+    ];
 
-    const membrosFiltrados = useMemo(() => {
-        return (frequenciaMembros || []).filter((m: any) => 
-            m.nome.toLowerCase().includes(busca.toLowerCase()) || 
-            m.email.toLowerCase().includes(busca.toLowerCase())
-        );
-    }, [frequenciaMembros, busca]);
+    const exportarDadosGerais = () => {
+        exportarPonto();
+    };
 
-    const DIMENSOES = useMemo(() => [
-        { id: 'presenca', titulo: 'Frequência Geral', subtitulo: 'Visão Coletiva de Ponto', icone: BarChart4, cor: 'from-primary to-blue-600', sombra: 'shadow-primary/10', info: 'Volume de acessos diários, assiduidade média e fluxo da fábrica.' },
-        { id: 'grade', titulo: 'Grade de Assiduidade', subtitulo: 'Mapa Mensal Membro x Dia', icone: Grid3X3, cor: 'from-emerald-600 to-teal-700', sombra: 'shadow-emerald-500/10', info: 'Grade completa do semestre para auditoria acadêmica consolidada.' },
-        { id: 'individual', titulo: 'Extrato por Membro', subtitulo: 'Auditoria Individual', icone: ShieldCheck, cor: 'from-blue-600 to-indigo-800', sombra: 'shadow-indigo-500/10', info: 'Linha do tempo detalhada, sessões e IPs de uma pessoa específica.' },
-        { id: 'justificativas', titulo: 'Justificativas de Ponto', subtitulo: 'Gestão de Ausências', icone: ClipboardList, cor: 'from-amber-500 to-orange-500', sombra: 'shadow-amber-500/10', info: 'Controle de atestados, faltas justificadas e pendências de audit.' },
-        { id: 'desempenho', titulo: 'Ranking de Produtividade', subtitulo: 'Desempenho Técnico', icone: Zap, cor: 'from-purple-500 to-violet-600', sombra: 'shadow-violet-500/10', info: 'Ranking de tarefas entregues e engajamento produtivo dos membros.' },
-        { id: 'projetos', titulo: 'Status de Projetos', subtitulo: 'Saúde do Backlog', icone: LayoutGrid, cor: 'from-rose-500 to-pink-500', sombra: 'shadow-rose-500/10', info: 'Progresso das entregas, tarefas atrasadas e volume por cada projeto.' },
-    ], []);
+    const renderizarRelatorio = () => {
+        if (carregando) return <div className="py-20 flex justify-center"><Carregando Centralizar={true} /></div>;
+
+        switch (relatorioAtivo) {
+            case 'presenca': return <RelatorioPresenca frequenciaGeral={frequenciaGeral} />;
+            case 'projeto': return <RelatorioProjetos projetos={projetosRelatorio} />;
+            case 'desempenho': return <RelatorioDesempenho desempenho={desempenhoRelatorio} />;
+            case 'individual': return <RelatorioIndividual membros={frequenciaMembros} dataInicio={dataInicio} dataFim={dataFim} />;
+            case 'grade': return <RelatorioGradeSemestral membros={frequenciaMembros} onExportar={exportarMapaSemestral} />;
+            case 'ausencias': return <RelatorioAusencias frequenciaGeral={frequenciaGeral} />;
+            default: return null;
+        }
+    };
 
     return (
-        <div className="w-full h-full flex flex-col space-y-8 animar-entrada">
-            <CabecalhoFuncionalidade
-                titulo={abaAtiva ? DIMENSOES.find(d => d.id === abaAtiva)?.titulo || 'Relatórios' : "Inteligência & Relatórios"}
-                subtitulo={abaAtiva ? DIMENSOES.find(d => d.id === abaAtiva)?.info || '' : "Supervisão estratégica e monitoramento preditivo de todas as dimensões."}
-                icone={abaAtiva ? DIMENSOES.find(d => d.id === abaAtiva)?.icone || FileSearch : FileSearch}
-            >
-                {/* Ações Dinâmicas no Cabeçalho */}
-                <div className="flex items-center gap-3">
-                    {abaAtiva && (
-                        <Botao 
-                            variante="fantasma"
-                            onClick={() => setAbaAtiva(null)}
-                            className="h-11 px-4 bg-muted/30 text-muted-foreground border border-border/40 rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-muted/50 transition-all"
-                            icone={<ArrowLeft size={16} />}
-                            rotulo="HUB"
-                        />
-                    )}
-
-                    {(abaAtiva === 'desempenho') && (
-                        <div className="relative group/search max-w-xs">
-                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within/search:text-primary transition-colors" size={14} />
-                            <input
-                                placeholder="Filtrar membro..."
-                                value={busca}
-                                onChange={e => setBusca(e.target.value)}
-                                className="h-11 w-64 bg-background border border-border rounded-2xl pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/30 font-medium"
-                            />
+        <div className="px-6 space-y-12">
+            {/* Cabeçalho de Relatórios */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 ">
+                <div className="space-y-4">
+                    {relatorioAtivo ? (
+                        <button 
+                            onClick={() => setRelatorioAtivo(null)}
+                            className="group flex items-center gap-2 text-primary font-black uppercase text-[10px] tracking-widest hover:gap-3 transition-all mb-4 bg-primary/5 px-6 py-3 rounded-2xl w-fit"
+                        >
+                            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> 
+                            Voltar para o Início
+                        </button>
+                    ) : (
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-primary/10 text-primary rounded-2xl border border-primary/20">
+                                <BarChart3 size={20} />
+                            </div>
+                            <span className="px-4 py-1.5 bg-primary/5 text-primary border border-primary/10 rounded-xl text-[10px] font-black uppercase tracking-widest leading-none">
+                                Analítica & Dados
+                            </span>
                         </div>
                     )}
-
-                    <Botao 
-                        variante="primario"
-                        onClick={recarregar} 
-                        disabled={carregando}
-                        className="h-11 px-6 rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
-                        icone={<Activity size={18} className={carregando ? 'animate-spin' : ''} />}
-                        rotulo={carregando ? 'GERANDO...' : 'ATUALIZAR'}
-                    />
+                    <h1 className="text-5xl font-black text-slate-900 tracking-tighter uppercase leading-none">
+                        {relatorioAtivo ? menuRelatorios.find(m => m.id === relatorioAtivo)?.titulo : 'Painel de Relatórios'}
+                    </h1>
+                    <p className="text-slate-400 font-bold text-sm max-w-xl">
+                        {relatorioAtivo 
+                            ? menuRelatorios.find(m => m.id === relatorioAtivo)?.subtitulo 
+                            : 'Gerencie a performance, frequência e entregas da Fábrica de Software em um só lugar.'}
+                    </p>
                 </div>
-            </CabecalhoFuncionalidade>
 
-            {/* View do HUB de Seleção */}
-            {!abaAtiva ? (
-                <div className="space-y-8">
-                    {/* Cards de Métricas Rápidas */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div className="p-8 bg-white border border-border/40 rounded-[2rem] shadow-sm flex items-center justify-between group hover:border-primary/20 transition-all">
-                            <div>
-                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Audit em Tempo Real</p>
-                                <p className="text-3xl font-black text-foreground tracking-tighter">{frequenciaMembros.length} Membros</p>
-                            </div>
-                            <div className="w-14 h-14 bg-primary/5 text-primary rounded-2xl flex items-center justify-center group-hover:rotate-6 transition-transform">
-                                <ShieldCheck size={28} />
-                            </div>
+                {!relatorioAtivo && (
+                    <div className="flex flex-col gap-4">
+                        <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-3xl border border-slate-100">
+                             <div className="space-y-1">
+                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Período de Análise</label>
+                                 <div className="flex items-center gap-3">
+                                     <input 
+                                         type="date" 
+                                         value={dataInicio}
+                                         onChange={(e) => setDataInicio(e.target.value)}
+                                         className="bg-transparent border-none outline-none text-xs font-black text-slate-700"
+                                     />
+                                     <span className="text-slate-300">→</span>
+                                     <input 
+                                         type="date" 
+                                         value={dataFim}
+                                         onChange={(e) => setDataFim(e.target.value)}
+                                         className="bg-transparent border-none outline-none text-xs font-black text-slate-700"
+                                     />
+                                 </div>
+                             </div>
                         </div>
-                        <div className="p-8 bg-white border border-border/40 rounded-[2rem] shadow-sm flex items-center justify-between group hover:border-rose-200 transition-all">
-                            <div>
-                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Esteira de Produção</p>
-                                <p className="text-3xl font-black text-foreground tracking-tighter">{projetosRelatorio.length} Projetos</p>
-                            </div>
-                            <div className="w-14 h-14 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center group-hover:rotate-6 transition-transform">
-                                <LayoutGrid size={28} />
-                            </div>
-                        </div>
-                        <div className="p-8 bg-white border border-border/40 rounded-[2rem] shadow-sm flex items-center justify-between group hover:border-violet-200 transition-all">
-                            <div>
-                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Último Ciclo</p>
-                                <p className="text-3xl font-black text-foreground tracking-tighter">Ativo</p>
-                            </div>
-                            <div className="w-14 h-14 bg-violet-50 text-violet-500 rounded-2xl flex items-center justify-center group-hover:rotate-6 transition-transform">
-                                <Zap size={28} />
-                            </div>
-                        </div>
+                        <button 
+                            onClick={exportarDadosGerais}
+                            className="w-full h-14 bg-slate-900 text-white rounded-3xl flex items-center justify-center gap-3 text-[11px] font-black uppercase tracking-widest hover:bg-primary transition-all active:scale-95 shadow-xl shadow-slate-200"
+                        >
+                            <Download size={18} strokeWidth={3} /> Baixar Dados Gerais
+                        </button>
                     </div>
+                )}
+            </div>
 
-                    {/* Grid de Dimensões Acadêmicas */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {DIMENSOES.map((dim, index) => (
-                            <Botao
-                                key={dim.id}
-                                variante="fantasma"
-                                onClick={() => setAbaAtiva(dim.id as any)}
-                                className={`flex flex-col p-8 bg-white border border-border/40 rounded-[2rem] text-left transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 group animar-entrada atraso-${index + 1}`}
-                            >
-                                <div className={`w-14 h-14 bg-gradient-to-br ${dim.cor} rounded-2xl flex items-center justify-center text-white shadow-lg mb-6 group-hover:scale-110 transition-transform`}>
-                                    <dim.icone size={26} />
-                                </div>
-                                <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">{dim.titulo}</h3>
-                                <h4 className="text-xl font-bold text-foreground mb-2">{dim.subtitulo}</h4>
-                                <p className="text-xs text-muted-foreground/60 leading-relaxed line-clamp-2">{dim.info}</p>
-                            </Botao>
-                        ))}
-                    </div>
+            {/* Hub de Módulos (Grid ou Visualização) */}
+            {!relatorioAtivo ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {menuRelatorios.map((item) => (
+                        <button
+                            key={item.id}
+                            onClick={() => setRelatorioAtivo(item.id)}
+                            className="group relative bg-white border border-slate-100 p-10 text-left rounded-[3rem] hover:shadow-2xl hover:shadow-slate-200 transition-all duration-500 hover:-translate-y-2 overflow-hidden"
+                        >
+                            <div className={`p-4 ${item.cor} text-white rounded-2xl w-fit mb-8 shadow-xl shadow-slate-100 group-hover:scale-110 transition-transform`}>
+                                {item.icone}
+                            </div>
+
+                            <div className="space-y-2">
+                                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter leading-none group-hover:text-primary transition-colors">{item.titulo}</h3>
+                                <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">
+                                    {item.descricao}
+                                </p>
+                            </div>
+
+                            <div className="mt-8 flex items-center gap-2">
+                                 <div className="h-1 flex-1 bg-slate-50 rounded-full overflow-hidden">
+                                     <div className={`h-full bg-primary w-8 group-hover:w-full transition-all duration-700`} />
+                                 </div>
+                                 <ChevronRight size={14} className="text-slate-200 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                            </div>
+                        </button>
+                    ))}
                 </div>
             ) : (
-                <div className="space-y-8 pb-20">
-                    {/* Barra de Filtros e Período */}
-                    <div className="flex flex-wrap items-center gap-4 p-5 bg-muted/10 border border-border/40 rounded-[2rem]">
-                        <div className="flex items-center gap-3 bg-background px-4 py-2.5 border border-border rounded-xl">
-                            <TrendingUp size={14} className="text-muted-foreground" />
-                            <select 
-                                className="bg-transparent border-none text-[10px] font-black text-foreground focus:ring-0 uppercase tracking-widest cursor-pointer p-0"
-                                onChange={(e) => {
-                                    const val = e.target.value;
-                                    const periodos: any = {
-                                        '2025.1': ['2025-01-01', '2025-06-30'],
-                                        '2025.2': ['2025-07-01', '2025-12-31'],
-                                        '2026.1': ['2026-01-01', '2026-06-30'],
-                                        '2026.2': ['2026-07-01', '2026-12-31'],
-                                    };
-                                    if (periodos[val]) { setDataInicio(periodos[val][0]); setDataFim(periodos[val][1]); }
-                                }}
-                                defaultValue=""
-                            >
-                                <option value="" disabled>SEMESTRE</option>
-                                <option value="2025.1">2025.1</option>
-                                <option value="2025.2">2025.2</option>
-                                <option value="2026.1">2026.1</option>
-                            </select>
-                        </div>
-
-                        <div className="flex items-center gap-3 bg-background px-4 py-2.5 border border-border rounded-xl">
-                            <Calendar size={14} className="text-muted-foreground" />
-                            <div className="flex items-center gap-3">
-                                <input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} className="bg-transparent border-none text-xs font-bold text-foreground p-0 focus:ring-0" />
-                                <span className="text-border">➔</span>
-                                <input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} className="bg-transparent border-none text-xs font-bold text-foreground p-0 focus:ring-0" />
-                            </div>
-                        </div>
-
-                        <div className="flex-1" />
-
-                        <div className="flex items-center gap-2">
-                            {abaAtiva === 'presenca' && (
-                                <Botao 
-                                    variante="fantasma"
-                                    onClick={exportarPonto}
-                                    className="h-10 px-5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all"
-                                    icone={<Download size={16} />}
-                                    rotulo="Ponto"
-                                />
-                            )}
-                            {abaAtiva === 'grade' && (
-                                <Botao 
-                                    variante="fantasma"
-                                    onClick={exportarMapaSemestral}
-                                    className="h-10 px-5 bg-teal-50 text-teal-600 border border-teal-100 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-teal-100 transition-all"
-                                    icone={<FileSpreadsheet size={16} />}
-                                    rotulo="Grade Completa"
-                                />
-                            )}
-                            <Botao 
-                                variante="fantasma"
-                                tamanho="icone"
-                                onClick={() => window.print()}
-                                className="h-10 w-10 bg-background border border-border rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground transition-all"
-                                icone={<Printer size={16} />}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Exibição dos Relatórios Contextuais */}
-                    {erro && <Alerta tipo="erro" mensagem={erro} />}
-
-                    {carregando && frequenciaMembros.length === 0 ? (
-                        <Carregando Centralizar={true} />
-                    ) : (
-                        <div className="animar-entrada">
-                            {abaAtiva === 'presenca' && frequenciaGeral && <RelatorioPresenca frequenciaGeral={frequenciaGeral} />}
-                             {abaAtiva === 'justificativas' && frequenciaGeral && <RelatorioAusencias frequenciaGeral={frequenciaGeral} />}
-                            {abaAtiva === 'projetos' && projetosRelatorio && <RelatorioProjetos projetos={projetosRelatorio} />}
-                            {abaAtiva === 'desempenho' && desempenhoRelatorio && <RelatorioDesempenho desempenho={desempenhoRelatorio} />}
-                            {abaAtiva === 'individual' && <RelatorioIndividual membros={frequenciaMembros} dataInicio={dataInicio} dataFim={dataFim} />}
-                            {abaAtiva === 'grade' && <RelatorioGradeSemestral membros={frequenciaMembros} onExportar={exportarMapaSemestral} />}
-                        </div>
-                    )}
+                <div className="animar-entrada">
+                    {renderizarRelatorio()}
                 </div>
             )}
         </div>
     );
-});
+}
 
-export default PaginaRelatorios;
+function CalendarDay(props: any) {
+    return <Calendar {...props} />;
+}

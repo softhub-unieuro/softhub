@@ -1,3 +1,4 @@
+// Componente: DocumentosProjetoModal
 import { memo } from 'react';
 import { ExternalLink, FileText, Github, X } from 'lucide-react';
 import { Modal } from '@/compartilhado/componentes/Modal';
@@ -18,6 +19,8 @@ interface DocumentosProjetoModalProps {
  * Integração com o repositório GitHub para centralização de artefatos.
  */
 export const DocumentosProjetoModal = memo(({ projeto, aberto, aoFechar }: DocumentosProjetoModalProps) => {
+    if (!projeto) return null;
+
     const urlGithub = projeto.github_repo 
         ? `https://github.com/${import.meta.env.VITE_GITHUB_STORAGE_OWNER}/${projeto.github_repo}`
         : null;

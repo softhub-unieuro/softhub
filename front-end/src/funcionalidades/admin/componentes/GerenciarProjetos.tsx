@@ -214,11 +214,13 @@ export default function GerenciarProjetos() {
                 )}
             </ConfirmacaoExclusao>
 
-            <DocumentosProjetoModal
-                projeto={projetoDocs}
-                aberto={!!projetoDocs}
-                aoFechar={() => setProjetoDocs(null)}
-            />
+            {projetoDocs && (
+                <DocumentosProjetoModal
+                    projeto={projetoDocs}
+                    aberto={!!projetoDocs}
+                    aoFechar={() => setProjetoDocs(null)}
+                />
+            )}
         </>
     );
 }
