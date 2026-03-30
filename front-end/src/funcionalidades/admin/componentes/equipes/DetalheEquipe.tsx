@@ -19,6 +19,7 @@ interface DetalheEquipeProps {
     aoRemoverMembro: (mId: string) => void;
     aoMoverMembro: (mId: string, gOrigemId: string) => void;
     aoSelecionarLider: (tipo: 'lider' | 'sub_lider') => void;
+    aoEditarGrupo: (g: Grupo) => void;
     aoSalvarNomeGrupo: (id: string, nome: string) => Promise<void>;
     aoSalvarNomeEquipe: (id: string, nome: string) => Promise<void>;
 }
@@ -33,6 +34,7 @@ export const DetalheEquipe = memo(({
     aoRemoverMembro,
     aoMoverMembro,
     aoSelecionarLider,
+    aoEditarGrupo,
     aoSalvarNomeGrupo,
     aoSalvarNomeEquipe
 }: DetalheEquipeProps) => {
@@ -264,9 +266,17 @@ export const DetalheEquipe = memo(({
                                                                 </button>
                                                             )}
                                                         </div>
-                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                        <div className="flex items-center gap-2 mt-0.5 group/escala">
                                                             <span className="text-[9px] font-black text-primary/40 uppercase tracking-[0.15em]">Presencial</span>
                                                             <ExibirEscala escala={g.escala_dias || null} />
+                                                            {podeEditarGrupo && (
+                                                                <button 
+                                                                    onClick={() => aoEditarGrupo(g)}
+                                                                    className="opacity-0 group-hover/escala:opacity-100 p-1 text-slate-300 hover:text-primary transition-all rounded-md hover:bg-primary/5"
+                                                                >
+                                                                    <Pencil size={10} strokeWidth={3} />
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 )}

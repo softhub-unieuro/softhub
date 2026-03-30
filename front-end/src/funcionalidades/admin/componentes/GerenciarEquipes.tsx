@@ -32,7 +32,7 @@ export const GerenciarEquipes = memo(() => {
     const podeEditarEquipe = usarPermissaoAcesso('equipes:editar_equipe');
 
     const [idEquipeAtiva, setIdEquipeAtiva] = useState<string | null>(null);
-    const [modalOrg, setModalOrg] = useState<{ aberto: boolean; tipo: 'equipe' | 'grupo'; dados?: { equipe_id?: string | null } } | null>(null);
+    const [modalOrg, setModalOrg] = useState<{ aberto: boolean; tipo: 'equipe' | 'grupo'; dados?: any } | null>(null);
     const [confirmacaoExclusao, setConfirmacaoExclusao] = useState<{ id: string; nome: string; tipo: 'equipe' | 'grupo' } | null>(null);
     const [modalAlocacao, setModalAlocacao] = useState<{ grupoId: string; equipeId: string } | null>(null);
     const [modalMover, setModalMover] = useState<{ membroId: string; grupoOrigemId: string; equipeId: string } | null>(null);
@@ -47,7 +47,7 @@ export const GerenciarEquipes = memo(() => {
     [equipesAtivas, idEquipeAtiva]);
 
     const gruposDaEquipe = useMemo(() => 
-        grupos.filter((g: Grupo) => g.equipe_id === idEquipeAtiva),
+        grupos.filter((g: Grupo) => !g.equipe_id || g.equipe_id === idEquipeAtiva),
     [grupos, idEquipeAtiva]);
 
     const handleSalvarOrg = useCallback(async (dados: any) => {
@@ -55,11 +55,21 @@ export const GerenciarEquipes = memo(() => {
         setDesativando(true);
         try {
             if (modalOrg.tipo === 'grupo') {
-                await criarGrupo(dados);
-                exibirToast('Grupo criado com sucesso');
+                if (dados.id) {
+                    await editarGrupo(dados.id, dados);
+                    exibirToast('Grupo atualizado com sucesso');
+                } else {
+                    await criarGrupo(dados);
+                    exibirToast('Grupo criado com sucesso');
+                }
             } else {
-                await criarEquipe(dados);
-                exibirToast('Equipe criada com sucesso');
+                if (dados.id) {
+                    await editarEquipe(dados.id, dados);
+                    exibirToast('Equipe atualizada com sucesso');
+                } else {
+                    await criarEquipe(dados);
+                    exibirToast('Equipe criada com sucesso');
+                }
             }
             setModalOrg(null);
         } catch (error: any) {
@@ -133,6 +143,7 @@ export const GerenciarEquipes = memo(() => {
 
     // Callbacks Memoizados para DetalheEquipe
     const handleAdicionarGrupo = useCallback(() => setModalOrg({ aberto: true, tipo: 'grupo', dados: { equipe_id: idEquipeAtiva } }), [idEquipeAtiva]);
+    const handleEditarGrupoAbrir = useCallback((g: Grupo) => setModalOrg({ aberto: true, tipo: 'grupo', dados: g }), []);
     const handleExcluirGrupo = useCallback((g: Grupo) => setConfirmacaoExclusao({ id: g.id, nome: g.nome, tipo: 'grupo' }), []);
     const handleAlocarAbrir = useCallback((gId: string, eId: string) => setModalAlocacao({ grupoId: gId, equipeId: eId }), []);
     const handleRemoverMembro = useCallback((mId: string) => { alocarMembro(mId, null, null); }, [alocarMembro]);
@@ -160,13 +171,22 @@ export const GerenciarEquipes = memo(() => {
                     />
 
                     {podeCriarEquipe && (
-                        <Botao
-                            variante="primario"
-                            onClick={() => setModalOrg({ aberto: true, tipo: 'equipe' })}
-                            className={`h-11 px-6 rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all ${idEquipeAtiva ? 'hidden lg:flex' : 'flex'}`}
-                            icone={<Plus size={18} strokeWidth={3} />}
-                            rotulo="Nova Equipe"
-                        />
+                        <div className="flex items-center gap-3">
+                            <Botao
+                                variante="secundario"
+                                onClick={() => setModalOrg({ aberto: true, tipo: 'grupo', dados: {} })}
+                                className="h-11 w-11 rounded-full flex items-center justify-center transition-all bg-primary/5 border border-primary/20 text-primary hover:bg-primary/10 hover:border-primary/40 shadow-sm active:scale-95"
+                                icone={<Plus size={20} strokeWidth={3} />}
+                                title="Novo Grupo Global"
+                            />
+                            <Botao
+                                variante="primario"
+                                onClick={() => setModalOrg({ aberto: true, tipo: 'equipe' })}
+                                className={`h-11 px-6 rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all ${idEquipeAtiva ? 'hidden lg:flex' : 'flex'}`}
+                                icone={<Plus size={18} strokeWidth={3} />}
+                                rotulo="Nova Equipe"
+                            />
+                        </div>
                     )}
                 </div>
             </CabecalhoFuncionalidade>
@@ -206,6 +226,7 @@ export const GerenciarEquipes = memo(() => {
                                      aoRemoverMembro={handleRemoverMembro}
                                      aoMoverMembro={handleMoverMembroAbrir}
                                      aoSelecionarLider={handleSelecionarLiderAbrir}
+                                     aoEditarGrupo={handleEditarGrupoAbrir}
                                      aoSalvarNomeGrupo={handleSalvarNomeGrupo}
                                      aoSalvarNomeEquipe={handleSalvarNomeEquipe}
                                  />
@@ -228,12 +249,17 @@ export const GerenciarEquipes = memo(() => {
                 <Modal
                     aberto={modalOrg.aberto}
                     aoFechar={() => setModalOrg(null)}
-                    titulo={modalOrg.tipo === 'grupo' && equipeAtiva ? `Novo Grupo em ${equipeAtiva.nome}` : `Nova Equipe`}
+                    titulo={
+                        modalOrg.tipo === 'equipe' 
+                            ? 'Nova Equipe' 
+                            : (modalOrg.dados?.id ? `Editar Grupo: ${modalOrg.dados.nome}` : `Novo Grupo em ${equipeAtiva?.nome || 'Equipe'}`)
+                    }
                 >
                     <FormGrupoEquipe
-                        titulo={modalOrg.tipo === 'equipe' ? 'Equipe' : 'Grupo'}
+                        titulo={modalOrg.tipo === 'equipe' ? 'Equipe' : (modalOrg.dados?.id ? 'Editar Grupo' : 'Novo Grupo')}
                         tipo={modalOrg.tipo}
                         equipeAtivaId={modalOrg.dados?.equipe_id ?? undefined}
+                        dadosIniciais={modalOrg.dados}
                         equipes={equipesAtivas.map((e: Equipe) => ({ id: e.id, nome: e.nome }))}
                         aoSalvar={handleSalvarOrg}
                         aoFechar={() => setModalOrg(null)}

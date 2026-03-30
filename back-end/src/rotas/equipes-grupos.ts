@@ -40,6 +40,10 @@ rotasGrupos.get('/', autenticacaoRequerida(), verificarPermissao('equipes:visual
     }
 });
 
+/**
+ * Cria um novo grupo.
+ * Regra: equipe_id agora é OPCIONAL para permitir Grupos Globais.
+ */
 rotasGrupos.post('/', autenticacaoRequerida(), verificarPermissao('equipes:criar_grupo'), async (c: Context) => {
     const { DB } = c.env;
     const usuarioLogado = c.get('usuario') as any;
@@ -53,7 +57,6 @@ rotasGrupos.post('/', autenticacaoRequerida(), verificarPermissao('equipes:criar
     }
 
     if (!nome?.trim()) return c.json({ erro: 'O nome do grupo é obrigatório.' }, 400);
-    if (!equipe_id) return c.json({ erro: 'O vínculo com uma equipe é obrigatório.' }, 400);
 
     try {
         const id = crypto.randomUUID();

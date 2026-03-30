@@ -14,6 +14,7 @@ interface FormGrupoEquipeProps {
     tipo: 'equipe' | 'grupo';
     equipes?: { id: string; nome: string }[];
     equipeAtivaId?: string;
+    dadosIniciais?: any;
     aoSalvar: (dados: any) => Promise<void>;
     aoFechar: () => void;
 }
@@ -27,11 +28,12 @@ const DIAS_SEMANA = [
 ];
 
 import { ExibirEscala } from '@/compartilhado/componentes/ui/ExibirEscala';
+import { useEffect } from 'react';
 
 /**
  * Componente para criação e edição de grupos e equipes.
  */
-export const FormGrupoEquipe = memo(({ titulo, tipo, equipes, equipeAtivaId, aoSalvar, aoFechar }: FormGrupoEquipeProps) => {
+export const FormGrupoEquipe = memo(({ titulo, tipo, equipes, equipeAtivaId, dadosIniciais, aoSalvar, aoFechar }: FormGrupoEquipeProps) => {
     const [salvando, setSalvando] = useState(false);
     const [nome, setNome] = useState('');
     const [equipeId, setEquipeId] = useState(equipeAtivaId || '');
@@ -45,6 +47,33 @@ export const FormGrupoEquipe = memo(({ titulo, tipo, equipes, equipeAtivaId, aoS
     const [configDias, setConfigDias] = useState<Record<string, EstadoDia>>({
         seg: 'vazio', ter: 'vazio', qua: 'vazio', qui: 'vazio', sex: 'vazio'
     });
+
+    // 🔄 Parser reverso para Modo Edição
+    useEffect(() => {
+        if (dadosIniciais) {
+            setNome(dadosIniciais.nome || '');
+            if (dadosIniciais.equipe_id) setEquipeId(dadosIniciais.equipe_id);
+            
+            const escalaRaw = dadosIniciais.escala_dias || '';
+            const tipoEscala = dadosIniciais.escala_tipo || 'fixa';
+            setEscalaTipo(tipoEscala);
+
+            if (tipoEscala === 'alternada' || escalaRaw.includes('FIXO:') || escalaRaw.includes('|')) {
+                setEscalaTipo('alternada');
+                const partes = escalaRaw.split('|');
+                const fRaw = partes.find((p: string) => p.startsWith('FIXO:'))?.split(':')[1]?.split(',') || [];
+                const aRaw = partes.find((p: string) => p.startsWith('ALTE:'))?.split(':')[1]?.split(',') || [];
+                
+                const novaConfig: Record<string, EstadoDia> = { seg: 'vazio', ter: 'vazio', qua: 'vazio', qui: 'vazio', sex: 'vazio' };
+                fRaw.forEach((d: string) => { if (d) novaConfig[d] = 'fixo'; });
+                aRaw.forEach((d: string) => { if (d) novaConfig[d] = 'alte'; });
+                setConfigDias(novaConfig);
+            } else {
+                setEscalaTipo('fixa');
+                setDiasFixos(escalaRaw.split(',').filter((d: string) => !!d));
+            }
+        }
+    }, [dadosIniciais]);
 
     const alternarEstadoDia = (dia: string) => {
         setConfigDias(prev => {
@@ -93,9 +122,10 @@ export const FormGrupoEquipe = memo(({ titulo, tipo, equipes, equipeAtivaId, aoS
         try {
             let dados;
             if (tipo === 'equipe') {
-                dados = { nome, grupos };
+                dados = { id: dadosIniciais?.id, nome, grupos };
             } else {
                 dados = { 
+                    id: dadosIniciais?.id,
                     nome, 
                     equipe_id: equipeId || null,
                     escala_tipo: escalaTipo,
@@ -201,14 +231,19 @@ export const FormGrupoEquipe = memo(({ titulo, tipo, equipes, equipeAtivaId, aoS
                 </div>
 
                 {tipo === 'grupo' && equipes && !equipeAtivaId && (
-                    <SeletorBuscavel
-                        label="Equipe Responsável"
-                        valor={equipeId}
-                        aoAlterar={setEquipeId}
-                        opcoes={equipes}
-                        placeholderVazio="Selecione a equipe de comando..."
-                        icone={Users}
-                    />
+                    <div className="space-y-1">
+                        <SeletorBuscavel
+                            label="Equipe Responsável (Opcional)"
+                            valor={equipeId}
+                            aoAlterar={setEquipeId}
+                            opcoes={equipes}
+                            placeholderVazio="Deixe vazio para criar um Grupo Global..."
+                            icone={Users}
+                        />
+                        <p className="text-[9px] text-muted-foreground/60 px-1 italic">
+                            * Grupos Globais aparecem em todas as equipes para alocação.
+                        </p>
+                    </div>
                 )}
 
                 {tipo === 'grupo' && renderCamposEscala()}
