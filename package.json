@@ -13,13 +13,11 @@
         "build": "npm run build --prefix front-end"
     },
     "devDependencies": {
+        "@testing-library/jest-dom": "^6.6.3",
+        "@testing-library/react": "^16.2.0",
         "@tsconfig/vite-react": "^7.0.2",
         "concurrently": "^8.2.2",
         "jsdom": "^26.0.0",
-        "vitest": "^3.0.7",
-        "@testing-library/react": "^16.2.0",
-        "@testing-library/jest-dom": "^6.6.3",
-        "isomorphic-dompurify": "^3.7.1"
-    },
-    "dependencies": {}
+        "vitest": "^3.0.7"
+    }
 }
