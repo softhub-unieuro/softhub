@@ -59,8 +59,8 @@ export const CardAviso = memo(({ aviso, podeDeletar, aoRemover, index }: CardAvi
                             variante="fantasma"
                             tamanho="icone"
                             onClick={() => aoRemover(aviso.id)}
-                            className="p-2 sm:-mt-2 sm:-mr-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-2xl transition-colors sm:opacity-0 group-hover:opacity-100 focus:opacity-100 outline-none"
-                            icone={<Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />}
+                            className="text-destructive/40 hover:text-destructive hover:bg-destructive/10 rounded-full transition-all sm:opacity-0 group-hover:opacity-100 focus:opacity-100 outline-none sm:-mt-2 sm:-mr-2 flex items-center justify-center shrink-0"
+                            icone={<Trash2 className="w-4 h-4" />}
                             title="Apagar Aviso"
                         />
                     )}

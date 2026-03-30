@@ -89,16 +89,26 @@ export async function salvarConfiguracao(env: EnvConfig, chave: string, valor: a
 }
 
 /**
- * Verifica se um IP está na lista de IPs autorizados (ou se não há IPs cadastrados).
+ * Verifica se um IP está na lista de IPs autorizados da UNIEURO.
+ * REGRA: Se a lista estiver vazia, BLOQUEIA (Fail-Closed).
  */
 export async function verificarIpAutorizado(env: EnvConfig, ip: string): Promise<boolean> {
-    const ipsAutorizados = await obterConfiguracao(env, 'ip_ponto_autorizado');
+    const configIps = await obterConfiguracao(env, 'ips_autorizados_ponto') || [];
     
-    // Se não houver lista definida, permite tudo (ou conforme regra de negócio)
-    if (!ipsAutorizados || (Array.isArray(ipsAutorizados) && ipsAutorizados.length === 0)) {
-        return true;
+    // Suporte para string única ou array vindo do banco/KV
+    const ipsAutorizados = (Array.isArray(configIps) ? configIps : [configIps])
+        .map(i => String(i).trim())
+        .filter(i => i.length > 0);
+
+    // 🛡️ SEGURANÇA: Se não houver IPs configurados, ninguém entra por padrão.
+    if (ipsAutorizados.length === 0) {
+        return false;
     }
 
-    const lista = Array.isArray(ipsAutorizados) ? ipsAutorizados : [ipsAutorizados];
-    return lista.includes(ip);
+    const ipClient = String(ip || '').trim();
+
+    // Verificação de Correspondência: Suporta IP Exato ou Prefixo de Rede
+    return ipsAutorizados.some(regra => {
+        return ipClient === regra || ipClient.startsWith(regra);
+    });
 }

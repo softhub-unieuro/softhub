@@ -79,7 +79,7 @@ export default function PainelQRCode() {
 
             <div className="relative flex flex-col items-center justify-center min-h-[220px]">
                 {status === 'gerando' && (
-                    <RefreshCw className="w-10 h-10 text-red-600/40 animate-spin" />
+                    <RefreshCw className="w-10 h-10 text-blue-600/40 animate-spin" />
                 )}
 
                 {status === 'pending' && sessao?.sessaoId && (
@@ -105,7 +105,7 @@ export default function PainelQRCode() {
                 {(status === 'expired' || status === 'erro') && (
                     <button 
                         onClick={gerarNovoQR}
-                        className="p-8 flex flex-col items-center gap-3 text-red-600 hover:scale-105 transition-all"
+                        className="p-8 flex flex-col items-center gap-3 text-blue-600 hover:scale-105 transition-all"
                     >
                         <RefreshCw className="w-10 h-10" />
                         <span className="text-[10px] font-black uppercase tracking-widest leading-none">Recarregar QR</span>
@@ -121,7 +121,7 @@ export default function PainelQRCode() {
                                 tamanho="xl"
                                 className="ring-8 ring-slate-50 shadow-2xl"
                             />
-                            <div className={`absolute -bottom-2 -right-2 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center shadow-lg ${status === 'confirmed' ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-red-600 animate-pulse shadow-[0_0_10px_#ef4444]'}`}>
+                            <div className={`absolute -bottom-2 -right-2 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center shadow-lg ${status === 'confirmed' ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-blue-600 animate-pulse shadow-[0_0_10px_#2563eb]'}`}>
                                 <CheckCircle className="w-4 h-4 text-white" strokeWidth={3} />
                             </div>
                         </div>
@@ -136,7 +136,7 @@ export default function PainelQRCode() {
             </div>
             
             <div className="mt-10 flex items-center gap-2 opacity-30">
-                 <ShieldCheck className="text-red-600" size={14} />
+                 <ShieldCheck className="text-blue-600" size={14} />
                  <span className="text-[9px] font-black text-slate-900 uppercase tracking-widest">Gateway UNIEURO de Auditoria Ativo</span>
             </div>
         </div>

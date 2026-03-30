@@ -6,6 +6,7 @@ import { Carregando } from '@/compartilhado/componentes/Carregando';
 import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
 import type { MembroSimples } from './tipos';
 import { CardMembroFino } from './CardMembroFino';
+import { ExibirEscala } from '@/compartilhado/componentes/ui/ExibirEscala';
 import type { Grupo, Equipe } from '@/funcionalidades/admin/hooks/usarEquipes';
 
 interface DetalheEquipeProps {
@@ -263,9 +264,10 @@ export const DetalheEquipe = memo(({
                                                                 </button>
                                                             )}
                                                         </div>
-                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                                                            <span className="text-primary/60">PRESENCIAL:</span> {g.escala_tipo === 'fixa' ? (g.escala_dias || 'Não definido') : (g.escala_dias || 'Alternada')}
-                                                        </span>
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            <span className="text-[9px] font-black text-primary/40 uppercase tracking-[0.15em]">Presencial</span>
+                                                            <ExibirEscala escala={g.escala_dias || null} />
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>

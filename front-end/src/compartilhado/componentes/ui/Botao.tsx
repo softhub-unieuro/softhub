@@ -38,8 +38,14 @@ export const Botao = React.forwardRef<HTMLButtonElement, BotaoProps>(
         className={className}
         {...props}
       >
-        {carregando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {!carregando && icone && <span className="mr-2">{icone}</span>}
+        {carregando && <Loader2 className={`h-4 w-4 animate-spin ${(rotulo || children) ? 'mr-2' : ''}`} />}
+        {!carregando && icone && (
+          (rotulo || children) ? (
+            <span className="mr-2">{icone}</span>
+          ) : (
+            icone
+          )
+        )}
         {rotulo || children}
       </Button>
     )

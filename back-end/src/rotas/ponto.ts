@@ -172,7 +172,7 @@ rotasPonto.get('/online', autenticacaoRequerida(), async (c: Context) => {
 /**
  * Heartbeat de presença para manter o usuário online no sistema.
  */
-rotasPonto.post('/presenca', autenticacaoRequerida(), async (c: Context) => {
+rotasPonto.post('/presenca', autenticacaoRequerida(), validarRedeLocal, async (c: Context) => {
     const { softhub_kv } = c.env;
     const usuario = c.get('usuario');
 

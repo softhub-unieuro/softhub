@@ -50,7 +50,7 @@ export default function ConfirmacaoLoginQR() {
                 
                 {status === 'validando' || status === 'autorizando' ? (
                     <div className="flex flex-col items-center gap-6 py-10">
-                        <RefreshCw className="w-12 h-12 text-red-600 animate-spin" />
+                        <RefreshCw className="w-12 h-12 text-blue-600 animate-spin" />
                         <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Sincronizando...</span>
                     </div>
                 ) : status === 'sucesso' ? (

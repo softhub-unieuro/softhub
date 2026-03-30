@@ -44,9 +44,31 @@ export async function validarHorarioBatida(
     // Validação de Escala do Grupo (específica do usuário)
     let aviso = undefined;
     if (escala && escala.escala_dias) {
-        const diasSugeridos = escala.escala_dias.split(',').map(Number);
-        if (!diasSugeridos.includes(diaSemana)) {
-            aviso = 'FORA_DA_ESCALA';
+        const raw = escala.escala_dias;
+        
+        // 🧩 Novo Motor de Escala: Suporta "FIXO:seg,ter|ALTE:qua,sex"
+        // Formato legível: "Fixo: Seg, Ter; Alternado: Qua, Sex"
+        const partes = raw.split('|');
+        const fixos = (partes.find(p => p.startsWith('FIXO:'))?.split(':')[1]?.split(',') || []).map(d => d.trim().toLowerCase());
+        const altes = (partes.find(p => p.startsWith('ALTE:'))?.split(':')[1]?.split(',') || []).map(d => d.trim().toLowerCase());
+        
+        const nomesDias = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+        const diaAtual = nomesDias[diaSemana];
+
+        // 🔄 Lógica de Rodízio (Dia Sim / Dia Não)
+        // Usamos o dia 0 (domingo) como referência para o ciclo
+        const diasDesdeEpoch = Math.floor(agora.getTime() / (24 * 60 * 60 * 1000));
+        const ehDiaSim = diasDesdeEpoch % 2 === 0;
+
+        const estaNoFixo = fixos.includes(diaAtual);
+        const estaNoAlte = altes.includes(diaAtual) && ehDiaSim;
+
+        if (!estaNoFixo && !estaNoAlte) {
+            // Se for do tipo antigo (apenas lista), legamos a compatibilidade
+            const diasSugeridosAntigos = raw.includes(':') ? [] : raw.split(',').map(Number);
+            if (raw.includes(':') || !diasSugeridosAntigos.includes(diaSemana)) {
+                aviso = 'Registrado fora do dia de escala do grupo';
+            }
         }
     }
 

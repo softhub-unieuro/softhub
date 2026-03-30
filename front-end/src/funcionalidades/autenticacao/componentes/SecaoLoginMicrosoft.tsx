@@ -28,7 +28,7 @@ export const SecaoLoginMicrosoft = memo(({
         <div className="flex-1 flex flex-col items-center justify-center animar-entrada atraso-2">
             <div className="space-y-8 lg:space-y-12 w-full max-w-sm">
                 <div className="space-y-4 text-center lg:text-left">
-                    <div className="inline-flex py-1 px-3 bg-red-500/5 text-red-600 text-[10px] font-black uppercase tracking-widest rounded-full leading-none border border-red-500/10">
+                    <div className="inline-flex py-1 px-3 bg-blue-500/5 text-blue-600 text-[10px] font-black uppercase tracking-widest rounded-full leading-none border border-blue-500/10">
                         Bem-vindo de volta
                     </div>
                     <h3 className="text-[28px] lg:text-4xl font-black text-slate-900 tracking-tight leading-tight">Inicie agora.</h3>
@@ -72,9 +72,9 @@ export const SecaoLoginMicrosoft = memo(({
                             <div className="flex items-center gap-4 animate-in fade-in slide-in-from-left-4 duration-500">
                                 <div className="relative w-7 h-7 flex items-center justify-center shrink-0">
                                     <div className="absolute inset-0 border-[1.5px] border-slate-100 rounded-full" />
-                                    <div className="absolute inset-0 border-t-[1.5px] border-l-[1.5px] border-red-500 rounded-full animate-[spin_1.2s_linear_infinite]" />
+                                    <div className="absolute inset-0 border-t-[1.5px] border-l-[1.5px] border-blue-500 rounded-full animate-[spin_1.2s_linear_infinite]" />
                                     <div className="w-[18px] h-[18px] border-b-[2px] border-amber-500/60 rounded-full animate-[spin_0.8s_linear_infinite_reverse]" />
-                                    <div className="absolute w-[6px] h-[6px] bg-red-600 rounded-full animate-pulse shadow-[0_0_8px_rgba(220,38,38,0.5)]" />
+                                    <div className="absolute w-[6px] h-[6px] bg-blue-600 rounded-full animate-pulse shadow-[0_0_8px_rgba(37,99,235,0.5)]" />
                                 </div>
                             </div>
                         )}
