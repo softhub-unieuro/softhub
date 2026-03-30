@@ -18,7 +18,8 @@
         "jsdom": "^26.0.0",
         "vitest": "^3.0.7",
         "@testing-library/react": "^16.2.0",
-        "@testing-library/jest-dom": "^6.6.3"
+        "@testing-library/jest-dom": "^6.6.3",
+        "isomorphic-dompurify": "^3.7.1"
     },
     "dependencies": {}
 }
