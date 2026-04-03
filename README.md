@@ -27,13 +27,15 @@ cd back-end
 npm run db:init # se disponível, ou use wrangler d1 execute
 
 # 4. Iniciar desenvolvimento
-# Terminal 1: Frontend
-cd front-end
+# Iniciar tudo simultaneamente:
 npm run dev
 
-# Terminal 2: Backend
-cd back-end
-npm run dev
+# Ou iniciar separadamente:
+# Terminal 1: Sistema Web (Frontend)
+npm run dev:web
+
+# Terminal 2: Agente (Backend)
+npm run dev:agente
 ```
 
 ## Estrutura
