@@ -1,5 +1,5 @@
 import { useMsal } from '@azure/msal-react';
-import { useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { loginRequest } from '../../../configuracoes/msal';
 import { usarAutenticacao } from '../../../contexto/ContextoAutenticacao';
@@ -8,26 +8,29 @@ import { logger } from '../../../utilitarios/gerenciador-logs';
 
 /**
  * Hook dedicado para o fluxo de autenticação MSAL (Checklist Frontend Part 4).
+ * Gerencia a interação com a Microsoft e a sincronização com o backend.
  */
 export function usarMsalAuth() {
-    const { instance, accounts, inProgress } = useMsal();
-    const navigate = useNavigate();
+    const { instance: instancia, accounts: contas, inProgress: emAndamento } = useMsal();
+    const navegar = useNavigate();
     const { entrar, sair, estaAutenticado } = usarAutenticacao();
 
     /**
-     * Inicia o fluxo de login via redirect (Mais seguro e PWA-friendly)
+     * Inicia o fluxo de login via redirect (Mais seguro e PWA-friendly).
+     * Redireciona o usuário para a página de login da Microsoft.
      */
     const loginComMicrosoft = useCallback(async () => {
         try {
-            await instance.loginRedirect(loginRequest);
-        } catch (error) {
-            logger.erro('MSAL', 'Falha ao iniciar login redirect', error);
-            throw error;
+            await instancia.loginRedirect(loginRequest);
+        } catch (erro) {
+            logger.erro('MSAL', 'Falha ao iniciar login redirect', erro);
+            throw erro;
         }
-    }, [instance]);
+    }, [instancia]);
 
     /**
-     * Realiza o logout total (App + Microsoft)
+     * Realiza o logout total (App local + Microsoft).
+     * Revoga tokens no backend e redireciona para o logout da Microsoft.
      */
     const logoutTotal = useCallback(async () => {
         try {
@@ -38,56 +41,62 @@ export function usarMsalAuth() {
             sair();
 
             // 3. Logout na Microsoft (Checklist: Logout sincronizado)
-            await instance.logoutRedirect({
+            await instancia.logoutRedirect({
                 postLogoutRedirectUri: window.location.origin + '/login',
             });
-        } catch (error) {
-            logger.erro('MSAL', 'Erro durante logout parcial/total', error);
-            // Mesmo com erro na MSAL, deslogamos localmente
+        } catch (erro) {
+            logger.erro('MSAL', 'Erro durante logout parcial/total', erro);
+            // Mesmo com erro na MSAL, deslogamos localmente para garantir segurança
             sair();
-            navigate('/login');
+            navegar('/login');
         }
-    }, [instance, sair, navigate]);
+    }, [instancia, sair, navegar]);
 
     /**
-     * Processa o resultado do login e troca o token com o backend
+     * Processa o resultado do login e troca o token com o backend para obter um JWT próprio.
+     * @param conta - Objeto da conta retornado pela Microsoft
+     * @returns Objeto com status de sucesso e erro se disponível
      */
     const processarLoginNoBackend = useCallback(async (conta: any) => {
         try {
             // Adquire o token silenciosamente (Audit Checklist: acquireTokenSilent)
-            const tokenResponse = await instance.acquireTokenSilent({
+            const respostaToken = await instancia.acquireTokenSilent({
                 ...loginRequest,
                 account: conta
             });
 
             // Valida no nosso backend e emite JWT próprio (Checklist Backend Part 1)
-            // Usamos apenas o idToken para validação de identidade e claims
-            const response = await api.post('/api/auth/msal', {
-                idToken: tokenResponse.idToken
+            // Usamos o idToken para validação de identidade e claims institucionais
+            const resposta = await api.post('/api/auth/msal', {
+                idToken: respostaToken.idToken
             });
 
-            const data = response.data;
+            const dados = resposta.data;
 
-            // Armazena tokens da sessão SoftHub
-            if (data.refreshToken) localStorage.setItem('softhub_refresh_token', data.refreshToken);
-            localStorage.setItem('softhub_token', data.token);
+            // Armazena tokens da sessão SoftHub para rotação (SEG-012)
+            if (dados.refreshToken) localStorage.setItem('softhub_refresh_token', dados.refreshToken);
+            localStorage.setItem('softhub_token', dados.token);
             
-            entrar(data.usuario, data.token);
-            navigate('/app/dashboard', { replace: true });
+            entrar(dados.usuario, dados.token);
+            navegar('/app/dashboard', { replace: true });
 
             return { sucesso: true };
-        } catch (error: any) {
-            logger.erro('MSAL', 'Falha ao sincronizar com backend', error);
-            return { sucesso: false, erro: error.response?.data?.erro || 'Falha na validação institucional do servidor' };
+        } catch (erro: any) {
+            logger.erro('MSAL', 'Falha ao sincronizar com backend', erro);
+            return { 
+                sucesso: false, 
+                erro: erro.resposta?.dados?.erro || 'Falha na validação institucional do servidor. Verifique se você usou @unieuro.edu.br.' 
+            };
         }
-    }, [instance, entrar, navigate]);
+    }, [instancia, entrar, navegar]);
 
     return {
-        accounts,
-        inProgress,
+        contas,
+        emAndamento,
         loginComMicrosoft,
         logoutTotal,
         processarLoginNoBackend,
         estaAutenticado
     };
 }
+

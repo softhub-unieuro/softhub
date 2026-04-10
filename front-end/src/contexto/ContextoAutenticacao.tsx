@@ -46,27 +46,28 @@ const CHAVE_PROJETO = 'softhub_projeto_ativo';
 const CHAVE_CONFIGS = 'softhub_configs_ux';
 const CHAVE_PREVIEW_ROLE = 'softhub_preview_role';
 
-// 🛡️ A flag de bootstrap admin agora vem diretamente do Backend no login e sync.
-// Não é mais necessário listar e-mails sensíveis no código do frontend.
-
 /**
  * Hook central de autenticação e governança.
+ * Fornece dados do usuário, token e funções de gerenciamento de sessão.
  */
 export function usarAutenticacao() {
-    const ctx = useContext(ContextoAutenticacao);
-    if (!ctx) throw new Error('usarAutenticacao deve ser usado dentro de ProvedorAutenticacao');
+    const contexto = useContext(ContextoAutenticacao);
+    if (!contexto) throw new Error('usarAutenticacao deve ser usado dentro de ProvedorAutenticacao');
 
     // Calcula ehDonoReal em tempo real para segurança total na UI
-    const ehDonoReal = ctx.usuarioEfetivo?.role === 'ADMIN' &&
-        ctx.usuarioEfetivo?.ehDonoReal === true;
+    const ehDonoReal = contexto.usuarioEfetivo?.role === 'ADMIN' &&
+        contexto.usuarioEfetivo?.ehDonoReal === true;
 
     return {
-        ...ctx,
-        usuario: ctx.usuarioEfetivo,
+        ...contexto,
+        usuario: contexto.usuarioEfetivo,
         ehDonoReal // Exposto para componentes usarem diretamente
     };
 }
 
+/**
+ * Provedor do contexto de autenticação que envolve toda a aplicação.
+ */
 export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
     const [token, setToken] = useState<string | null>(() => localStorage.getItem(CHAVE_TOKEN));
     const [usuarioOriginal, setUsuarioOriginal] = useState<Usuario | null>(() => {
@@ -85,7 +86,7 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
     const [projetoAtivoId, setProjetoAtivoIdInterno] = useState<string>(() => localStorage.getItem(CHAVE_PROJETO) || '');
     const [roleVisualizacao, setRoleVisualizacao] = useState<string | null>(() => sessionStorage.getItem(CHAVE_PREVIEW_ROLE));
 
-    // Usuário calculado para a UI (considera simulação de cargo)
+    // Usuário calculado para a UI (considera simulação de cargo por administradores)
     const usuarioEfetivo = useMemo(() => {
         if (!usuarioOriginal) return null;
         if (!roleVisualizacao) return usuarioOriginal;
@@ -98,6 +99,9 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
         else localStorage.removeItem(CHAVE_PROJETO);
     }, []);
 
+    /**
+     * Finaliza a sessão do usuário e limpa todos os armazenamentos locais.
+     */
     const sair = useCallback(() => {
         setUsuarioOriginal(null);
         setToken(null);
@@ -106,6 +110,9 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
         window.location.href = '/login';
     }, []);
 
+    /**
+     * Sincroniza os dados do perfil atual com o servidor.
+     */
     const sincronizarPerfil = useCallback(async () => {
         if (!localStorage.getItem(CHAVE_TOKEN)) return;
         try {
@@ -124,14 +131,15 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
                 setUsuarioOriginal(perfilAtualizado);
                 localStorage.setItem(CHAVE_USUARIO, JSON.stringify(perfilAtualizado));
             }
-        } catch (error: any) {
-            if (error.response?.status === 401 || error.response?.status === 404) sair();
+        } catch (erro: any) {
+            if (erro.resposta?.status === 401 || erro.resposta?.status === 404) sair();
         }
     }, [sair]);
 
+    /**
+     * Define uma role simulada para visualização (restrito a administradores).
+     */
     const setRoleVisualizacaoProtegido = useCallback((role: string | null) => {
-        // Apenas ADMINS reais (mesmo que no banco diga MEMBRO) podem simular.
-        // O usuarioOriginal.role virá como 'ADMIN' se for Bootstrap.
         if (usuarioOriginal?.role === 'ADMIN' || role === null) {
             setRoleVisualizacao(role);
             if (role) sessionStorage.setItem(CHAVE_PREVIEW_ROLE, role);
@@ -141,6 +149,9 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
         }
     }, [usuarioOriginal]);
 
+    /**
+     * Busca as configurações públicas e governança do servidor.
+     */
     const buscarConfiguracoesPublicas = useCallback(async () => {
         try {
             const { data } = await api.get('/api/configuracoes/publico');
@@ -151,13 +162,10 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
                 dias_trabalho: data.dias_trabalho || [1, 2, 3, 4, 5],
             };
 
-            // 🧪 Sync hierarquia com matrix (Garante que novos cargos como "LÍDER-TÉCNICO" apareçam)
             const chavesMatrix = Object.keys(novasConfigs.permissoes_roles);
-            // Remove lixos de exclusão e garante os novos
             let hierarquiaFinal = (novasConfigs.hierarquia_roles || []).filter(r => r === 'ADMIN' || chavesMatrix.includes(r));
             const faltantes = chavesMatrix.filter(k => k !== 'TODOS' && !hierarquiaFinal.includes(k));
 
-            // Injeta faltantes antes do ADMIN para manter a premissa de ADMIN no topo (reverse)
             const indexAdmin = hierarquiaFinal.indexOf('ADMIN');
             if (indexAdmin !== -1) hierarquiaFinal.splice(indexAdmin, 0, ...faltantes);
             else hierarquiaFinal.push(...faltantes);
@@ -166,8 +174,8 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
 
             setConfiguracoes(novasConfigs);
             localStorage.setItem(CHAVE_CONFIGS, JSON.stringify(novasConfigs));
-        } catch (error) {
-            console.error("[Auth] Falha ao carregar matriz de governança:", error);
+        } catch (erro) {
+            logger.erro("Auth", "Falha ao carregar matriz de governança", erro);
         } finally {
             setCarregando(false);
         }
@@ -182,6 +190,9 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
         }
     }, [token, buscarConfiguracoesPublicas, sincronizarPerfil]);
 
+    /**
+     * Inicia a sessão no frontend com os dados recebidos do login.
+     */
     const entrar = useCallback((novoUsuario: any, novoToken: string) => {
         logger.sucesso('Sessão', `Usuário conectado: ${novoUsuario?.email}`);
 
@@ -195,7 +206,6 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
         localStorage.setItem(CHAVE_TOKEN, novoToken);
         localStorage.setItem(CHAVE_USUARIO, JSON.stringify(formatado));
 
-        // Dispara sincronização imediata para verificar override de Bootstrap
         sincronizarPerfil();
     }, [sincronizarPerfil]);
 
@@ -204,10 +214,11 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
         localStorage.setItem(CHAVE_USUARIO, JSON.stringify(atualizado));
     }, []);
 
+    // Pulsação de presença para o ponto eletrônico (SEG-015)
     useEffect(() => {
         if (!token || !usuarioOriginal) return;
         const enviarPulsacao = async () => {
-            try { await api.post('/api/ponto/presenca'); } catch (e) { /* Suprime logs de batida de ponto */ }
+            try { await api.post('/api/ponto/presenca'); } catch (e) { /* Suprime logs silenciosos */ }
         };
         enviarPulsacao();
         const intervalo = setInterval(enviarPulsacao, 300000); // 5 minutos
@@ -227,7 +238,7 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
             setProjetoAtivoId,
             setRoleVisualizacao: setRoleVisualizacaoProtegido,
             entrar,
-            sair, // Unificado
+            sair,
             sincronizarPerfil,
             atualizarUsuarioLocalmente,
         }}>
@@ -235,3 +246,4 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
         </ContextoAutenticacao.Provider>
     );
 }
+

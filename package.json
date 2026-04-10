@@ -3,10 +3,10 @@
     "version": "1.0.0",
     "description": "Fábrica de Software - Sistema Integrado",
     "scripts": {
-        "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+        "dev": "concurrently \"npm run dev:agente\" \"npm run dev:web\"",
+        "dev:web": "npm run dev --prefix front-end",
+        "dev:agente": "npm run dev --prefix back-end",
         "dev:live": "npm run dev:live --prefix front-end",
-        "dev:frontend": "npm run dev --prefix front-end",
-        "dev:backend": "npm run dev --prefix back-end",
         "db:init": "npm run db:init --prefix back-end",
         "db:seed": "npm run db:seed --prefix back-end",
         "install:all": "npm install && npm install --prefix front-end && npm install --prefix back-end",

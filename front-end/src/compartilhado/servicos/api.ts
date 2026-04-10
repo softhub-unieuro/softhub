@@ -1,119 +1,132 @@
 import { ambiente } from '@/configuracoes/ambiente';
 import { logger } from '@/utilitarios/gerenciador-logs';
 
-class ApiError extends Error {
-    response?: { data: any, status: number };
-    constructor(message: string, data: any, status: number) {
-        super(message);
-        this.response = { data, status };
+class ErroApi extends Error {
+    resposta?: { dados: any, status: number };
+    constructor(mensagem: string, dados: any, status: number) {
+        super(mensagem);
+        this.resposta = { dados, status };
     }
 }
 
-let isRefreshing = false;
-let refreshSubscribers: ((token: string) => void)[] = [];
+let estaAtualizando = false;
+let inscritosAtualizacao: ((token: string) => void)[] = [];
 
-function onRefreshed(token: string) {
-    refreshSubscribers.map((callback) => callback(token));
-    refreshSubscribers = [];
+/**
+ * Notifica todos os inscritos que o token foi renovado.
+ * @param token - Novo token de acesso
+ */
+function aoAtualizar(token: string) {
+    inscritosAtualizacao.map((callback) => callback(token));
+    inscritosAtualizacao = [];
 }
 
-async function doFetch(method: string, url: string, data?: any, config?: any): Promise<any> {
-    const rolePreview = sessionStorage.getItem('softhub_preview_role');
-    const getHeaders = () => {
+/**
+ * Executor central de requisições HTTP usando fetch nativo.
+ * Implementa Refresh Token Rotation e tratamento de erros institucional.
+ */
+async function executarRequisicao(metodo: string, url: string, dados?: any, configuracao?: any): Promise<any> {
+    const roleSimulada = sessionStorage.getItem('softhub_preview_role');
+    
+    const obterCabecalhos = () => {
         const token = localStorage.getItem('softhub_token');
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
-            ...config?.headers,
+            ...configuracao?.headers,
         };
         if (token) headers['Authorization'] = `Bearer ${token}`;
-        if (rolePreview) headers['X-Role-Simulada'] = rolePreview;
+        if (roleSimulada) headers['X-Role-Simulada'] = roleSimulada;
         return headers;
     };
 
-    const fetchOptions: RequestInit = {
-        method,
-        headers: getHeaders(),
-        body: data ? JSON.stringify(data) : undefined,
-        keepalive: config?.keepalive,
+    const asOpcoesFetch: RequestInit = {
+        method: metodo,
+        headers: obterCabecalhos(),
+        body: dados ? JSON.stringify(dados) : undefined,
+        keepalive: configuracao?.keepalive,
     };
 
-    let fullUrl = url.startsWith('http') ? url : `${ambiente.apiUrl}${url}`;
+    let urlCompleta = url.startsWith('http') ? url : `${ambiente.apiUrl}${url}`;
     
-    if (config?.params) {
+    if (configuracao?.params) {
         const query = new URLSearchParams();
-        Object.entries(config.params).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) query.append(key, String(value));
+        Object.entries(configuracao.params).forEach(([chave, valor]) => {
+            if (valor !== undefined && valor !== null) query.append(chave, String(valor));
         });
-        const separator = fullUrl.includes('?') ? '&' : '?';
-        fullUrl += `${separator}${query.toString()}`;
+        const separador = urlCompleta.includes('?') ? '&' : '?';
+        urlCompleta += `${separador}${query.toString()}`;
     }
 
-    const res = await fetch(fullUrl, fetchOptions);
+    const resposta = await fetch(urlCompleta, asOpcoesFetch);
 
-    const isAuthRoute = url.includes('/api/auth') || url.includes('/api/configuracoes/publico');
-    const isNoLogin = window.location.pathname === '/login';
+    const ehRotaAuth = url.includes('/api/auth') || url.includes('/api/configuracoes/publico');
+    const estaNaTelaLogin = window.location.pathname === '/login';
 
-    if (res.status === 401 && !isAuthRoute && !isNoLogin) {
+    // 🔄 Lógica de Refresh Token (SEG-012)
+    if (resposta.status === 401 && !ehRotaAuth && !estaNaTelaLogin) {
         const refreshToken = localStorage.getItem('softhub_refresh_token');
-        const userSaved = localStorage.getItem('softhub_usuario');
-        const user = userSaved ? JSON.parse(userSaved) : null;
+        const usuarioSalvo = localStorage.getItem('softhub_usuario');
+        const usuario = usuarioSalvo ? JSON.parse(usuarioSalvo) : null;
 
-        if (!refreshToken || !user?.id) {
+        if (!refreshToken || !usuario?.id) {
             tratarLogout();
-            throw new ApiError('Sessão expirada.', { erro: 'Sem tokens de renovação' }, 401);
+            throw new ErroApi('Sessão expirada.', { erro: 'Tokens de renovação ausentes' }, 401);
         }
 
-        if (!isRefreshing) {
-            isRefreshing = true;
+        if (!estaAtualizando) {
+            estaAtualizando = true;
             try {
-                const refreshRes = await fetch(`${ambiente.apiUrl}/api/auth/refresh`, {
+                const respostaRefresh = await fetch(`${ambiente.apiUrl}/api/auth/refresh`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ refreshToken, usuarioId: user.id })
+                    body: JSON.stringify({ refreshToken, usuarioId: usuario.id })
                 });
 
-                if (refreshRes.ok) {
-                    const refreshData = await refreshRes.json();
-                    localStorage.setItem('softhub_token', refreshData.token);
-                    if (refreshData.refreshToken) localStorage.setItem('softhub_refresh_token', refreshData.refreshToken);
+                if (respostaRefresh.ok) {
+                    const dadosRefresh = await respostaRefresh.json();
+                    localStorage.setItem('softhub_token', dadosRefresh.token);
+                    if (dadosRefresh.refreshToken) localStorage.setItem('softhub_refresh_token', dadosRefresh.refreshToken);
                     
-                    isRefreshing = false;
-                    onRefreshed(refreshData.token);
+                    estaAtualizando = false;
+                    aoAtualizar(dadosRefresh.token);
                     
                     // Refaz a requisição original com o novo token
-                    return doFetch(method, url, data, config);
+                    return executarRequisicao(metodo, url, dados, configuracao);
                 } else {
-                    throw new Error('Refresh falhou');
+                    throw new Error('Falha na rotação do token');
                 }
             } catch (e) {
-                isRefreshing = false;
+                estaAtualizando = false;
                 tratarLogout();
-                throw new ApiError('Desconectado.', { erro: 'Falha na renovação da sessão' }, 401);
+                throw new ErroApi('Desconectado.', { erro: 'Não foi possível renovar sua sessão' }, 401);
             }
         }
 
-        // Aguarda o refresh em andamento
+        // Aguarda a renovação em andamento antes de tentar novamente
         return new Promise((resolve) => {
-            refreshSubscribers.push((token: string) => {
-                resolve(doFetch(method, url, data, config));
+            inscritosAtualizacao.push((token: string) => {
+                resolve(executarRequisicao(metodo, url, dados, configuracao));
             });
         });
     }
 
-    let resData;
+    let dadosResposta;
     try {
-        resData = await res.json();
+        dadosResposta = await resposta.json();
     } catch {
-        resData = null;
+        dadosResposta = null;
     }
 
-    if (!res.ok) {
-        throw new ApiError(`Erro HTTP ${res.status}`, resData, res.status);
+    if (!resposta.ok) {
+        throw new ErroApi(`Erro HTTP ${resposta.status}`, dadosResposta, resposta.status);
     }
 
-    return { data: resData, status: res.status };
+    return { data: dadosResposta, status: resposta.status };
 }
 
+/**
+ * Limpa dados de sessão e redireciona para login.
+ */
 function tratarLogout() {
     logger.aviso('Sessão', 'Finalizando sessão por expiração ou erro crítico.');
     localStorage.removeItem('softhub_token');
@@ -125,9 +138,10 @@ function tratarLogout() {
 }
 
 export const api = {
-    get: (url: string, config?: any) => doFetch('GET', url, undefined, config),
-    post: (url: string, data?: any, config?: any) => doFetch('POST', url, data, config),
-    put: (url: string, data?: any, config?: any) => doFetch('PUT', url, data, config),
-    patch: (url: string, data?: any, config?: any) => doFetch('PATCH', url, data, config),
-    delete: (url: string, config?: any) => doFetch('DELETE', url, undefined, config),
+    get: (url: string, config?: any) => executarRequisicao('GET', url, undefined, config),
+    post: (url: string, dados?: any, config?: any) => executarRequisicao('POST', url, dados, config),
+    put: (url: string, dados?: any, config?: any) => executarRequisicao('PUT', url, dados, config),
+    patch: (url: string, dados?: any, config?: any) => executarRequisicao('PATCH', url, dados, config),
+    delete: (url: string, config?: any) => executarRequisicao('DELETE', url, undefined, config),
 };
+

@@ -1,81 +1,110 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router';
 import { api } from '../../../compartilhado/servicos/api';
-import { usarAutenticacao } from '../../../contexto/ContextoAutenticacao';
 import { usarMsalAuth } from '../hooks/usarMsalAuth';
 import PainelQRCode from './PainelQRCode';
 import { usarDispositivo } from '../../../compartilhado/hooks/usarDispositivo';
 import { LadoEsquerdoInstitucional } from './LadoEsquerdoInstitucional';
 import { SecaoLoginMicrosoft } from './SecaoLoginMicrosoft';
 import { usarToast } from '@/compartilhado/hooks/usarToast';
+import { Loader2 } from 'lucide-react';
 
 /**
  * Tela de login consolidada - MSAL Only (Auditoria Part 1).
+ * Gerencia o fluxo de entrada via Microsoft e QR Code.
  */
 export default function TelaLogin() {
-    const { accounts, inProgress, loginComMicrosoft, processarLoginNoBackend, estaAutenticado } = usarMsalAuth();
+    const { contas, emAndamento, loginComMicrosoft, processarLoginNoBackend, estaAutenticado } = usarMsalAuth();
     const { isMobile } = usarDispositivo();
     const { exibirToast } = usarToast();
-    const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
+    const navegar = useNavigate();
+    const [parametrosBusca] = useSearchParams();
 
-    const [configPublica, setConfigPublica] = useState<any>(null);
-    const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+    const [configuracaoPublica, setConfiguracaoPublica] = useState<any>(null);
+    const [instanteInstalacao, setInstanteInstalacao] = useState<any>(null);
     const [processando, setProcessando] = useState(false);
+    const [erroAutenticacao, setErroAutenticacao] = useState<string | null>(null);
 
     // Ouvir evento de instalação PWA (Auditoria Checklist Part 3)
     useEffect(() => {
-        const handler = (e: Event) => {
+        const tratarEventoInstalacao = (e: Event) => {
             e.preventDefault();
-            setDeferredPrompt(e);
+            setInstanteInstalacao(e);
         };
-        window.addEventListener('beforeinstallprompt', handler);
-        return () => window.removeEventListener('beforeinstallprompt', handler);
+        window.addEventListener('beforeinstallprompt', tratarEventoInstalacao);
+        return () => window.removeEventListener('beforeinstallprompt', tratarEventoInstalacao);
     }, []);
 
-    const handleInstallClick = async () => {
-        if (!deferredPrompt) {
+    const tratarCliqueInstalacao = async () => {
+        if (!instanteInstalacao) {
             exibirToast('O navegador está otimizando o App para instalação. Tente novamente em alguns segundos.', 'sucesso');
             return;
         }
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') setDeferredPrompt(null);
+        instanteInstalacao.prompt();
+        const { outcome } = await instanteInstalacao.userChoice;
+        if (outcome === 'accepted') setInstanteInstalacao(null);
     };
 
-    // Carregar configurações de governança
+    // Carregar configurações de governança e domínios autorizados
     useEffect(() => {
-        const load = async () => {
+        const carregarConfiguracoes = async () => {
             try {
                 const res = await api.get('/api/configuracoes/publico');
-                setConfigPublica(res.data);
+                setConfiguracaoPublica(res.data);
             } catch (e) {
-                setConfigPublica({ dominios_autorizados: ['unieuro.com.br', 'unieuro.edu.br'], modo_manutencao: false });
+                setConfiguracaoPublica({ 
+                    dominios_autorizados: ['unieuro.com.br', 'unieuro.edu.br'], 
+                    modo_manutencao: false 
+                });
             }
         };
-        load();
+        carregarConfiguracoes();
     }, []);
 
-    // Redireciona se já estiver logado
+    // Redireciona para o dashboard se já estiver logado
     useEffect(() => {
-        if (estaAutenticado) navigate('/app/dashboard', { replace: true });
-    }, [estaAutenticado, navigate]);
+        if (estaAutenticado) navegar('/app/dashboard', { replace: true });
+    }, [estaAutenticado, navegar]);
 
-    // Processa retorno do MSAL automaticamente (Checklist Part 2)
-    useEffect(() => {
-        if (accounts.length > 0 && !estaAutenticado && inProgress === 'none' && !processando) {
-            setProcessando(true);
-            processarLoginNoBackend(accounts[0]).finally(() => {
-                setProcessando(false);
-            });
+    // Processa retorno do MSAL automaticamente após o redirect (Checklist Part 2)
+    const sincronizarComBackend = useCallback(async (conta: any) => {
+        setProcessando(true);
+        setErroAutenticacao(null);
+        try {
+            const resultado = await processarLoginNoBackend(conta);
+            if (!resultado.sucesso) {
+                setErroAutenticacao(resultado.erro || 'Não foi possível validar sua identidade institucional.');
+            }
+        } finally {
+            setProcessando(false);
         }
-    }, [accounts, inProgress, estaAutenticado, processarLoginNoBackend, processando]);
+    }, [processarLoginNoBackend]);
 
-    const erroRedirect = searchParams.get('erro');
-    const erroFinal = erroRedirect ? 'Erro na autenticação externa.' : null;
+    useEffect(() => {
+        const podeProcessar = contas.length > 0 && !estaAutenticado && emAndamento === 'none' && !processando;
+        if (podeProcessar) {
+            sincronizarComBackend(contas[0]);
+        }
+    }, [contas, emAndamento, estaAutenticado, sincronizarComBackend, processando]);
+
+    const erroUrl = parametrosBusca.get('erro');
+    const erroExibicao = erroAutenticacao || (erroUrl ? 'Erro na autenticação externa da Microsoft.' : null);
 
     return (
-        <div className="light min-h-screen bg-slate-50 flex items-center justify-center p-0 sm:p-6 lg:p-8 transition-colors duration-500">
+        <div className="light min-h-screen bg-slate-50 flex items-center justify-center p-0 sm:p-6 lg:p-8 transition-colors duration-500 relative">
+            
+            {/* Overlay de Processamento Premium */}
+            {processando && (
+                <div className="absolute inset-0 z-[100] backdrop-blur-md bg-white/60 flex flex-col items-center justify-center animate-in fade-in duration-500">
+                    <div className="relative">
+                        <Loader2 size={48} className="text-blue-600 animate-spin" />
+                        <div className="absolute inset-0 border-4 border-blue-100 rounded-full opacity-20" />
+                    </div>
+                    <h2 className="mt-6 text-xl font-black text-slate-800 tracking-tight uppercase italic">Validando Credenciais</h2>
+                    <p className="mt-2 text-slate-500 text-sm font-bold uppercase tracking-widest">Aguarde a sincronização institucional...</p>
+                </div>
+            )}
+
             <div className="w-full max-w-7xl bg-white sm:rounded-2xl shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col lg:flex-row min-h-screen sm:min-h-[750px] border-none sm:border border-border animar-entrada">
                 
                 <LadoEsquerdoInstitucional />
@@ -87,13 +116,13 @@ export default function TelaLogin() {
                         <div className="w-full max-w-sm space-y-8">
                             
                             <SecaoLoginMicrosoft 
-                                configPublica={configPublica}
-                                erro={erroFinal}
-                                carregando={inProgress !== 'none' || processando}
+                                configPublica={configuracaoPublica}
+                                erro={erroExibicao}
+                                carregando={emAndamento !== 'none' || processando}
                                 handleLogin={loginComMicrosoft}
                                 isMobile={isMobile}
-                                deferredPrompt={deferredPrompt}
-                                handleInstallClick={handleInstallClick}
+                                deferredPrompt={instanteInstalacao}
+                                handleInstallClick={tratarCliqueInstalacao}
                             />
 
                         </div>
@@ -121,4 +150,5 @@ export default function TelaLogin() {
         </div>
     );
 }
+
 
