@@ -9,8 +9,8 @@ import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 export function usarGuardiaoSessao() {
     const { sair, configuracoes, estaAutenticado } = usarAutenticacao();
     const [sessaoExpirando, setSessaoExpirando] = useState(false);
-    const timerInatividade = useRef<NodeJS.Timeout | null>(null);
-    const timerAvisoFinal = useRef<NodeJS.Timeout | null>(null);
+    const timerInatividade = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const timerAvisoFinal = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Converte "HH:mm" para minutos totais no dia
     const paraMinutos = (horaStr: string) => {

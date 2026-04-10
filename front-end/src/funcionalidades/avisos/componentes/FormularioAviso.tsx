@@ -1,10 +1,10 @@
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
 import { api } from '@/compartilhado/servicos/api';
 import { Sparkles } from 'lucide-react';
-import { useState } from 'react';
 import { usarAvisos } from '@/funcionalidades/avisos/hooks/usarAvisos';
 
 const esquemaAviso = z.object({
@@ -54,6 +54,7 @@ export function FormularioAviso({ aoSalvar }: FormularioAvisoProps) {
         try {
             await criarAviso({
                 ...dados,
+                conteudo: dados.conteudo ?? '',
                 expira_em: (temExpiracao && dados.expira_em) ? dados.expira_em : null,
             });
             aoSalvar();

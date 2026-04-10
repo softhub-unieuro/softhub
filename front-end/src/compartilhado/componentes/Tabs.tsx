@@ -1,5 +1,5 @@
 import * as React from "react";
-import { cn } from "@/utilitarios/formatadores";
+import { cn } from "@/utilitarios/utils";
 
 const TabsContext = React.createContext<any>(null);
 
