@@ -32,22 +32,11 @@ export async function validarHorarioBatida(
         return (horas || 0) * 60 + (minutos || 0);
     };
 
-    const agoraMinutos = converterParaMinutos(horaBrasiliaStr);
-    const inicioMinutos = converterParaMinutos(horaInicio.replace(/"/g, ''));
-    const fimMinutos = converterParaMinutos(horaFim.replace(/"/g, ''));
-    const TOLERANCIA = 15;
-
-    if (!diasPermitidos.includes(diaSemana)) {
-        return { valido: false, erro: 'Hoje não é dia de funcionamento da Fábrica.' };
-    }
-
-    // Validação de Escala do Grupo (específica do usuário)
     let aviso = undefined;
     if (escala && escala.escala_dias) {
         const raw = escala.escala_dias;
         
         // 🧩 Novo Motor de Escala: Suporta "FIXO:seg,ter|ALTE:qua,sex"
-        // Formato legível: "Fixo: Seg, Ter; Alternado: Qua, Sex"
         const partes = raw.split('|');
         const fixos = (partes.find(p => p.startsWith('FIXO:'))?.split(':')[1]?.split(',') || []).map(d => d.trim().toLowerCase());
         const altes = (partes.find(p => p.startsWith('ALTE:'))?.split(':')[1]?.split(',') || []).map(d => d.trim().toLowerCase());
@@ -56,7 +45,6 @@ export async function validarHorarioBatida(
         const diaAtual = nomesDias[diaSemana];
 
         // 🔄 Lógica de Rodízio (Dia Sim / Dia Não)
-        // Usamos o dia 0 (domingo) como referência para o ciclo
         const diasDesdeEpoch = Math.floor(agora.getTime() / (24 * 60 * 60 * 1000));
         const ehDiaSim = diasDesdeEpoch % 2 === 0;
 
@@ -64,23 +52,30 @@ export async function validarHorarioBatida(
         const estaNoAlte = altes.includes(diaAtual) && ehDiaSim;
 
         if (!estaNoFixo && !estaNoAlte) {
-            // Se for do tipo antigo (apenas lista), legamos a compatibilidade
             const diasSugeridosAntigos = raw.includes(':') ? [] : raw.split(',').map(Number);
             if (raw.includes(':') || !diasSugeridosAntigos.includes(diaSemana)) {
-                aviso = 'Registrado fora do dia de escala do grupo';
+                aviso = 'Fora da Escala Selecionada';
             }
         }
     }
 
-    if (agoraMinutos < (inicioMinutos - TOLERANCIA) || agoraMinutos > (fimMinutos + TOLERANCIA)) {
-        return { 
-            valido: false, 
-            erro: `O registro de ponto está autorizado apenas entre ${horaInicio} e ${horaFim} (tolerância de ${TOLERANCIA}min).` 
-        };
+    const agoraMinutos = converterParaMinutos(horaBrasiliaStr);
+    const inicioMinutos = converterParaMinutos(horaInicio.replace(/"/g, ''));
+    const fimMinutos = converterParaMinutos(horaFim.replace(/"/g, ''));
+    const TOLERANCIA = 15;
+
+    // Validação de Funcionamento da Fábrica (Sempre permite, mas avisa)
+
+    const foraDosDias = !diasPermitidos.includes(diaSemana);
+    const foraDoHorario = agoraMinutos < (inicioMinutos - TOLERANCIA) || agoraMinutos > (fimMinutos + TOLERANCIA);
+
+    if (foraDosDias || foraDoHorario) {
+        aviso = 'Fora da Escala Selecionada';
     }
 
     return { valido: true, aviso };
 }
+
 
 /**
  * Processa o registro de um ponto, aplicando todas as validações de negócio.
@@ -114,12 +109,9 @@ export async function registrarPonto(env: { DB: D1Database, KV: KVNamespace | un
     `).bind(usuario.id).first() as { escala_dias: string | null, escala_tipo: string } | null;
 
     const validacao = await validarHorarioBatida(DB, KV, tipo, ultimo?.tipo, escala);
-    if (!validacao.valido) {
-        throw new Error(validacao.erro);
-    }
 
     // 3. Persistência
-    const pontoId = crypto.randomUUID();
+    const pontoId = (crypto as any).randomUUID();
     await repo.inserirPonto(DB, {
         id: pontoId,
         usuario_id: usuario.id,

@@ -105,7 +105,16 @@ export const DayCard = memo(({ dia, registros, hoje }: DayCardProps) => {
                                     <span className={`text-[8px] font-black uppercase tracking-[0.15em] mt-1 ${reg.tipo === 'entrada' ? 'text-emerald-500' : 'text-rose-500'}`}>
                                         {reg.tipo} {reg.ip_origem === 'SISTEMA-AUTOMATICO' && '(AUTO)'}
                                     </span>
+                                    {reg.aviso && (
+                                        <div className="flex items-center gap-1 mt-1">
+                                            <div className="w-1 h-1 rounded-full bg-amber-500 animate-pulse" />
+                                            <span className="text-[7.5px] font-black uppercase tracking-widest text-amber-600 bg-amber-500/5 px-1.5 py-0.5 rounded-md border border-amber-500/10">
+                                                {reg.aviso}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
+
                             </div>
                         ))}
                     </div>

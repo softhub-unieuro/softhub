@@ -62,10 +62,10 @@ export function CartaoTarefa({ tarefa, aoClicar, aoVerPerfil, isOverlay }: Carta
             onClick={handleToggleExpansao}
             className={`
                 bg-card rounded-2xl border border-border/60 flex flex-col select-none shadow-sm relative overflow-hidden group/card
-                ${!isDragging && !isOverlay ? 'transition-all duration-300' : 'transition-none'}
+                ${!isDragging && !isOverlay ? 'transition-all duration-300' : ''}
                 ${podeMover && !isOverlay ? 'cursor-grab active:cursor-grabbing hover:border-primary/40 hover:shadow-lg' : ''}
-                ${isDragging && !isOverlay ? 'opacity-0 border-dashed border-primary/30 ring-0' : ''}
-                ${isOverlay ? 'shadow-2xl border-primary/40 cursor-grabbing bg-card opacity-100 pointer-events-none z-[9999]' : ''}
+                ${isDragging && !isOverlay ? 'opacity-0' : 'opacity-100'}
+                ${isOverlay ? 'shadow-2xl border-primary/40 cursor-grabbing bg-card z-[9999] w-full ring-2 ring-primary/20' : ''}
                 ${isUrgente && !isDragging ? 'border-rose-500/30 bg-rose-500/5 dark:bg-rose-500/10' : ''}
                 ${expandido && !isDragging ? 'p-5 gap-4' : 'p-3.5 gap-2 hover:bg-muted/30'}
             `}
@@ -191,4 +191,3 @@ export function CartaoTarefa({ tarefa, aoClicar, aoVerPerfil, isOverlay }: Carta
         </div>
     );
 }
-

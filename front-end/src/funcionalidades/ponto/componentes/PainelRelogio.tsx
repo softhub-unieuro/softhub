@@ -131,7 +131,8 @@ export const PainelRelogio = memo(({
                             <Botao
                                 onMouseDown={aoTentarRegistrar}
                                 onClick={aoBaterPonto}
-                                disabled={carregando || salvando || foraDaRede || foraDoHorario || (foraDoDia && foraDaFabrica)}
+                                disabled={carregando || salvando || foraDaRede || !podeRegistrar}
+
                                 carregando={salvando}
                                 className={`
                                     w-full py-3.5 sm:py-4 rounded-2xl sm:rounded-3xl text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] 

@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, memo, useEffect } from 'react';
 import {
     DndContext,
     DragOverlay,
-    closestCorners,
+    rectIntersection,
     MouseSensor,
     TouchSensor,
     KeyboardSensor,
@@ -11,6 +11,7 @@ import {
     DragStartEvent,
     DragEndEvent
 } from '@dnd-kit/core';
+
 
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { FolderKanban, Plus, Layers, FileText } from 'lucide-react';
@@ -251,7 +252,7 @@ export const QuadroKanban = memo(() => {
                             )}
                                     <DndContext 
                                         sensors={sensors} 
-                                        collisionDetection={closestCorners} 
+                                        collisionDetection={rectIntersection} 
                                         onDragStart={handleDragStart} 
                                         onDragEnd={handleDragEnd}
                                     >
@@ -271,17 +272,18 @@ export const QuadroKanban = memo(() => {
                                                 ))}
                                             </div>
                                         </div>
-                                        <DragOverlay>
-                                            {activeTarefa ? (
-                                                <div className="w-[320px] lg:w-[380px] pointer-events-none">
+                                        <DragOverlay dropAnimation={null} style={{ pointerEvents: 'none' }}>
+                                            {activeTarefa && (
+                                                <div className="w-[300px] lg:w-[350px]">
                                                     <CartaoTarefa 
                                                         tarefa={activeTarefa} 
                                                         isOverlay 
                                                     />
                                                 </div>
-                                            ) : null}
+                                            )}
                                         </DragOverlay>
                                     </DndContext>
+
 
 
                         </div>

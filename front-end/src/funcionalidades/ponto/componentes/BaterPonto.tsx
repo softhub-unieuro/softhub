@@ -129,13 +129,14 @@ export const BaterPonto = memo(() => {
                         carregando={carregando}
                         proximoTipo={proximoTipo as 'entrada' | 'saida'}
                         aoTentarRegistrar={() => {
-                            if (foraDaRede || foraDoHorario || (foraDoDia && foraDaFabrica ) || !podeRegistrar) {
+                            if (foraDaRede || !podeRegistrar) {
                                 setTentativaBloqueada(true);
                                 setTimeout(() => setTentativaBloqueada(false), 500);
                             }
                         }}
                         aoBaterPonto={handleBaterPonto}
                     />
+
 
                     <div className="flex flex-col gap-4 w-full">
                         <PainelStatusJornada

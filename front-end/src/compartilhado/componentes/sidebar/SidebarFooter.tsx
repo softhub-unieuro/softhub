@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Bell, LogOut, QrCode } from 'lucide-react';
 import { Avatar } from '@/compartilhado/componentes/Avatar';
-import { MembrosOnline } from './MembrosOnline';
+
 
 interface SidebarFooterProps {
     usuario: any;
@@ -20,11 +20,8 @@ export const SidebarFooter = memo(({
 }: SidebarFooterProps) => {
     return (
         <div className="shrink-0 px-4 pb-3 pt-2 mt-auto relative z-10 space-y-2 border-t border-sidebar-border/20">
-            <div className="hidden lg:block">
-                <MembrosOnline />
-            </div>
-
             <button
+
                 onClick={() => setModalNotificacoes(true)}
                 className="w-full flex items-center justify-between px-2 group/notif"
             >

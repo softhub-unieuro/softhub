@@ -107,15 +107,30 @@ export function usarInterfacePonto() {
         const inicioMinutos = converterParaMinutos(janelaTrabalho.inicio);
         const fimMinutos = converterParaMinutos(janelaTrabalho.fim);
 
-        // Se o próximo tipo for 'saida' e houver uma entrada hoje, não bloqueamos visualmente.
-        const ultimo = registrosHoje.length > 0 ? registrosHoje[0] : null;
-        if (proximoTipo === 'saida' && ultimo?.tipo === 'entrada') {
-            return false;
-        }
-
-        // Regra Soft: Fora do dia não bloqueia o horário se houver permissão do backend
-        return agoraMinutos < inicioMinutos || agoraMinutos > fimMinutos;
+        // O frontend agora permite registrar sempre, a regra de negócio do aviso é tratada no backend
+        return false;
     }, [agoraRelogio, janelaTrabalho, proximoTipo, registrosHoje]);
+
+    const foraDoHorarioReal = useMemo(() => {
+        const horaBrasiliaStr = agoraRelogio.toLocaleTimeString('pt-BR', { 
+            timeZone: 'America/Sao_Paulo', 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            hour12: false 
+        });
+        
+        const converterParaMinutos = (h: string) => {
+            const [horas, minutos] = h.split(':').map(Number);
+            return horas * 60 + minutos;
+        };
+
+        const agoraMinutos = converterParaMinutos(horaBrasiliaStr);
+        const inicioMinutos = converterParaMinutos(janelaTrabalho.inicio);
+        const fimMinutos = converterParaMinutos(janelaTrabalho.fim);
+
+        return agoraMinutos < inicioMinutos || agoraMinutos > fimMinutos;
+    }, [agoraRelogio, janelaTrabalho]);
+
 
     const semanasDisponiveis = useMemo(() => {
         const mapa = new Set<number>();
@@ -167,9 +182,10 @@ export function usarInterfacePonto() {
         erroPonto,
         proximoTipo,
         agoraRelogio,
-        foraDoHorario,
+        foraDoHorario: foraDoHorarioReal,
         foraDoDia,
         foraDaFabrica,
+
         diasTrabalho,
         semanasDisponiveis,
         semanaSelecionada,

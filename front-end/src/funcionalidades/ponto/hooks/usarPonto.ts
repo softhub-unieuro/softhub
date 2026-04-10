@@ -8,7 +8,9 @@ export interface RegistroPonto {
     tipo: 'entrada' | 'saida';
     registrado_em: string; // ISO 8601
     ip_origem: string;
+    aviso?: string;
 }
+
 
 /**
  * Hook de gerenciamento do Ponto Eletrônico da Fábrica.
