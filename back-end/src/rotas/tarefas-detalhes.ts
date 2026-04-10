@@ -250,7 +250,7 @@ rotasTarefasDetalhes.patch('/:tarefaId/checklist/:itemId', autenticacaoRequerida
         const item = await DB.prepare('SELECT c.texto, c.concluido, t.titulo FROM checklist_tarefa c JOIN tarefas t ON c.tarefa_id = t.id WHERE c.id = ?').bind(itemId).first() as any;
         if (!item) return c.json({ erro: 'Item não encontrado' }, 404);
 
-        if (concluido !== undefined) {
+        if (concluido !== undefined && !!item.concluido !== !!concluido) {
             await DB.prepare('UPDATE checklist_tarefa SET concluido = ? WHERE id = ?').bind(concluido ? 1 : 0, itemId).run();
             
             await registrarLog(DB, {
@@ -265,7 +265,8 @@ rotasTarefasDetalhes.patch('/:tarefaId/checklist/:itemId', autenticacaoRequerida
                 dadosNovos: { concluido: !!concluido }
             });
         }
-        if (texto !== undefined) {
+        
+        if (texto !== undefined && item.texto !== texto.trim()) {
             await DB.prepare('UPDATE checklist_tarefa SET texto = ? WHERE id = ?').bind(texto.trim(), itemId).run();
             
             await registrarLog(DB, {
@@ -282,6 +283,7 @@ rotasTarefasDetalhes.patch('/:tarefaId/checklist/:itemId', autenticacaoRequerida
         }
         return c.json({ sucesso: true });
     } catch (e) {
+
         return c.json({ erro: 'Falha ao atualizar item' }, 500);
     }
 });

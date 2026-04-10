@@ -64,25 +64,33 @@ export function formatarReais(centavos: number): string {
 }
 
 /**
- * Formata a descrição de um evento do histórico de tarefa.
+ * Formata a descrição de um evento do histórico de tarefa de forma amigável (Workflow 29).
+ * Converte chaves técnicas e objetos JSON em sentenças legíveis em PT-BR.
+ * 
+ * @param campo - Identificador técnico da mudança (ex: 'status', 'TAREFA_CHECKLIST_ALTERADO')
+ * @param anterior - Valor antes da mudança (pode ser string ou JSON stringificado)
+ * @param novo - Valor após a mudança (pode ser string ou JSON stringificado)
+ * @returns {string} Descrição legível da atividade
  */
 export function formatarEventoHistorico(campo: string, anterior: string, novo: string): string {
+    // 1. Dicionário de traduções de valores canônicos
     const labels: Record<string, Record<string, string>> = {
         status: {
-            a_fazer: 'A Fazer',
-            em_andamento: 'Em Andamento',
+            backlog: 'Backlog',
+            todo: 'A Fazer',
+            in_progress: 'Em Andamento',
             em_revisao: 'Em Revisão',
-            testando: 'Testando',
-            concluido: 'Concluido'
+            concluida: 'Concluída'
         },
         prioridade: {
             urgente: 'Urgente',
             alta: 'Alta',
-            media: 'Media',
+            media: 'Média',
             baixa: 'Baixa'
         }
     };
 
+    // 2. Dicionário de campos comuns
     const nomesCampos: Record<string, string> = {
         status: 'o status',
         prioridade: 'a prioridade',
@@ -91,16 +99,64 @@ export function formatarEventoHistorico(campo: string, anterior: string, novo: s
         responsavel: 'o responsável'
     };
 
+    /**
+     * Tenta converter uma string que pode ser JSON em um objeto legível.
+     */
+    const tratarValor = (v: string): any => {
+        if (!v || v === 'null') return null;
+        try {
+            const obj = JSON.parse(v);
+            if (typeof obj === 'object' && obj !== null) {
+                if (obj.concluido !== undefined) return obj.concluido ? 'concluído' : 'pendente';
+                if (obj.texto !== undefined) return obj.texto;
+                if (obj.nome !== undefined) return obj.nome;
+            }
+            return obj;
+        } catch {
+            return v;
+        }
+    };
+
+    // 3. Tratamento especial para eventos de Checklist (Padrão: TAREFA_CHECKLIST_XXX)
+    if (campo.includes('TAREFA_CHECKLIST')) {
+        const vAnter = tratarValor(anterior);
+        const vNovo = tratarValor(novo);
+
+        if (campo === 'TAREFA_CHECKLIST_ADICIONADO') {
+            return `adicionou o item "${vNovo}" ao checklist`;
+        }
+        if (campo === 'TAREFA_CHECKLIST_REMOVIDO') {
+            return `removeu o item "${vAnter}" do checklist`;
+        }
+        if (campo === 'TAREFA_CHECKLIST_ALTERADO') {
+            if (vAnter === vNovo) return `atualizou um item do checklist`;
+            return `marcou um item do checklist como ${vNovo}`;
+        }
+        if (campo === 'TAREFA_CHECKLIST_EDICAO') {
+            return `renomeou um item do checklist para "${vNovo}"`;
+        }
+    }
+
+    // 4. Tratamento padrão para alterações de campos da tabela 'tarefas'
     const campoAmigavel = nomesCampos[campo] || campo;
-    const labelAnterior = labels[campo]?.[anterior] ?? anterior;
-    const labelNovo = labels[campo]?.[novo] ?? novo;
+    let labelAnterior = labels[campo]?.[anterior] ?? anterior;
+    let labelNovo = labels[campo]?.[novo] ?? novo;
+
+    // Se os valores forem JSON (ex: responsavel_id alterado)
+    if (typeof labelAnterior === 'string' && labelAnterior.startsWith('{')) labelAnterior = tratarValor(labelAnterior);
+    if (typeof labelNovo === 'string' && labelNovo.startsWith('{')) labelNovo = tratarValor(labelNovo);
 
     if (!anterior || anterior === 'null') {
         return `definiu ${campoAmigavel} como "${labelNovo}"`;
     }
 
+    if (labelAnterior === labelNovo) {
+        return `atualizou ${campoAmigavel}`;
+    }
+
     return `alterou ${campoAmigavel} de "${labelAnterior}" para "${labelNovo}"`;
 }
+
 
 /**
  * Pluraliza uma palavra baseada na quantidade.

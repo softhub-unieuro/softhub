@@ -3,13 +3,15 @@ import {
     DndContext,
     DragOverlay,
     closestCorners,
+    MouseSensor,
+    TouchSensor,
     KeyboardSensor,
-    PointerSensor,
     useSensor,
     useSensors,
     DragStartEvent,
     DragEndEvent
 } from '@dnd-kit/core';
+
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { FolderKanban, Plus, Layers, FileText } from 'lucide-react';
 import { useSearchParams } from 'react-router';
@@ -93,9 +95,12 @@ export const QuadroKanban = memo(() => {
     }, [tarefaIdUrl, tarefas]);
 
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(MouseSensor, { activationConstraint: { distance: 3 } }),
+        useSensor(TouchSensor),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
+
+
 
     const temFiltroAtivo = !!(filtros.busca || filtros.prioridades?.length || filtros.responsavelId);
 
@@ -244,31 +249,41 @@ export const QuadroKanban = memo(() => {
                                     </div>
                                 </div>
                             )}
-                            <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-                                <div className="flex-1 min-h-0 w-full overflow-hidden">
-                                    <div className="flex h-full w-full gap-4">
-                                        {COLUNAS_KANBAN.map((coluna, index) => (
-                                            <ColunaDropZone
-                                                key={coluna}
-                                                id={coluna}
-                                                titulo={LABELS_COLUNAS[coluna]}
-                                                tarefas={tarefasPorStatus[coluna] || []}
-                                                aoApertarTarefa={setTarefaDetalhes}
-                                                aoVerPerfil={handleVerPerfil}
-                                                delayClass={`atraso-${index + 1}`}
-                                                className={colunaAtiva === coluna ? 'flex' : 'hidden lg:flex'}
-                                            />
-                                        ))}
-                                        <DragOverlay dropAnimation={null}>
+                                    <DndContext 
+                                        sensors={sensors} 
+                                        collisionDetection={closestCorners} 
+                                        onDragStart={handleDragStart} 
+                                        onDragEnd={handleDragEnd}
+                                    >
+                                        <div className="flex-1 min-h-0 w-full overflow-hidden">
+                                            <div className="flex h-full w-full gap-4">
+                                                {COLUNAS_KANBAN.map((coluna, index) => (
+                                                    <ColunaDropZone
+                                                        key={coluna}
+                                                        id={coluna}
+                                                        titulo={LABELS_COLUNAS[coluna]}
+                                                        tarefas={tarefasPorStatus[coluna] || []}
+                                                        aoApertarTarefa={setTarefaDetalhes}
+                                                        aoVerPerfil={handleVerPerfil}
+                                                        delayClass={`atraso-${index + 1}`}
+                                                        className={colunaAtiva === coluna ? 'flex' : 'hidden lg:flex'}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <DragOverlay>
                                             {activeTarefa ? (
-                                                <div className="scale-[1.03] shadow-2xl opacity-90 transition-transform">
-                                                    <CartaoTarefa tarefa={activeTarefa} />
+                                                <div className="w-[320px] lg:w-[380px] pointer-events-none">
+                                                    <CartaoTarefa 
+                                                        tarefa={activeTarefa} 
+                                                        isOverlay 
+                                                    />
                                                 </div>
                                             ) : null}
                                         </DragOverlay>
-                                    </div>
-                                </div>
-                            </DndContext>
+                                    </DndContext>
+
+
                         </div>
                     )}
                 </div>

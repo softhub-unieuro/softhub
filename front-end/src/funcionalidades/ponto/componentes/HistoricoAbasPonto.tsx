@@ -46,7 +46,8 @@ export const HistoricoAbasPonto = memo(({
     }, [justificativas, busca]);
 
     return (
-        <div className="card-glass p-4 sm:p-8 flex flex-col card-glass-hover max-h-[600px] sm:max-h-[540px]">
+        <div className="card-glass p-4 sm:p-8 flex flex-col card-glass-hover max-h-[850px] sm:max-h-[800px]">
+
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4 sm:gap-6 shrink-0">
                 <div className="space-y-0.5 sm:space-y-1">
                     <h3 className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Linha do Tempo</h3>

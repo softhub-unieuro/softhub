@@ -44,8 +44,17 @@ export const ColunaDropZone = memo(({ id, titulo, tarefas, aoApertarTarefa, aoVe
             </div>
             <div
                 ref={setNodeRef}
-                className={`flex-1 p-4 overflow-y-auto overflow-x-hidden flex flex-col gap-4 scrollbar-none transition-all duration-300 ${isOver ? 'bg-primary/5 ring-2 ring-inset ring-primary/30 rounded-2xl' : ''}`}
+                className={`
+                    flex-1 p-4 overflow-y-auto overflow-x-hidden flex flex-col gap-4 scrollbar-none transition-all duration-300 relative
+                    ${isOver 
+                        ? 'bg-primary/5 ring-2 ring-primary/20 rounded-2xl shadow-[inset_0_0_20px_rgba(var(--primary-rgb),0.05)]' 
+                        : 'border-transparent'}
+                `}
             >
+                {isOver && (
+                    <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.03] to-transparent pointer-events-none animate-pulse" />
+                )}
+
                 {tarefas.map(tarefa => (
                     <CartaoTarefa key={tarefa.id} tarefa={tarefa} aoClicar={aoApertarTarefa} aoVerPerfil={aoVerPerfil} />
                 ))}

@@ -70,7 +70,8 @@ export const DayCard = memo(({ dia, registros, hoje }: DayCardProps) => {
             </div>
 
             {/* activity records - chronological log ribbon with internal scroll */}
-            <div className="flex flex-col w-full h-[160px] sm:h-[200px] px-1 overflow-y-auto scrollbar-none scroll-smooth">
+            <div className="flex flex-col w-full h-[220px] sm:h-[320px] px-1 overflow-y-auto scrollbar-none scroll-smooth">
+
                 {temRegistros ? (
                     <div className="flex flex-col gap-5 py-2">
                         {registrosOrdenados.map((reg, idx, arr) => (
