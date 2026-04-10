@@ -1,21 +1,26 @@
 import { memo } from 'react';
-import { ChevronRight, User, Clock, AlertCircle } from 'lucide-react';
+import { ChevronRight, User, Clock } from 'lucide-react';
 import { Emblema } from '@/compartilhado/componentes/Emblema';
 import { Avatar } from '@/compartilhado/componentes/Avatar';
 import { LABELS_PRIORIDADE, LABELS_STATUS } from '@/utilitarios/constantes';
+import type { Tarefa } from '@/funcionalidades/kanban/hooks/usarKanban';
 
 interface CardTarefaBacklogMobileProps {
-    tarefa: any;
-    aoClicar?: () => void;
+    tarefa: Tarefa;
+    aoClicar: (tarefa: Tarefa) => void;
 }
 
+/**
+ * Versão otimizada para toque da tarefa no Backlog.
+ * Exibida apenas em dispositivos móveis.
+ */
 export const CardTarefaBacklogMobile = memo(({ tarefa, aoClicar }: CardTarefaBacklogMobileProps) => {
     const prioridadeCor = {
         urgente: 'vermelho' as const,
         alta: 'amarelo' as const,
         media: 'azul' as const,
         baixa: 'cinza' as const
-    }[tarefa.prioridade as string] || 'cinza';
+    }[tarefa.prioridade] || 'cinza';
 
     const statusCor = {
         concluida: 'verde' as const,
@@ -23,12 +28,12 @@ export const CardTarefaBacklogMobile = memo(({ tarefa, aoClicar }: CardTarefaBac
         em_revisao: 'roxo' as const,
         todo: 'amarelo' as const,
         backlog: 'cinza' as const
-    }[tarefa.status as string] || 'cinza';
+    }[tarefa.status] || 'cinza';
 
     return (
         <div 
-            onClick={aoClicar}
-            className="group relative bg-card/40 backdrop-blur-xl border border-white/[0.08] rounded-3xl p-5 flex flex-col gap-5 active:scale-[0.98] transition-all duration-300"
+            onClick={() => aoClicar(tarefa)}
+            className="group relative bg-card/40 backdrop-blur-xl border border-white/[0.08] rounded-3xl p-5 flex flex-col gap-5 active:scale-[0.98] transition-all duration-300 cursor-pointer"
         >
             {/* Header: Título e Menu */}
             <div className="flex items-start justify-between gap-4">
@@ -48,11 +53,11 @@ export const CardTarefaBacklogMobile = memo(({ tarefa, aoClicar }: CardTarefaBac
             {/* Badges e Infos */}
             <div className="flex items-center flex-wrap gap-2">
                 <Emblema 
-                    texto={LABELS_PRIORIDADE[tarefa.prioridade as keyof typeof LABELS_PRIORIDADE]} 
+                    texto={LABELS_PRIORIDADE[tarefa.prioridade]} 
                     variante={prioridadeCor}
                 />
                 <Emblema 
-                    texto={LABELS_STATUS[tarefa.status as keyof typeof LABELS_STATUS]} 
+                    texto={LABELS_STATUS[tarefa.status]} 
                     variante={statusCor}
                     className="!bg-white/5 !text-white/40 !border-white/5"
                 />
@@ -81,7 +86,7 @@ export const CardTarefaBacklogMobile = memo(({ tarefa, aoClicar }: CardTarefaBac
                 <div className="flex items-center gap-1.5 opacity-40">
                     <Clock size={10} />
                     <span className="text-[9px] font-bold uppercase tracking-widest italic">
-                        {tarefa.updated_at ? `Atualizada há pouco` : 'Criada faz tempo'}
+                        {tarefa.id ? `Tarefa ativa` : 'Rascunho'}
                     </span>
                 </div>
                 <span className="text-[8px] font-black text-primary/40 uppercase tracking-tighter">
@@ -91,3 +96,4 @@ export const CardTarefaBacklogMobile = memo(({ tarefa, aoClicar }: CardTarefaBac
         </div>
     );
 });
+

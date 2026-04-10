@@ -2,7 +2,7 @@ import { format, formatDistanceToNow, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 /**
- * Formata data e hora para exibição completa.
+ * Formata data e hora para exibição completa no fuso de Brasília.
  * @param {string | Date} data ISO 8601 com Z ou objeto Date
  * @returns {string} 05/03/25 às 14:30
  */
@@ -11,7 +11,15 @@ export function formatarDataHora(data: string | Date): string {
     if (!isValid(d)) {
         return 'Data inválida';
     }
-    return format(d, "dd/MM/yy 'às' HH:mm", { locale: ptBR });
+    
+    return new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(d).replace(',', ' às');
 }
 
 
@@ -44,6 +52,18 @@ export function formatarHoras(minutos: number): string {
 }
 
 /**
+ * Formata um valor numérico em centavos para exibição em BRL.
+ * @param {number} centavos Valor em centavos (ex: 1990 = R$ 19,90)
+ * @returns {string} Valor formatado em R$
+ */
+export function formatarReais(centavos: number): string {
+    return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+    }).format(centavos / 100);
+}
+
+/**
  * Formata a descrição de um evento do histórico de tarefa.
  */
 export function formatarEventoHistorico(campo: string, anterior: string, novo: string): string {
@@ -53,12 +73,12 @@ export function formatarEventoHistorico(campo: string, anterior: string, novo: s
             em_andamento: 'Em Andamento',
             em_revisao: 'Em Revisão',
             testando: 'Testando',
-            concluido: 'Concluído'
+            concluido: 'Concluido'
         },
         prioridade: {
             urgente: 'Urgente',
             alta: 'Alta',
-            media: 'Média',
+            media: 'Media',
             baixa: 'Baixa'
         }
     };

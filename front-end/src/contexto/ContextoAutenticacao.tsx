@@ -3,6 +3,9 @@ import type { ReactNode } from 'react';
 import { api } from '@/compartilhado/servicos/api';
 import { logger } from '@/utilitarios/gerenciador-logs';
 
+/**
+ * Representa um usuário autenticado no sistema.
+ */
 export interface Usuario {
     id: string;
     nome: string;
@@ -12,8 +15,12 @@ export interface Usuario {
     ehDonoReal?: boolean;
     escala_tipo?: string;
     escala_dias?: string | null;
+    is_bootstrap?: boolean; // Campo auxiliar para controle administrativo
 }
 
+/**
+ * Configurações de interface e governança (matrizes de permissão).
+ */
 export interface IConfiguracoesUX {
     hierarquia_roles: string[];
     permissoes_roles: Record<string, Record<string, boolean>>;
@@ -21,6 +28,9 @@ export interface IConfiguracoesUX {
     dias_trabalho: number[];
 }
 
+/**
+ * Contrato do contexto de autenticação global.
+ */
 interface ContextoAutenticacaoContrato {
     usuario: Usuario | null;
     usuarioEfetivo: Usuario | null;
@@ -49,6 +59,8 @@ const CHAVE_PREVIEW_ROLE = 'softhub_preview_role';
 /**
  * Hook central de autenticação e governança.
  * Fornece dados do usuário, token e funções de gerenciamento de sessão.
+ * 
+ * @returns {ContextoAutenticacaoContrato & { ehDonoReal: boolean }} Contexto estendido
  */
 export function usarAutenticacao() {
     const contexto = useContext(ContextoAutenticacao);
@@ -131,8 +143,14 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
                 setUsuarioOriginal(perfilAtualizado);
                 localStorage.setItem(CHAVE_USUARIO, JSON.stringify(perfilAtualizado));
             }
-        } catch (erro: any) {
-            if (erro.resposta?.status === 401 || erro.resposta?.status === 404) sair();
+        } catch (erro: unknown) {
+            // Tenta verificar status de erro
+            if (erro && typeof erro === 'object' && 'response' in erro) {
+                const axiosErr = erro as { response?: { status?: number } };
+                if (axiosErr.response?.status === 401 || axiosErr.response?.status === 404) {
+                    sair();
+                }
+            }
         }
     }, [sair]);
 
@@ -192,8 +210,11 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
 
     /**
      * Inicia a sessão no frontend com os dados recebidos do login.
+     * 
+     * @param novoUsuario - Dados do usuário carregados no login
+     * @param novoToken - JWT emitido pelo servidor
      */
-    const entrar = useCallback((novoUsuario: any, novoToken: string) => {
+    const entrar = useCallback((novoUsuario: Usuario, novoToken: string) => {
         logger.sucesso('Sessão', `Usuário conectado: ${novoUsuario?.email}`);
 
         const formatado: Usuario = {
@@ -209,6 +230,9 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
         sincronizarPerfil();
     }, [sincronizarPerfil]);
 
+    /**
+     * Atualiza dados de usuário persistidos localmente sem trocar o token.
+     */
     const atualizarUsuarioLocalmente = useCallback((atualizado: Usuario) => {
         setUsuarioOriginal(atualizado);
         localStorage.setItem(CHAVE_USUARIO, JSON.stringify(atualizado));
@@ -246,4 +270,5 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
         </ContextoAutenticacao.Provider>
     );
 }
+
 

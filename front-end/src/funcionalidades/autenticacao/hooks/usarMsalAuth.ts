@@ -1,4 +1,5 @@
 import { useMsal } from '@azure/msal-react';
+import { AccountInfo } from '@azure/msal-browser';
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { loginRequest } from '../../../configuracoes/msal';
@@ -7,7 +8,7 @@ import { api } from '../../../compartilhado/servicos/api';
 import { logger } from '../../../utilitarios/gerenciador-logs';
 
 /**
- * Hook dedicado para o fluxo de autenticação MSAL (Checklist Frontend Part 4).
+ * Hook dedicado para o fluxo de autenticação MSAL.
  * Gerencia a interação com a Microsoft e a sincronização com o backend.
  */
 export function usarMsalAuth() {
@@ -54,19 +55,18 @@ export function usarMsalAuth() {
 
     /**
      * Processa o resultado do login e troca o token com o backend para obter um JWT próprio.
-     * @param conta - Objeto da conta retornado pela Microsoft
-     * @returns Objeto com status de sucesso e erro se disponível
+     * @param {AccountInfo} conta - Objeto da conta retornado pela Microsoft
+     * @returns {Promise<{ sucesso: boolean; erro?: string }>} Resposta do processamento
      */
-    const processarLoginNoBackend = useCallback(async (conta: any) => {
+    const processarLoginNoBackend = useCallback(async (conta: AccountInfo) => {
         try {
-            // Adquire o token silenciosamente (Audit Checklist: acquireTokenSilent)
+            // Adquire o token silenciosamente
             const respostaToken = await instancia.acquireTokenSilent({
                 ...loginRequest,
                 account: conta
             });
 
             // Valida no nosso backend e emite JWT próprio (Checklist Backend Part 1)
-            // Usamos o idToken para validação de identidade e claims institucionais
             const resposta = await api.post('/api/auth/msal', {
                 idToken: respostaToken.idToken
             });
@@ -81,11 +81,22 @@ export function usarMsalAuth() {
             navegar('/app/dashboard', { replace: true });
 
             return { sucesso: true };
-        } catch (erro: any) {
+        } catch (erro: unknown) {
             logger.erro('MSAL', 'Falha ao sincronizar com backend', erro);
+            
+            let mensagemErro = 'Falha na validação institucional do servidor. Verifique se você usou @unieuro.edu.br.';
+            
+            // Tenta extrair erro amigável da resposta do axios
+            if (erro && typeof erro === 'object' && 'response' in erro) {
+                const axiosErr = erro as { response?: { data?: { erro?: string } } };
+                if (axiosErr.response?.data?.erro) {
+                    mensagemErro = axiosErr.response.data.erro;
+                }
+            }
+
             return { 
                 sucesso: false, 
-                erro: erro.resposta?.dados?.erro || 'Falha na validação institucional do servidor. Verifique se você usou @unieuro.edu.br.' 
+                erro: mensagemErro
             };
         }
     }, [instancia, entrar, navegar]);
@@ -99,4 +110,5 @@ export function usarMsalAuth() {
         estaAutenticado
     };
 }
+
 

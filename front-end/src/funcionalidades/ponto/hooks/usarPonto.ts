@@ -47,17 +47,28 @@ export function usarPonto() {
         }
     });
 
+    /**
+     * Registra um novo ponto de entrada ou saída.
+     * @param tipo - 'entrada' ou 'saida'
+     * @returns {Promise<boolean>} Sucesso da operação
+     */
     const baterPonto = useCallback(async (tipo: 'entrada' | 'saida') => {
         try {
             await mutationBaterPonto.mutateAsync(tipo);
             return true;
-        } catch (e: any) {
-             const msgErro = e.response?.data?.erro || 'Erro ao registrar ponto. Verifique sua conexão ou se está na rede autorizada.';
+        } catch (erro: unknown) {
+             let msgErro = 'Erro ao registrar ponto. Verifique sua conexão ou se está na rede autorizada.';
+             
+             if (erro && typeof erro === 'object' && 'response' in erro) {
+                const axiosErr = erro as { response?: { data?: { erro?: string } } };
+                if (axiosErr.response?.data?.erro) {
+                    msgErro = axiosErr.response.data.erro;
+                }
+             }
+
              throw new Error(msgErro);
         }
     }, [mutationBaterPonto]);
-
-
 
     const erroFinal = erroQuery instanceof Error ? erroQuery.message : (mutationBaterPonto.error as Error)?.message || null;
 
@@ -70,3 +81,4 @@ export function usarPonto() {
         recarregar: refetch 
     };
 }
+

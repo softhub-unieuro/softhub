@@ -4,14 +4,23 @@ import { Emblema } from '@/compartilhado/componentes/Emblema';
 import { Avatar } from '@/compartilhado/componentes/Avatar';
 import { LABELS_PRIORIDADE, LABELS_STATUS } from '@/utilitarios/constantes';
 import { Botao } from '@/compartilhado/componentes/ui/Botao';
+import type { Tarefa } from '@/funcionalidades/kanban/hooks/usarKanban';
 
 interface LinhaTarefaBacklogProps {
-    tarefa: any;
+    tarefa: Tarefa;
+    aoClicar: (tarefa: Tarefa) => void;
 }
 
-export const LinhaTarefaBacklog = memo(({ tarefa }: LinhaTarefaBacklogProps) => {
+/**
+ * Representa uma linha individual na tabela de Backlog operacional.
+ * Focada em legibilidade e densidade de informação para desktop.
+ */
+export const LinhaTarefaBacklog = memo(({ tarefa, aoClicar }: LinhaTarefaBacklogProps) => {
     return (
-        <tr className="group hover:bg-muted/30 transition-all duration-300 cursor-pointer">
+        <tr 
+            onClick={() => aoClicar(tarefa)}
+            className="group hover:bg-muted/30 transition-all duration-300 cursor-pointer"
+        >
             <td className="px-6 py-4">
                 <div className="flex flex-col gap-1">
                     <span className="text-[13px] font-bold text-foreground/90 group-hover:text-primary transition-colors duration-300 tracking-tight">{tarefa.titulo}</span>
@@ -72,8 +81,10 @@ export const LinhaTarefaBacklog = memo(({ tarefa }: LinhaTarefaBacklogProps) => 
                     tamanho="icone"
                     className="p-2.5 bg-muted hover:bg-primary text-muted-foreground hover:text-primary-foreground rounded-xl transition-all duration-300 shadow-sm hover:shadow-primary/30 group-hover:translate-x-1"
                     icone={<ChevronRight size={16} />}
+                    onClick={() => aoClicar(tarefa)}
                 />
             </td>
         </tr>
     );
 });
+

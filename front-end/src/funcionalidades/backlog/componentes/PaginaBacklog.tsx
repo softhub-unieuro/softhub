@@ -25,13 +25,20 @@ import { Botao } from '@/compartilhado/componentes/ui/Botao';
 import { LinhaTarefaBacklog } from './LinhaTarefaBacklog';
 import { CardTarefaBacklogMobile } from './CardTarefaBacklogMobile';
 import { BacklogVazioProjetos } from './BacklogVazioProjetos';
+import { ModalDetalhesTarefa } from '@/funcionalidades/kanban/componentes/ModalDetalhesTarefa';
+import type { Tarefa } from '@/funcionalidades/kanban/hooks/usarKanban';
 
+/**
+ * Página principal do Backlog do projeto selecionado.
+ * Permite visualização em lista, filtros e criação rápida de tarefas.
+ */
 const PaginaBacklog = memo(() => {
     const { projetoAtivoId } = usarAutenticacao();
     const { projetos, carregando: carregandoProjetos } = usarProjetos();
     const podeGerenciarProjetos = usarPermissaoAcesso('projetos:visualizar');
 
     const [modalCriarAberto, setModalCriarAberto] = useState(false);
+    const [tarefaSelecionada, setTarefaSelecionada] = useState<Tarefa | null>(null);
     const [busca, setBusca] = useState('');
     const [statusFiltro, setStatusFiltro] = useState<string[]>([]);
     const [prioridadeFiltro, setPrioridadeFiltro] = useState<string[]>([]);
@@ -53,6 +60,10 @@ const PaginaBacklog = memo(() => {
 
     const togglePrioridade = useCallback((p: string) => {
         setPrioridadeFiltro(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
+    }, []);
+
+    const aoVerTarefa = useCallback((tarefa: Tarefa) => {
+        setTarefaSelecionada(tarefa);
     }, []);
 
     const podeCriar = usarPermissaoAcesso('tarefas:criar');
@@ -125,7 +136,7 @@ const PaginaBacklog = memo(() => {
                         />
                         
                         <div className="h-6 w-px bg-white/5 hidden lg:block" />
-
+ 
                         <FiltroPills 
                             label="Status" 
                             opcoes={LABELS_STATUS} 
@@ -166,7 +177,11 @@ const PaginaBacklog = memo(() => {
                     {/* VISÃO MOBILE — Cards Táteis */}
                     <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-6 animar-entrada atraso-2">
                         {tarefas.map(tarefa => (
-                            <CardTarefaBacklogMobile key={tarefa.id} tarefa={tarefa} />
+                            <CardTarefaBacklogMobile 
+                                key={tarefa.id} 
+                                tarefa={tarefa} 
+                                aoClicar={aoVerTarefa}
+                            />
                         ))}
                     </div>
 
@@ -185,7 +200,11 @@ const PaginaBacklog = memo(() => {
                                 </thead>
                                 <tbody className="divide-y divide-border/20">
                                     {tarefas.map(tarefa => (
-                                        <LinhaTarefaBacklog key={tarefa.id} tarefa={tarefa} />
+                                        <LinhaTarefaBacklog 
+                                            key={tarefa.id} 
+                                            tarefa={tarefa} 
+                                            aoClicar={aoVerTarefa}
+                                        />
                                     ))}
                                 </tbody>
                             </table>
@@ -201,8 +220,15 @@ const PaginaBacklog = memo(() => {
                     await criarTarefa(dados);
                 }}
             />
+
+            <ModalDetalhesTarefa 
+                tarefa={tarefaSelecionada}
+                aberto={!!tarefaSelecionada}
+                aoFechar={() => setTarefaSelecionada(null)}
+            />
         </div>
     );
 });
 
 export default PaginaBacklog;
+

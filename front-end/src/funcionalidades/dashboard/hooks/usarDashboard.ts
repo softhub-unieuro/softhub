@@ -32,10 +32,13 @@ export interface DadosDashboard {
 /**
  * Hook de gerenciamento dos dados do Dashboard Principal.
  * Utiliza React Query para cache e gerenciamento de estado de carregamento.
+ * 
+ * @param projetoId - Opcional. ID do projeto para filtrar os dados do dashboard.
+ * @returns {Object} Objeto contendo métricas, avisos, tarefas, projetos, estado de carregamento e erro.
  */
 export function usarDashboard(projetoId?: string) {
     const { 
-        data, 
+        data: dados, 
         isLoading: carregando, 
         error 
     } = useQuery<DadosDashboard>({
@@ -50,17 +53,26 @@ export function usarDashboard(projetoId?: string) {
         refetchOnWindowFocus: true, // re-busca ao voltar à aba
     });
 
-    const erro = error ? (error as any).response?.data?.erro || 'Erro ao carregar dashboard' : null;
+    let erro = null;
+    if (error) {
+        if (typeof error === 'object' && 'response' in error) {
+            const axiosErr = error as { response?: { data?: { erro?: string } } };
+            erro = axiosErr.response?.data?.erro || 'Erro ao carregar dashboard';
+        } else {
+            erro = 'Erro interno ao carregar dashboard';
+        }
+    }
 
     return { 
-        metricas: data?.metricas || null, 
-        avisos: data?.avisos || [], 
-        minhasTarefas: data?.minhasTarefas || [], 
-        projetosAtivos: data?.projetosAtivos || [],
+        metricas: dados?.metricas || null, 
+        avisos: dados?.avisos || [], 
+        minhasTarefas: dados?.minhasTarefas || [], 
+        projetosAtivos: dados?.projetosAtivos || [],
         carregando, 
         erro 
     };
 }
+
 
 
 

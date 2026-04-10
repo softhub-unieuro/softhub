@@ -1,9 +1,13 @@
-import { D1Database } from '@cloudflare/workers-types';
+import { D1Database, KVNamespace } from '@cloudflare/workers-types';
 import { logger } from '../utilitarios/logger';
 
 /**
- * Cria uma notificação para o usuário. 
- * As notificações são sempre geradas pelo backend.
+ * Cria notificações para usuários no banco de dados e atualiza flags no KV.
+ * As notificações são sempre geradas de forma assíncrona pelo backend.
+ * 
+ * @param db - Instância do banco de dados D1
+ * @param params - Parâmetros para definir destinatários e conteúdo
+ * @param kv - Namespace do KV para sinalização em tempo real (opcional)
  */
 export interface ParamsNotificacao {
     usuarioId?: string;
@@ -19,20 +23,20 @@ export interface ParamsNotificacao {
     entidadeId?: string;
 }
 
-export async function criarNotificacoes(db: any, params: ParamsNotificacao, kv?: any): Promise<void> {
-    const idsToNotify = new Set<string>();
+export async function criarNotificacoes(db: D1Database, params: ParamsNotificacao, kv?: KVNamespace): Promise<void> {
+    const idsParaNotificar = new Set<string>();
 
     if (params.usuarioId) {
-        idsToNotify.add(params.usuarioId);
+        idsParaNotificar.add(params.usuarioId);
     }
 
     if (params.usuariosIds && Array.from(params.usuariosIds).length > 0) {
-        params.usuariosIds.forEach(id => idsToNotify.add(id));
+        params.usuariosIds.forEach(id => idsParaNotificar.add(id));
     }
 
     if (params.todosOsUsuarios) {
-        const { results } = await db.prepare('SELECT id FROM usuarios').all();
-        results?.forEach((u: any) => idsToNotify.add(u.id));
+        const { results } = await db.prepare('SELECT id FROM usuarios').all<{ id: string }>();
+        results?.forEach(u => idsParaNotificar.add(u.id));
     }
 
     if (params.todosDoProjetoId) {
@@ -41,13 +45,13 @@ export async function criarNotificacoes(db: any, params: ParamsNotificacao, kv?:
             FROM projetos_equipes pe
             JOIN usuarios_organizacao uo ON uo.equipe_id = pe.equipe_id
             WHERE pe.projeto_id = ?
-        `).bind(params.todosDoProjetoId).all();
-        results?.forEach((u: any) => idsToNotify.add(u.usuario_id));
+        `).bind(params.todosDoProjetoId).all<{ usuario_id: string }>();
+        results?.forEach(u => idsParaNotificar.add(u.usuario_id));
     }
 
     // Processa batches de inserção
-    if (idsToNotify.size > 0) {
-        const statements = Array.from(idsToNotify).map(id =>
+    if (idsParaNotificar.size > 0) {
+        const statements = Array.from(idsParaNotificar).map(id =>
             db.prepare(`
                 INSERT INTO notificacoes (id, usuario_id, tipo, titulo, mensagem, link_acao, entidade_id)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -69,11 +73,11 @@ export async function criarNotificacoes(db: any, params: ParamsNotificacao, kv?:
             // 🚀 Atualiza flag no KV para cada usuário notificado
             if (kv) {
                 try {
-                    for (const id of idsToNotify) {
-                        await kv.put(`tem_notificacao:${id}`, 'true', { expirationTtl: 86400 }); // Expira em 24h se não houver atividade
+                    for (const id of idsParaNotificar) {
+                        await kv.put(`tem_notificacao:${id}`, 'true', { expirationTtl: 86400 }); // Expira em 24h
                     }
-                } catch (e: any) {
-                    logger.error('[KV ERROR] Falha ao atualizar flags de notificação', { erro: e.message });
+                } catch (e: unknown) {
+                    logger.error('[KV ERROR] Falha ao atualizar flags de notificação', { erro: e instanceof Error ? e.message : String(e) });
                 }
             }
         }
@@ -83,8 +87,12 @@ export async function criarNotificacoes(db: any, params: ParamsNotificacao, kv?:
 /**
  * Remove todas as notificações vinculadas a uma entidade específica.
  * Útil para quando um aviso ou tarefa é excluído.
+ * 
+ * @param db - Instância do banco de dados D1
+ * @param entidadeId - UUID da entidade (tarefa, aviso, etc)
  */
-export async function removerNotificacoesPorEntidade(db: any, entidadeId: string): Promise<void> {
+export async function removerNotificacoesPorEntidade(db: D1Database, entidadeId: string): Promise<void> {
     if (!entidadeId) return;
     await db.prepare('DELETE FROM notificacoes WHERE entidade_id = ?').bind(entidadeId).run();
 }
+

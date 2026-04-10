@@ -7,9 +7,9 @@ import { kvRateLimit } from './middleware/rate-limit';
 import { processarFechamentoAutomatico, enviarLembreteSaida } from './servicos/servico-ponto-auto';
 
 // ─── Rotas ────────────────────────────────────────────────────────────────────
-import rotasAuth from './rotas/auth';
-import rotasAuthQr from './rotas/auth-qr';
-import rotasSessoes from './rotas/auth-sessions';
+import rotasAuth from './rotas/autenticacao';
+import rotasAuthQr from './rotas/autenticacao-qr';
+import rotasSessoes from './rotas/autenticacao-sessoes';
 import rotasUsuarios from './rotas/usuarios';
 import rotasUsuariosAdmin from './rotas/usuarios-admin';
 import rotasProjetos from './rotas/projetos';
@@ -39,7 +39,7 @@ export type Env = {
     MSAL_CLIENT_ID: string;
     BOOTSTRAP_ADMIN_EMAIL: string;
     softhub_kv: KVNamespace;
-    AI: any;
+    AI: unknown; // IA binding do Cloudflare
     GITHUB_TOKEN: string;
     GITHUB_OWNER: string;
 };
@@ -91,7 +91,7 @@ app.use('*', async (c, next) => {
                 try {
                     const { verify } = await import('hono/jwt');
                     const token = authHeader.slice(7);
-                    const payload = await verify(token, c.env.JWT_SECRET, 'HS256') as any;
+                    const payload = await verify(token, c.env.JWT_SECRET, 'HS256') as { role: string };
                     
                     if (payload.role === 'ADMIN') return await next();
                 } catch {
@@ -104,8 +104,8 @@ app.use('*', async (c, next) => {
                 detalhe: 'Estamos realizando melhorias técnicas. Administradores ainda possuem acesso.' 
             }, 503);
         }
-    } catch (e: any) {
-        log('error', '[MAINTENANCE] Falha ao verificar status', { erro: e.message });
+    } catch (e: unknown) {
+        log('error', '[MAINTENANCE] Falha ao verificar status', { erro: e instanceof Error ? e.message : String(e) });
     }
 
     await next();
@@ -148,20 +148,20 @@ app.route('/api/perfil', rotasPerfil);
 // ─── Health check (Rota pública) ──────────────────────────────────────────────
 app.get('/api/status', async (c) => {
     const { DB, softhub_kv } = c.env;
-    const report: any = { status: 'check', d1: 'desconhecido', kv: 'desconhecido' };
+    const report: { status: string, d1: string, kv: string } = { status: 'check', d1: 'desconhecido', kv: 'desconhecido' };
     
     try {
         await DB.prepare('SELECT 1').first();
         report.d1 = 'ok';
-    } catch (e: any) {
-        report.d1 = 'erro: ' + e.message;
+    } catch (e: unknown) {
+        report.d1 = 'erro: ' + (e instanceof Error ? e.message : String(e));
     }
     
     try {
         await softhub_kv.get('test_ping'); // Sem ?, queremos ver se explode
         report.kv = 'ok';
-    } catch (e: any) {
-        report.kv = 'erro: ' + e.message;
+    } catch (e: unknown) {
+        report.kv = 'erro: ' + (e instanceof Error ? e.message : String(e));
     }
     
     return c.json(report);
@@ -180,10 +180,13 @@ export { app };
 
 /**
  * Ponto de Entrada da Worker (Fetch + Cron)
+ * @param event - Evento agendado ou requisição HTTP
+ * @param env - Variáveis de ambiente e bindings
+ * @param ctx - Contexto de execução da Worker
  */
 export default {
     fetch: app.fetch,
-    async scheduled(event: any, env: Env, ctx: any) {
+    async scheduled(event: { cron: string }, env: Env, ctx: ExecutionContext) {
         log('info', '[SCHEDULED] Executando tarefa agendada', { cron: event.cron });
         
         // Tarefa: Fechamento de Ponto às 23:59 (Brasília)
@@ -196,4 +199,4 @@ export default {
             ctx.waitUntil(enviarLembreteSaida(env.DB, env.softhub_kv));
         }
     }
-};
+};
