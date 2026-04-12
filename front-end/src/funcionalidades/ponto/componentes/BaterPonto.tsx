@@ -53,11 +53,14 @@ export const BaterPonto = memo(() => {
     }, [registrosHoje, agoraRelogio]);
 
     const registrosAgrupados = useMemo(() => {
-        // Pega 7 dias a partir do inicio da semana (segunda-feira) e filtra apenas os marcados
         const diasSemana = Array.from({ length: 7 }, (_, i) => addDays(new Date(semanaSelecionada), i))
-            .filter(dia => diasTrabalho.includes(dia.getDay()));
+            .filter(dia => 
+                diasTrabalho.includes(dia.getDay()) || 
+                historico.some(reg => isSameDay(new Date(reg.registrado_em), dia))
+            );
             
         return diasSemana.map(dia => ({
+
             dia,
             registros: historico.filter(reg => isSameDay(new Date(reg.registrado_em), dia))
         }));
@@ -146,9 +149,8 @@ export const BaterPonto = memo(() => {
 
                         <HistoricoAbasPonto
                             abaAtiva={abaAtiva}
-                            busca={busca}
-                            onMudarBusca={setBusca}
                             semanaSelecionada={semanaSelecionada}
+
                             semanasDisponiveis={semanasDisponiveis}
                             onSemanaAnterior={handleSemanaAnterior}
                             onSemanaProxima={handleSemanaProxima}

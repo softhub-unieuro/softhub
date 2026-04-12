@@ -3,7 +3,6 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Botao } from '@/compartilhado/componentes/ui/Botao';
 import { isSameDay, startOfWeek, isToday, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { BarraBusca } from '@/compartilhado/componentes/BarraBusca';
 import { DayCard } from './DayCard';
 import { ListaJustificativas } from './ListaJustificativas';
 import type { JustificativaPonto } from '@/funcionalidades/ponto/hooks/usarJustificativa';
@@ -11,8 +10,6 @@ import type { RegistroPonto } from '@/funcionalidades/ponto/hooks/usarPonto';
 
 interface HistoricoAbasPontoProps {
     abaAtiva: 'registro' | 'justificativas';
-    busca: string;
-    onMudarBusca: (v: string) => void;
     semanaSelecionada: number;
     semanasDisponiveis: number[];
     onSemanaAnterior: () => void;
@@ -25,8 +22,6 @@ interface HistoricoAbasPontoProps {
 
 export const HistoricoAbasPonto = memo(({
     abaAtiva,
-    busca,
-    onMudarBusca,
     semanaSelecionada,
     semanasDisponiveis,
     onSemanaAnterior,
@@ -39,11 +34,8 @@ export const HistoricoAbasPonto = memo(({
     const indiceSemanaAtual = semanasDisponiveis.indexOf(semanaSelecionada);
 
     const justificativasFiltradas = useMemo(() => {
-        return justificativas.filter(j => 
-            j.motivo.toLowerCase().includes(busca.toLowerCase()) || 
-            j.tipo.toLowerCase().includes(busca.toLowerCase())
-        );
-    }, [justificativas, busca]);
+        return justificativas;
+    }, [justificativas]);
 
     return (
         <div className="card-glass p-4 sm:p-8 flex flex-col card-glass-hover max-h-[850px] sm:max-h-[800px]">
@@ -85,15 +77,9 @@ export const HistoricoAbasPonto = memo(({
                         </div>
                     )}
 
-                    <div className="relative w-full sm:w-56">
-                        <BarraBusca
-                            valor={busca}
-                            aoMudar={onMudarBusca}
-                            placeholder="Buscar..."
-                        />
-                    </div>
                 </div>
             </div>
+
 
             <div className="flex-1 overflow-x-auto sm:overflow-y-auto scrollbar-none pb-2 sm:pb-0 sm:pr-1">
                 {abaAtiva === 'registro' ? (

@@ -22,7 +22,6 @@ export function usarInterfacePonto() {
     const [justificativaEditando, setJustificativaEditando] = useState<JustificativaPonto | null>(null);
     const [idExcluindo, setIdExcluindo] = useState<string | null>(null);
     const [abaAtiva, setAbaAtiva] = useState<'registro' | 'justificativas'>('registro');
-    const [busca, setBusca] = useState('');
     const [semanaSelecionada, setSemanaSelecionada] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }).getTime());
     const [tentativaBloqueada, setTentativaBloqueada] = useState(false);
     const [janelaTrabalho, setJanelaTrabalho] = useState({ inicio: '13:00', fim: '17:00' });
@@ -74,11 +73,28 @@ export function usarInterfacePonto() {
     }, [registrosHoje]);
 
     const diasTrabalho = useMemo(() => {
-        if (usuario?.escala_dias) {
-            return usuario.escala_dias.split(',').map(Number);
+        if (!usuario?.escala_dias) return diasTrabalhoFabrica;
+
+        const raw = usuario.escala_dias;
+        const nomesDias = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+
+        // Se for o formato novo com PIPE
+        if (raw.includes('|') || raw.includes(':')) {
+            const partes = raw.split('|');
+            const fixos = (partes.find(p => p.startsWith('FIXO:'))?.split(':')[1]?.split(',') || []).map(d => d.trim().toLowerCase());
+            const altes = (partes.find(p => p.startsWith('ALTE:'))?.split(':')[1]?.split(',') || []).map(d => d.trim().toLowerCase());
+
+            // Mapeia nomes para números
+            const diasFixo = fixos.map(n => nomesDias.indexOf(n)).filter(i => i !== -1);
+            const diasAlte = altes.map(n => nomesDias.indexOf(n)).filter(i => i !== -1);
+
+            return [...new Set([...diasFixo, ...diasAlte])];
         }
-        return diasTrabalhoFabrica;
+
+        // Formato legatário (apenas números separados por vírgula)
+        return raw.split(',').map(Number);
     }, [usuario, diasTrabalhoFabrica]);
+
 
     const foraDoDia = useMemo(() => {
         const diaHoje = agoraRelogio.getDay();
@@ -192,9 +208,8 @@ export function usarInterfacePonto() {
         setSemanaSelecionada,
         abaAtiva,
         setAbaAtiva,
-        busca,
-        setBusca,
         tentativaBloqueada,
+
         setTentativaBloqueada,
         modalJustificativaAberto,
         setModalJustificativaAberto,
