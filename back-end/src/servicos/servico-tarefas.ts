@@ -43,25 +43,27 @@ export async function listarTarefas(
         throw new Error('Você não tem acesso a este projeto.');
     }
 
-    // 2. Filtro de exclusividade (Membros comuns vêem apenas suas próprias tarefas)
+    // 2. Filtro de exclusividade (Membros comuns vêem apenas o que pertence à sua equipe ou participam)
     const podeVerTodasTarefas = await verificarPermissaoManual(c, 'tarefas:visualizar_todas');
     if (!podeVerTodasTarefas) {
-        filtros.responsavelId = usuario.id;
+        filtros.participacaoUsuarioId = usuario.id;
+        // Limpa o responsavelId anterior para não conflitar com o filtro holístico
+        delete filtros.responsavelId;
     }
 
     // 3. Busca tarefas no repositório
-    const tarefas = await repo.buscarTarefas(DB, { ...filtros, projetoId });
+    const tarefas = await repo.buscarTarefas(DB, { ...filtros, projetoId }) as any[];
 
     if (tarefas.length === 0) return [];
 
     // 4. Busca responsáveis de forma otimizada (Batch Load)
-    const idsTarefas = tarefas.map(t => t.id);
+    const idsTarefas = tarefas.map(t => String(t.id));
     const todosResponsaveis = await repo.buscarResponsaveisPorTarefas(DB, idsTarefas);
 
     // 5. Mapeia responsáveis para cada tarefa correspondente
     const mapaResponsaveis: Record<string, ResponsavelMapeado[]> = {};
     
-    (todosResponsaveis as (ResponsavelMapeado & { tarefa_id: string })[]).forEach(r => {
+    (todosResponsaveis as any[]).forEach(r => {
         if (!mapaResponsaveis[r.tarefa_id]) {
             mapaResponsaveis[r.tarefa_id] = [];
         }
@@ -74,7 +76,7 @@ export async function listarTarefas(
 
     return tarefas.map(t => ({
         ...t,
-        responsaveis: mapaResponsaveis[t.id] || []
+        responsaveis: mapaResponsaveis[String(t.id)] || []
     }));
 }
 

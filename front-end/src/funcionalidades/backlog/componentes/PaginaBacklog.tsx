@@ -20,7 +20,7 @@ import { LABELS_PRIORIDADE, LABELS_STATUS } from '@/utilitarios/constantes';
 import { Avatar } from '@/compartilhado/componentes/Avatar';
 import { useState, useCallback, memo } from 'react';
 import { ModalCriarTarefa } from './ModalCriarTarefa';
-import { BarraFiltros, FiltroPills } from '@/compartilhado/componentes/BarraFiltros';
+import { BarraFiltros, FiltroPills, FiltroToggle } from '@/compartilhado/componentes/BarraFiltros';
 import { Botao } from '@/compartilhado/componentes/ui/Botao';
 import { LinhaTarefaBacklog } from './LinhaTarefaBacklog';
 import { CardTarefaBacklogMobile } from './CardTarefaBacklogMobile';
@@ -33,15 +33,17 @@ import type { Tarefa } from '@/funcionalidades/kanban/hooks/usarKanban';
  * Permite visualização em lista, filtros e criação rápida de tarefas.
  */
 const PaginaBacklog = memo(() => {
-    const { projetoAtivoId } = usarAutenticacao();
+    const { projetoAtivoId, usuario } = usarAutenticacao();
     const { projetos, carregando: carregandoProjetos } = usarProjetos();
     const podeGerenciarProjetos = usarPermissaoAcesso('projetos:visualizar');
+    const podeVerTudo = usarPermissaoAcesso('tarefas:visualizar_todas');
 
     const [modalCriarAberto, setModalCriarAberto] = useState(false);
     const [tarefaSelecionada, setTarefaSelecionada] = useState<Tarefa | null>(null);
     const [busca, setBusca] = useState('');
-    const [statusFiltro, setStatusFiltro] = useState<string[]>([]);
+    const [statusFiltro, setStatusFiltro] = useState<string[]>(['backlog']);
     const [prioridadeFiltro, setPrioridadeFiltro] = useState<string[]>([]);
+    const [filtroParticipacao, setFiltroParticipacao] = useState(true);
 
     const {
         tarefas,
@@ -51,7 +53,8 @@ const PaginaBacklog = memo(() => {
     } = usarBacklog(projetoAtivoId, {
         busca,
         status: statusFiltro.length > 0 ? statusFiltro : undefined,
-        prioridades: prioridadeFiltro.length > 0 ? prioridadeFiltro : undefined
+        prioridades: prioridadeFiltro.length > 0 ? prioridadeFiltro : undefined,
+        participacaoUsuarioId: filtroParticipacao ? usuario?.id : undefined
     });
 
     const toggleStatus = useCallback((s: string) => {
@@ -118,15 +121,30 @@ const PaginaBacklog = memo(() => {
                 <BarraFiltros
                     busca={busca}
                     aoMudarBusca={setBusca}
-                    placeholderBusca="Buscar tarefa pelo nome ou descrição..."
-                    temFiltrosAtivos={busca !== '' || statusFiltro.length > 0 || prioridadeFiltro.length > 0}
+                    esconderBusca={true}
+                    temFiltrosAtivos={busca !== '' || statusFiltro.length > 0 || prioridadeFiltro.length > 0 || !filtroParticipacao}
                     aoLimparFiltros={() => {
                         setBusca('');
                         setStatusFiltro([]);
                         setPrioridadeFiltro([]);
+                        setFiltroParticipacao(true);
                     }}
                 >
                     <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
+                        {podeVerTudo && (
+                            <>
+                                <FiltroToggle 
+                                    opcoes={[
+                                        { valor: 'true', rotulo: 'Pertence ou Participa' },
+                                        { valor: 'false', rotulo: 'Todo o Projeto' }
+                                    ]}
+                                    valorAtivo={filtroParticipacao ? 'true' : 'false'}
+                                    aoMudar={(v) => setFiltroParticipacao(v === 'true')}
+                                />
+                                <div className="h-6 w-px bg-white/5 hidden lg:block" />
+                            </>
+                        )}
+
                         <FiltroPills 
                             label="Prioridade" 
                             opcoes={LABELS_PRIORIDADE} 
@@ -186,7 +204,7 @@ const PaginaBacklog = memo(() => {
                     </div>
 
                     {/* VISÃO DESKTOP — Tabela Operacional */}
-                    <div className="hidden lg:block bg-card/40 backdrop-blur-2xl border border-border/50 rounded-2xl shadow-xl overflow-hidden animar-entrada atraso-2">
+                    <div className="hidden lg:block bg-card/40 backdrop-blur-2xl border border-border/50 rounded-2xl shadow-sm overflow-hidden animar-entrada atraso-2">
                         <div className="overflow-x-auto">
                             <table className="w-full border-collapse">
                                 <thead>

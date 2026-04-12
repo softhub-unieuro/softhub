@@ -1,6 +1,6 @@
 import { Modal } from '@/compartilhado/componentes/Modal';
 import { Emblema } from '@/compartilhado/componentes/Emblema';
-import { CORES_PRIORIDADE, LABELS_PRIORIDADE } from '@/utilitarios/constantes';
+import { CORES_PRIORIDADE, LABELS_PRIORIDADE, LABELS_STATUS } from '@/utilitarios/constantes';
 import type { Tarefa } from '@/funcionalidades/kanban/hooks/usarKanban';
 import { SecaoChecklist } from './SecaoChecklist';
 import { JornalTarefa } from './JornalTarefa';
@@ -43,7 +43,7 @@ export function ModalDetalhesTarefa({ tarefa, aberto, aoFechar }: ModalDetalhesT
                         <div>
                             <h4 className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em]">Onde está</h4>
                             <p className="text-sm font-bold text-foreground capitalize">
-                                {tarefa.status.replace('_', ' ')}
+                                {LABELS_STATUS[tarefa.status as keyof typeof LABELS_STATUS] || tarefa.status}
                             </p>
                         </div>
                     </div>

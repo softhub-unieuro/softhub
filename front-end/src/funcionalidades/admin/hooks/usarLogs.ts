@@ -79,7 +79,7 @@ export function usarLogs() {
     const { configuracoes, roleVisualizacao, usuario } = usarAutenticacao();
     const podeVerLogs = usarPermissaoAcesso('logs:visualizar');
 
-    const carregar = async (exibirLoading = true) => {
+    const carregar = async (exibirLoading = true, signal?: AbortSignal) => {
         // Se estiver em modo de previsualização e o cargo atual não puder ver logs, aborta para evitar 403
         if (!podeVerLogs) {
             setCarregando(false);
@@ -107,8 +107,8 @@ export function usarLogs() {
             if (filtroMeusLogs) params.meus = true;
 
             const [resLogs, resStats] = await Promise.all([
-                api.get('/api/logs', { params }),
-                api.get('/api/logs/estatisticas')
+                api.get('/api/logs', { params, signal }),
+                api.get('/api/logs/estatisticas', { signal })
             ]);
 
             setLogs(resLogs.data.dados || []);
@@ -117,6 +117,7 @@ export function usarLogs() {
             setTotalRegistros(resLogs.data.paginacao?.total || 0);
             setErro(null);
         } catch (e: any) {
+            if (e.name === 'AbortError') return;
             console.error('[ERRO LOGS]', e);
             const erroApi = e.response?.data?.erro || 'Erro ao carregar logs';
             const detalheApi = e.response?.data?.detalhe ? ` (${e.response.data.detalhe})` : '';
@@ -127,7 +128,9 @@ export function usarLogs() {
     };
 
     useEffect(() => {
-        carregar(contadorPolling === 0); // Só mostra loading na primeira carga ou troca de filtro
+        const controlador = new AbortController();
+        carregar(contadorPolling === 0, controlador.signal); // Só mostra loading na primeira carga ou troca de filtro
+        return () => controlador.abort();
     }, [pagina, itensPorPagina, filtroModulo, filtroAcao, buscaDebounced, dataInicio, dataFim, filtroMeusLogs, modoVisualizacao, contadorPolling]);
 
     return {

@@ -19,7 +19,7 @@ export function usarJustificativasAdmin() {
 
     const podeAprovar = usarPermissaoAcesso('ponto:aprovar_justificativa');
     
-    const carregar = async () => {
+    const carregar = async (signal?: AbortSignal) => {
         if (!podeAprovar) {
             setCarregando(false);
             setJustificativas([]);
@@ -28,10 +28,11 @@ export function usarJustificativasAdmin() {
 
         try {
             setCarregando(true);
-            const res = await api.get('/api/ponto/admin/justificativas');
+            const res = await api.get('/api/ponto/admin/justificativas', { signal });
             setJustificativas(res.data);
             setErro(null);
         } catch (e: any) {
+            if (e.name === 'AbortError') return;
             setErro(e.response?.data?.erro || 'Erro ao carregar banco de justificativas.');
         } finally {
             setCarregando(false);
@@ -63,8 +64,10 @@ export function usarJustificativasAdmin() {
     };
 
     useEffect(() => {
-        carregar();
-    }, []);
+        const controlador = new AbortController();
+        carregar(controlador.signal);
+        return () => controlador.abort();
+    }, [podeAprovar]);
 
     return {
         justificativas,

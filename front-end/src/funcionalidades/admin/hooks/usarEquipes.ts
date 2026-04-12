@@ -53,17 +53,17 @@ export function usarEquipes() {
     const { data: dadosCache, isLoading: carregando, error } = useQuery({
         queryKey: ['estrutura-organizacional'],
         enabled: podeAcessar,
-        queryFn: async () => {
+        queryFn: async ({ signal }) => {
             const [resGrupos, resEquipes] = await Promise.all([
-                api.get('/api/grupos'),
-                api.get('/api/equipes')
+                api.get('/api/grupos', { signal }),
+                api.get('/api/equipes', { signal })
             ]);
             
             let membrosData = [];
             // Só busca usuários se tiver permissão, senão o Promise.all falha com 403 e quebra a tela toda
             if (podeAcessarMembros) {
                 try {
-                    const resMembros = await api.get('/api/usuarios');
+                    const resMembros = await api.get('/api/usuarios', { signal });
                     membrosData = resMembros.data.membros ?? [];
                 } catch (e) {
                     console.warn('[usarEquipes] Sem permissão para listar membros detalhados.');

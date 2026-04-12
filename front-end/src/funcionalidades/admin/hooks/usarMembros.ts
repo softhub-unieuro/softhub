@@ -28,8 +28,8 @@ export function usarMembros() {
     const { data: membros = [], isLoading: carregando, error } = useQuery<Membro[]>({
         queryKey: ['membros'],
         enabled: podeAcessar,
-        queryFn: async () => {
-            const res = await api.get('/api/usuarios');
+        queryFn: async ({ signal }) => {
+            const res = await api.get('/api/usuarios', { signal });
             return res.data.membros ?? [];
         },
         staleTime: 30000,

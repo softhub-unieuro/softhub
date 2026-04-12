@@ -38,8 +38,8 @@ export function usarConfiguracoes() {
     } = useQuery<ConfiguracoesSistema>({
         queryKey,
         enabled: podeAcessar,
-        queryFn: async () => {
-            const res = await api.get('/api/configuracoes');
+        queryFn: async ({ signal }) => {
+            const res = await api.get('/api/configuracoes', { signal });
             const dados = res.data.configuracoes || {};
 
             // Garantir integridade dos dados (fallbacks)

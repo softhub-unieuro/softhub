@@ -42,9 +42,19 @@ export function JornalTarefa({ tarefaId }: JornalTarefaProps) {
 
     if (erro) return <div className="py-4"><Alerta tipo="erro" mensagem={erro} /></div>;
 
-    const entradasFiltradas = podeVerHistorico 
-        ? entradas 
-        : entradas.filter(e => e.tipo === 'comentario');
+    const entradasFiltradas = entradas.filter(e => {
+        // Se for comentário real, sempre exibe
+        if (e.tipo === 'comentario') return true;
+        
+        // Se for log de sistema, verifica se tem permissão E se não é lixo técnico
+        if (podeVerHistorico) {
+            const c = e.conteudo?.campo?.toUpperCase();
+            const redundantes = ['TAREFA_COMENTADA', 'TAREFA_CRIADA', 'TAREFA_COMENT'];
+            return !redundantes.includes(c);
+        }
+        
+        return false;
+    });
 
     return (
         <div className="flex flex-col gap-6 mt-8 animar-entrada">

@@ -22,20 +22,41 @@ export function SecaoHistorico({ tarefaId }: SecaoHistoricoProps) {
     const [carregando, setCarregando] = useState(true);
     const [pagina, setPagina] = useState(1);
     const [temMais, setTemMais] = useState(true);
+    const [exibirTudo, setExibirTudo] = useState(false);
 
     useEffect(() => {
         if (!tarefaId) return;
         setCarregando(true);
-        api.get(`/tarefas/${tarefaId}/historico`, { params: { page: pagina, limit: 20 } })
+        api.get(`/tarefas/${tarefaId}/historico`, { params: { page: pagina, limit: 30 } })
             .then(res => {
                 const novos = res.data;
-                if (novos.length < 20) setTemMais(false);
+                if (novos.length < 30) setTemMais(false);
                 setHistorico(prev => pagina === 1 ? novos : [...prev, ...novos]);
             })
             .finally(() => setCarregando(false));
     }, [tarefaId, pagina]);
 
     const carregarMais = () => setPagina(prev => prev + 1);
+
+    const ehImportante = (campo: string) => {
+        const c = campo.toUpperCase();
+        // Ações que realmente mostram PROGRESSO ou DECISÃO
+        const fundamentais = [
+            'STATUS', 
+            'TAREFA_MOVIDA', 
+            'PRIORIDADE', 
+            'TAREFA_FEEDBACK_REGISTRADO'
+        ];
+        
+        // Ignoramos criação e comentários (pois o comentário já aparece na aba de comentários e a criação é óbvia)
+        if (c === 'TAREFA_CRIADA' || c === 'TAREFA_COMENTADA' || c === 'TAREFA_COMENT') return false;
+
+        // Se estiver na lista fundamental ou for uma alteração direta de campo (ex: titulo, responsavel)
+        return fundamentais.includes(c) || (!campo.startsWith('TAREFA_') && campo.length < 25);
+    };
+
+    const historicoExibido = exibirTudo ? historico : historico.filter(e => ehImportante(e.campo_alterado));
+    const totalOmitidos = historico.length - (historico.filter(e => ehImportante(e.campo_alterado)).length);
 
     const getIcone = (evento: EventoHistorico) => {
         const c = evento.campo_alterado.toUpperCase();
@@ -58,25 +79,36 @@ export function SecaoHistorico({ tarefaId }: SecaoHistoricoProps) {
         return <Pencil className="w-3 h-3 text-muted-foreground/70" />;
     };
 
-    if (carregando) return <div className="text-xs text-muted-foreground py-4 animate-pulse">Carregando histórico...</div>;
+    if (carregando && pagina === 1) return <div className="text-xs text-muted-foreground py-4 animate-pulse">Carregando histórico...</div>;
 
     if (historico.length === 0) return null;
 
     return (
         <div className="mt-8 pt-8 border-t border-border">
-            <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-                <History className="w-4 h-4 text-muted-foreground" />
-                Histórico de Atividades
-            </h3>
+            <div className="flex items-center justify-between mb-6">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <History className="w-4 h-4 text-muted-foreground" />
+                    Atividades da Tarefa
+                </h3>
+                
+                {totalOmitidos > 0 && (
+                    <button 
+                        onClick={() => setExibirTudo(!exibirTudo)}
+                        className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground/60 hover:text-primary transition-all bg-muted/50 px-2 py-1 rounded-md"
+                    >
+                        {exibirTudo ? 'Ver apenas principais' : `+${totalOmitidos} secundárias`}
+                    </button>
+                )}
+            </div>
 
             <div className="space-y-6">
-                {historico.map((evento) => (
-                    <div key={evento.id} className="relative pl-8 pb-1">
+                {historicoExibido.map((evento) => (
+                    <div key={evento.id} className="relative pl-8 pb-1 animate-in fade-in slide-in-from-left-2 duration-300">
                         {/* Linha vertical conectora */}
                         <div className="absolute left-[11px] top-6 bottom-0 w-px bg-muted last:hidden"></div>
 
                         {/* Círculo do ícone */}
-                        <div className="absolute left-0 top-0 w-6 h-6 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground z-10">
+                        <div className="absolute left-0 top-0 w-6 h-6 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground z-10 shadow-sm">
                             {getIcone(evento)}
                         </div>
 
@@ -98,9 +130,9 @@ export function SecaoHistorico({ tarefaId }: SecaoHistoricoProps) {
                 <button 
                   onClick={carregarMais} 
                   disabled={carregando}
-                  className="mt-6 w-full py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors border border-dashed border-border rounded-lg hover:border-primary/30"
+                  className="mt-8 w-full py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-all border border-dashed border-border rounded-xl hover:bg-muted/30"
                 >
-                  {carregando ? 'Carregando...' : 'Carregar mais atividades'}
+                  {carregando ? 'Buscando mais...' : 'Ver atividades anteriores'}
                 </button>
             )}
         </div>

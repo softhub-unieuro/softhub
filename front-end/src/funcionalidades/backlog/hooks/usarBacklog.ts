@@ -9,6 +9,7 @@ export interface FiltrosBacklog {
     status?: string[];
     modulo?: string;
     responsavelId?: string;
+    participacaoUsuarioId?: string; // Novo: Pertence ou Participa
 }
 
 /**
@@ -27,6 +28,7 @@ export function usarBacklog(projetoId: string = PROJETO_PADRAO_ID, filtros: Filt
             if (filtros.prioridades?.length) params.prioridade = filtros.prioridades.join(',');
             if (filtros.modulo) params.modulo = filtros.modulo;
             if (filtros.responsavelId) params.responsavelId = filtros.responsavelId;
+            if (filtros.participacaoUsuarioId) params.participacaoUsuarioId = filtros.participacaoUsuarioId;
 
             const res = await api.get('/api/tarefas', { params });
             const data = res.data || [];

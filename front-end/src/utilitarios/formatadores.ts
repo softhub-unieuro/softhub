@@ -159,7 +159,7 @@ export function formatarEventoHistorico(campo: string, anterior: string, novo: s
     }
 
     // 5. Tratamento de Comentários
-    if (campo.startsWith('TAREFA_COMENTARIO')) {
+    if (campo.startsWith('TAREFA_COMENT')) {
         if (campo === 'TAREFA_COMENTADA') return 'adicionou um comentário';
         if (campo === 'TAREFA_COMENTARIO_EDITADO') return 'editou um comentário';
         if (campo === 'TAREFA_COMENTARIO_REMOVIDO') return 'removeu um comentário';

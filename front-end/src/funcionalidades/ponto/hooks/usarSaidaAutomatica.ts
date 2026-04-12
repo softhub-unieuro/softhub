@@ -55,9 +55,9 @@ export function usarSaidaAutomatica() {
         };
 
         // 1. Monitoramento de Horário (Fim de Expediente)
-        const monitorarHorario = async () => {
+        const monitorarHorario = async (signal?: AbortSignal) => {
             try {
-                const res = await api.get('/api/configuracoes/publico');
+                const res = await api.get('/api/configuracoes/publico', { signal });
                 const horaFim = res.data.hora_fim_ponto;
                 if (!horaFim) return;
 
@@ -71,14 +71,15 @@ export function usarSaidaAutomatica() {
                     jaProcessouFimExpediente.current = true;
                     registrarSaida('expediente');
                 }
-            } catch (e) {
-                // Silencioso
+            } catch (e: any) {
+                if (e.name === 'AbortError') return;
             }
         };
 
+        const controlador = new AbortController();
         // Verifica a cada 1 minuto
-        const interval = setInterval(monitorarHorario, 60000);
-        monitorarHorario(); // Check inicial
+        const interval = setInterval(() => monitorarHorario(controlador.signal), 60000);
+        monitorarHorario(controlador.signal); // Check inicial
 
         const handleFechamento = () => registrarSaida('fechamento');
 
@@ -87,6 +88,7 @@ export function usarSaidaAutomatica() {
         window.addEventListener('beforeunload', handleFechamento);
         
         return () => {
+             controlador.abort();
              clearInterval(interval);
              window.removeEventListener('pagehide', handleFechamento);
              window.removeEventListener('beforeunload', handleFechamento);

@@ -4,6 +4,7 @@ export interface FiltrosTarefas {
     busca?: string;
     prioridade?: string;
     responsavelId?: string;
+    participacaoUsuarioId?: string; // Novo: filtro holístico "pertence ou participa"
     modulo?: string;
     projetoId: string;
 }
@@ -44,6 +45,15 @@ export async function buscarTarefas(DB: D1Database, filtros: FiltrosTarefas) {
     if (filtros.responsavelId) {
         query += ` AND EXISTS (SELECT 1 FROM tarefas_responsaveis tr WHERE tr.tarefa_id = t.id AND tr.usuario_id = ?)`;
         params.push(filtros.responsavelId);
+    }
+
+    // Filtro holístico para Membros: Sou responsável OU é da minha equipe
+    if (filtros.participacaoUsuarioId) {
+        query += ` AND (
+            EXISTS (SELECT 1 FROM tarefas_responsaveis tr WHERE tr.tarefa_id = t.id AND tr.usuario_id = ?)
+            OR t.equipe_id IN (SELECT equipe_id FROM usuarios_organizacao WHERE usuario_id = ?)
+        )`;
+        params.push(filtros.participacaoUsuarioId, filtros.participacaoUsuarioId);
     }
 
     query += ` ORDER BY t.criado_em DESC`;

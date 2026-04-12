@@ -25,18 +25,34 @@ export default function PaginaVisaoProjeto() {
     const [carregandoVisao, setCarregandoVisao] = useState(false);
     
     const podeVerDocumentos = usarPermissaoAcesso('projetos:documentos');
+    const podeVerLogs = usarPermissaoAcesso('logs:visualizar');
 
     const projeto = projetos.find(p => p.id === projetoAtivoId);
 
     // Carregar dados extras (feed e avisos) quando o projeto mudar
     useEffect(() => {
         if (!projetoAtivoId) return;
+        
+        const controlador = new AbortController();
         setCarregandoVisao(true);
-        api.get(`/api/projetos/${projetoAtivoId}/visao`)
+        
+        api.get(`/api/projetos/${projetoAtivoId}/visao`, { signal: controlador.signal })
             .then(res => setVisao(res.data))
-            .catch(() => {})
-            .finally(() => setCarregandoVisao(false));
+            .catch((e) => {
+                if (e.name === 'AbortError') return;
+                console.error('[VisaoProjeto]', e);
+            })
+            .finally(() => {
+                if (!controlador.signal.aborted) {
+                    setCarregandoVisao(false);
+                }
+            });
+
+        return () => controlador.abort();
     }, [projetoAtivoId]);
+
+    const { configuracoes } = usarConfiguracoes();
+    const githubOrg = configuracoes?.github_org || import.meta.env.VITE_GITHUB_STORAGE_OWNER;
 
     if (carregando && !projeto) {
         return <div className="flex justify-center py-20"><Carregando /></div>;
@@ -54,10 +70,9 @@ export default function PaginaVisaoProjeto() {
         );
     }
 
-    const { configuracoes } = usarConfiguracoes();
-    const githubOrg = configuracoes?.github_org || import.meta.env.VITE_GITHUB_STORAGE_OWNER;
-
-    const urGitHubDocs = projeto.github_repo ? `https://github.com/${githubOrg}/${projeto.github_repo}` : '#';
+    const githubOrgLimpo = githubOrg?.replace(/\/+$/, '') || '';
+    const repoLimpo = projeto.github_repo?.replace(/\/+$/, '') || '';
+    const urGitHubDocs = repoLimpo ? `https://github.com/${githubOrgLimpo}/${repoLimpo}` : '#';
 
     const pctConcluido = projeto.total_tarefas && projeto.total_tarefas > 0 
         ? Math.round(((projeto.tarefas_concluidas || 0) / projeto.total_tarefas) * 100) 
@@ -231,10 +246,20 @@ export default function PaginaVisaoProjeto() {
                     
                     {/* FEED DE ATIVIDADES RECENTES */}
                     <div className="bg-card border border-border/60 rounded-[32px] p-7 shadow-sm">
-                        <h3 className="text-xs font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-2 mb-8">
-                            <History size={16} className="text-muted-foreground" />
-                            Feed Ativo
-                        </h3>
+                        <div className="flex items-center justify-between mb-8">
+                            <h3 className="text-xs font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-2">
+                                <History size={16} className="text-muted-foreground" />
+                                Feed Ativo
+                            </h3>
+                            {podeVerLogs && (
+                                <button 
+                                    onClick={() => navegar(`/app/admin/logs?projetoId=${projeto.id}`)}
+                                    className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline decoration-2 underline-offset-4 transition-all"
+                                >
+                                    Ver Mais
+                                </button>
+                            )}
+                        </div>
                         <div className="space-y-6">
                             {carregandoVisao ? (
                                 <div className="space-y-4 animate-pulse">

@@ -20,6 +20,7 @@ interface BarraFiltrosProps {
     aoLimparFiltros?: () => void;
     temFiltrosAtivos?: boolean;
     desabilitarBusca?: boolean;
+    esconderBusca?: boolean; // Novo: Oculta completamente a barra
     className?: string;
 }
 
@@ -34,31 +35,34 @@ export function BarraFiltros({
     aoLimparFiltros,
     temFiltrosAtivos,
     desabilitarBusca = false,
+    esconderBusca = false,
     className = ""
 }: BarraFiltrosProps) {
     return (
         <div className={`my-4 flex flex-col lg:flex-row gap-3 items-start lg:items-center justify-between p-3 bg-card border border-border rounded-2xl shadow-sm w-full animate-in fade-in slide-in-from-top-4 duration-700 ${className}`}>
             <div className="flex flex-col lg:flex-row flex-1 items-stretch lg:items-center justify-between gap-3 w-full">
                 {/* Busca Principal */}
-                <div className={`relative group flex-1 max-w-xl transition-opacity duration-300 ${desabilitarBusca ? 'opacity-30 grayscale pointer-events-none' : ''}`}>
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                    <input
-                        type="text"
-                        placeholder={placeholderBusca}
-                        value={busca}
-                        onChange={(e) => aoMudarBusca(e.target.value)}
-                        disabled={desabilitarBusca}
-                        className="w-full h-11 pl-12 pr-4 py-3 bg-background border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all font-medium placeholder:text-muted-foreground text-foreground disabled:cursor-not-allowed"
-                    />
-                    {busca && (
-                        <button 
-                            onClick={() => aoMudarBusca('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                            <X size={16} />
-                        </button>
-                    )}
-                </div>
+                {!esconderBusca && (
+                    <div className={`relative group flex-1 max-w-xl transition-opacity duration-300 ${desabilitarBusca ? 'opacity-30 grayscale pointer-events-none' : ''}`}>
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                        <input
+                            type="text"
+                            placeholder={placeholderBusca}
+                            value={busca}
+                            onChange={(e) => aoMudarBusca(e.target.value)}
+                            disabled={desabilitarBusca}
+                            className="w-full h-11 pl-12 pr-4 py-3 bg-background border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all font-medium placeholder:text-muted-foreground text-foreground disabled:cursor-not-allowed"
+                        />
+                        {busca && (
+                            <button 
+                                onClick={() => aoMudarBusca('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                                <X size={16} />
+                            </button>
+                        )}
+                    </div>
+                )}
 
                 {/* Filtros Customizados — Rolagem horizontal no mobile */}
                 <div className="flex flex-row items-center gap-2 overflow-x-auto no-scrollbar w-full lg:w-auto pb-1 lg:pb-0 lg:overflow-visible">
