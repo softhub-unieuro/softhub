@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/compartilhado/servicos/api';
 import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
+import { usarConfiguracoes } from '@/funcionalidades/admin/hooks/usarConfiguracoes';
 
 export interface RegistroPonto {
     id: string;
@@ -21,6 +22,9 @@ export function usarPonto() {
     const { usuario } = usarAutenticacao();
     const estaAutenticado = !!usuario;
 
+    const { configuracoes } = usarConfiguracoes();
+    const intervaloMs = (configuracoes?.intervalo_sincronia_segundos || 30) * 1000;
+
     const { 
         data: { registrosHoje = [], historico = [] } = {}, 
         isLoading: carregando, 
@@ -36,8 +40,8 @@ export function usarPonto() {
              };
         },
         enabled: estaAutenticado,
-        // Polling de 60s apenas se a aba estiver FOCADA, salvando 90% das chamadas diárias
-        refetchInterval: 60 * 1000, 
+        // Polling dinâmico apenas se a aba estiver FOCADA, salvando recursos
+        refetchInterval: intervaloMs, 
     });
 
     const mutationBaterPonto = useMutation({

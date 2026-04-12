@@ -5,6 +5,7 @@ import { usarPonto } from '@/funcionalidades/ponto/hooks/usarPonto';
 import { usarJustificativas } from '@/funcionalidades/ponto/hooks/usarJustificativa';
 import { api } from '@/compartilhado/servicos/api';
 import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
+import { usarConfiguracoes } from '@/funcionalidades/admin/hooks/usarConfiguracoes';
 import type { JustificativaPonto } from '@/funcionalidades/ponto/hooks/usarJustificativa';
 import type { RegistroPonto } from '@/funcionalidades/ponto/hooks/usarPonto';
 
@@ -98,6 +99,9 @@ export function usarInterfacePonto() {
 
 
 
+    const { configuracoes } = usarConfiguracoes();
+    const TOLERANCIA_SISTEMA = configuracoes?.tolerancia_ponto_minutos ?? 15;
+
     const foraDoHorario = useMemo(() => {
         const horaBrasiliaStr = agoraRelogio.toLocaleTimeString('pt-BR', { 
             timeZone: 'America/Sao_Paulo', 
@@ -115,14 +119,11 @@ export function usarInterfacePonto() {
         const inicioMinutos = converterParaMinutos(janelaTrabalho.inicio);
         const fimMinutos = converterParaMinutos(janelaTrabalho.fim);
 
-        // Tolerância de 15 minutos para entrada/saída
-        const TOLERANCIA = 15;
-
         // Se for SAÍDA e estiver logado, permitimos sempre (Regra de Ouro)
         if (proximoTipo === 'saida') return false;
 
-        return agoraMinutos < (inicioMinutos - TOLERANCIA) || agoraMinutos > (fimMinutos + TOLERANCIA);
-    }, [agoraRelogio, janelaTrabalho, proximoTipo]);
+        return agoraMinutos < (inicioMinutos - TOLERANCIA_SISTEMA) || agoraMinutos > (fimMinutos + TOLERANCIA_SISTEMA);
+    }, [agoraRelogio, janelaTrabalho, proximoTipo, TOLERANCIA_SISTEMA]);
 
     const foraDoDia = useMemo(() => {
         const diaHoje = agoraRelogio.getDay();

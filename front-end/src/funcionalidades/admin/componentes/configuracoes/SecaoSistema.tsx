@@ -54,6 +54,39 @@ export function SecaoSistema({ configuracoes, atualizarConfiguracao }: Props) {
                     <span className="font-black text-rose-500/80 mr-1 uppercase">Atenção:</span>
                     Ativar o modo de manutenção bloqueia o acesso de todos os membros, exceto administradores.
                 </p>
+
+                <div className="mt-8 space-y-5 pt-5 border-t border-border/40">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Cor Primária (Branding)</label>
+                        <div className="flex gap-3">
+                            <input 
+                                type="color"
+                                value={configuracoes?.cor_primaria || '#4f46e2'}
+                                onChange={(e) => atualizarConfiguracao('cor_primaria', e.target.value)}
+                                className="w-12 h-10 p-1 bg-muted/40 border border-border/50 rounded-xl cursor-pointer"
+                            />
+                            <input 
+                                type="text"
+                                value={configuracoes?.cor_primaria || '#4f46e2'}
+                                onChange={(e) => atualizarConfiguracao('cor_primaria', e.target.value)}
+                                className="flex-1 bg-muted/40 border border-border/50 rounded-xl px-4 py-2 text-[11px] font-black pointer-events-none"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Sincronia Global (Segundos)</label>
+                        <input 
+                            type="number"
+                            min="5"
+                            max="3600"
+                            value={configuracoes?.intervalo_sincronia_segundos || 30}
+                            onChange={(e) => atualizarConfiguracao('intervalo_sincronia_segundos', Number(e.target.value))}
+                            className="w-full bg-muted/40 border border-border/50 rounded-xl px-4 py-3 text-[13px] font-black text-foreground outline-none focus:bg-background focus:border-indigo-500/30 transition-all"
+                        />
+                        <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest ml-1">Tempo entre atualizações de avisos e presença</p>
+                    </div>
+                </div>
             </div>
         </div>
     );

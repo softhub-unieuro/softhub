@@ -62,7 +62,10 @@ export async function validarHorarioBatida(
     const agoraMinutos = converterParaMinutos(horaBrasiliaStr);
     const inicioMinutos = converterParaMinutos(horaInicio.replace(/"/g, ''));
     const fimMinutos = converterParaMinutos(horaFim.replace(/"/g, ''));
-    const TOLERANCIA = 15;
+    
+    // Tolerância Dinâmica
+    const configTolerancia = await obterConfiguracao({ DB: db, softhub_kv: kv }, 'tolerancia_ponto_minutos');
+    const TOLERANCIA = typeof configTolerancia === 'number' ? configTolerancia : (parseInt(String(configTolerancia)) || 15);
 
     // Validação de Funcionamento da Fábrica (Agora bloqueia ENTRADAS fora de hora/dia)
     const foraDosDias = !diasPermitidos.includes(diaSemana);

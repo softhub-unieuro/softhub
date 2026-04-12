@@ -22,9 +22,9 @@ import { SecaoMatrizAcesso } from '@/funcionalidades/admin/componentes/configura
 export const PaginaConfiguracoes = memo(() => {
     const { configuracoes, carregando, erro, atualizarConfiguracao, salvarConfiguracoesLote, renomearCargo } = usarConfiguracoes();
     const { usuario } = usarAutenticacao();
-    const podeEditar = usarPermissaoAcesso('configuracoes:editar');
-    const temAcessoCritico = usarPermissaoAcesso('configuracoes:matriz_governanca');
     const isAdmin = usuario?.role === 'ADMIN';
+    const podeEditar = usarPermissaoAcesso('configuracoes:editar') || isAdmin;
+    const temAcessoCritico = usarPermissaoAcesso('configuracoes:matriz_governanca') || isAdmin;
 
     const [erroLocal, setErroLocal] = useState<string | null>(null);
 

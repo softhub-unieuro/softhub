@@ -28,6 +28,11 @@ export const PainelHistoricoPorMembro = memo(() => {
         };
     }, []);
 
+    const { configuracoes } = usarConfiguracoes();
+    const metaConfig = configuracoes?.meta_semanal_horas || 20;
+    const META_SEMANAL_MINUTOS = metaConfig * 60;
+    const intervaloMs = (configuracoes?.intervalo_sincronia_segundos || 30) * 1000;
+
     const { data: membros = [], isLoading } = useQuery({
         queryKey: ['admin', 'ponto', 'frequencia-membros', datasSemana],
         queryFn: async () => {
@@ -36,8 +41,8 @@ export const PainelHistoricoPorMembro = memo(() => {
             });
             return res.data.membros || [];
         },
-        staleTime: 1000 * 10, // 10 segundos
-        refetchInterval: 1000 * 30, // Atualiza a cada 30 segundos
+        staleTime: intervaloMs / 3, // 1/3 do intervalo
+        refetchInterval: intervaloMs, 
     });
 
     const { data: onlineMembers = [] } = useQuery({
@@ -46,7 +51,7 @@ export const PainelHistoricoPorMembro = memo(() => {
             const res = await api.get('/api/ponto/online');
             return res.data.online || [];
         },
-        refetchInterval: 30000, // Atualiza a cada 30s
+        refetchInterval: intervaloMs, 
     });
 
     const equipesUnicas = useMemo(() => {
@@ -78,10 +83,6 @@ export const PainelHistoricoPorMembro = memo(() => {
         setMembroSelecionado({ id: membro.id, nome: membro.nome, email: membro.email });
         setModalAberto(true);
     };
-
-    const { configuracoes } = usarConfiguracoes();
-    const metaConfig = configuracoes?.meta_semanal_horas || 20;
-    const META_SEMANAL_MINUTOS = metaConfig * 60;
 
     return (
         <div className="bg-white border border-slate-100 rounded-[3rem] shadow-sm flex flex-col flex-1 overflow-hidden min-h-[500px]">

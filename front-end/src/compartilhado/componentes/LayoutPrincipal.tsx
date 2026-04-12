@@ -12,6 +12,7 @@ import { SincronizadorGlobal } from './SincronizadorGlobal';
 import { Breadcrumbs } from './Breadcrumbs';
 import { usarGuardiaoSessao } from '../hooks/usarGuardiaoSessao';
 import { usarSaidaAutomatica } from '@/funcionalidades/ponto/hooks/usarSaidaAutomatica';
+import { usarConfiguracoes } from '@/funcionalidades/admin/hooks/usarConfiguracoes';
 import { ShieldAlert, LogOut, Clock } from 'lucide-react';
 import { BarraPrevisualizacaoCargo } from './BarraPrevisualizacaoCargo';
 
@@ -57,6 +58,19 @@ export function LayoutPrincipal({ children }: LayoutPrincipalProps) {
             root.style.overscrollBehavior = '';
         };
     }, [sidebarAberta]);
+
+    const { configuracoes } = usarConfiguracoes();
+    const corPrimaria = configuracoes?.cor_primaria || '#4f46e2';
+
+    // Injeção Dinâmica de Branding (Primary Color)
+    useEffect(() => {
+        const root = document.documentElement;
+        root.style.setProperty('--primary', corPrimaria);
+        
+        // Calcular variações de opacidade para sombras e estados hover
+        root.style.setProperty('--primary-ring', `${corPrimaria}33`); // 20%
+        root.style.setProperty('--primary-muted', `${corPrimaria}1a`); // 10%
+    }, [corPrimaria]);
 
     // Dinamismo Inteligente: Atualiza o título da aba com o nome do projeto ativo
     useEffect(() => {

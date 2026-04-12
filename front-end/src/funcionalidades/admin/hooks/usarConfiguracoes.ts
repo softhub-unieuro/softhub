@@ -13,6 +13,11 @@ export interface ConfiguracoesSistema {
     hora_fim_ponto: string;
     dias_trabalho: number[];
     meta_semanal_horas: number;
+    tolerancia_ponto_minutos: number;
+    cor_primaria: string;
+    github_org: string;
+    intervalo_sincronia_segundos: number;
+    mensagem_meta_semanal: string;
     hierarquia_roles: string[];
     labels_roles: Record<string, string>;
 }
@@ -52,6 +57,12 @@ export function usarConfiguracoes() {
             if (typeof dados.hora_inicio_ponto !== 'string') dados.hora_inicio_ponto = '13:00';
             if (typeof dados.hora_fim_ponto !== 'string') dados.hora_fim_ponto = '17:00';
             if (typeof dados.meta_semanal_horas !== 'number') dados.meta_semanal_horas = 20;
+            if (typeof dados.tolerancia_ponto_minutos !== 'number') dados.tolerancia_ponto_minutos = 15;
+            if (typeof dados.cor_primaria !== 'string') dados.cor_primaria = '#4f46e2'; // indigo-600
+            if (typeof dados.github_org !== 'string') dados.github_org = import.meta.env.VITE_GITHUB_STORAGE_OWNER || '';
+            if (typeof dados.intervalo_sincronia_segundos !== 'number') dados.intervalo_sincronia_segundos = 30;
+            if (typeof dados.mensagem_meta_semanal !== 'string') dados.mensagem_meta_semanal = 'A semana está só começando. Mantenha o foco e a consistência!';
+            
             if (!Array.isArray(dados.dias_trabalho)) {
                 dados.dias_trabalho = [1, 2, 3, 4, 5]; // Padrão: Segunda a Sexta
             }

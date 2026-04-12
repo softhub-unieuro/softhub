@@ -61,6 +61,21 @@ export function SecaoGovernanca({ configuracoes, atualizarConfiguracao, podeEdit
                     </button>
                 </div>
 
+                {/* Organização GitHub */}
+                <div className="space-y-3">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/50 block ml-1">Organização GitHub</label>
+                    <div className="relative">
+                        <input 
+                            disabled={!podeEditar}
+                            value={configuracoes?.github_org || ''}
+                            onChange={(e) => atualizarConfiguracao('github_org', e.target.value)}
+                            placeholder="Ex: unieuro-softhub"
+                            className="w-full bg-muted/40 border border-border/50 rounded-xl px-4 py-3 text-[11px] font-bold text-foreground outline-none focus:bg-background focus:border-indigo-500/30 transition-all placeholder:text-muted-foreground/30"
+                        />
+                    </div>
+                    <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest ml-1">Base para links de documentação e repositórios</p>
+                </div>
+
                 {/* Domínios Autorizados */}
                 <div className="space-y-3">
                     <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/50 block ml-1">Domínios Válidos</label>

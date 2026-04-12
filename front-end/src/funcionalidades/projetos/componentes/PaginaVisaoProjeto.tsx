@@ -4,6 +4,7 @@ import { api } from '@/compartilhado/servicos/api';
 import { CabecalhoFuncionalidade } from '@/compartilhado/componentes/CabecalhoFuncionalidade';
 import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 import { usarProjetos } from '@/funcionalidades/projetos/hooks/usarProjetos';
+import { usarConfiguracoes } from '@/funcionalidades/admin/hooks/usarConfiguracoes';
 import { FolderKanban, Globe, Lock, Github, FileText, BarChart3, Layers, ExternalLink, LayoutGrid, Figma, BookOpen, Terminal, Users2, Rocket, History, Megaphone, Box, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
 import { formatarDataHora, formatarTempoAtras, formatarEventoHistorico } from '@/utilitarios/formatadores';
@@ -53,7 +54,10 @@ export default function PaginaVisaoProjeto() {
         );
     }
 
-    const urGitHubDocs = projeto.github_repo ? `https://github.com/${import.meta.env.VITE_GITHUB_STORAGE_OWNER}/${projeto.github_repo}/tree/main/docs/softhub` : '#';
+    const { configuracoes } = usarConfiguracoes();
+    const githubOrg = configuracoes?.github_org || import.meta.env.VITE_GITHUB_STORAGE_OWNER;
+
+    const urGitHubDocs = projeto.github_repo ? `https://github.com/${githubOrg}/${projeto.github_repo}/tree/main/docs/softhub` : '#';
 
     const pctConcluido = projeto.total_tarefas && projeto.total_tarefas > 0 
         ? Math.round(((projeto.tarefas_concluidas || 0) / projeto.total_tarefas) * 100) 
@@ -283,7 +287,7 @@ export default function PaginaVisaoProjeto() {
                             />
                             <MinimalLink 
                                 titulo="Repositório Git" 
-                                url={projeto.github_repo ? `https://github.com/${import.meta.env.VITE_GITHUB_STORAGE_OWNER}/${projeto.github_repo}` : undefined} 
+                                url={projeto.github_repo ? `https://github.com/${githubOrg}/${projeto.github_repo}` : undefined} 
                                 icone={<Github size={14} className="text-slate-500" />} 
                             />
                         </div>

@@ -46,22 +46,47 @@ export function SecaoJornada({ configuracoes, atualizarConfiguracao, podeEditar 
                     </div>
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Meta Semanal (Horas)</label>
-                    <div className="relative">
-                        <input 
-                            type="number"
-                            min="1"
-                            max="168"
-                            disabled={!podeEditar}
-                            value={configuracoes?.meta_semanal_horas || 20}
-                            onChange={(e) => atualizarConfiguracao('meta_semanal_horas', Number(e.target.value))}
-                            className="w-full bg-muted/40 border border-border/50 rounded-xl px-4 py-3 text-[13px] font-black text-foreground outline-none focus:bg-background focus:border-sky-500/30 transition-all"
-                        />
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-muted-foreground/30 uppercase tracking-widest pointer-events-none">
-                            Horas / Semana
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Meta Semanal (Horas)</label>
+                        <div className="relative">
+                            <input 
+                                type="number"
+                                min="1"
+                                max="168"
+                                disabled={!podeEditar}
+                                value={configuracoes?.meta_semanal_horas || 20}
+                                onChange={(e) => atualizarConfiguracao('meta_semanal_horas', Number(e.target.value))}
+                                className="w-full bg-muted/40 border border-border/50 rounded-xl px-4 py-3 text-[13px] font-black text-foreground outline-none focus:bg-background focus:border-sky-500/30 transition-all"
+                            />
                         </div>
                     </div>
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Tolerância (Min)</label>
+                        <div className="relative">
+                            <input 
+                                type="number"
+                                min="1"
+                                max="60"
+                                disabled={!podeEditar}
+                                value={configuracoes?.tolerancia_ponto_minutos || 15}
+                                onChange={(e) => atualizarConfiguracao('tolerancia_ponto_minutos', Number(e.target.value))}
+                                className="w-full bg-muted/40 border border-border/50 rounded-xl px-4 py-3 text-[13px] font-black text-foreground outline-none focus:bg-background focus:border-sky-500/30 transition-all"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Mensagem de Boas-vindas (Meta)</label>
+                    <textarea 
+                        rows={2}
+                        disabled={!podeEditar}
+                        value={configuracoes?.mensagem_meta_semanal || ''}
+                        onChange={(e) => atualizarConfiguracao('mensagem_meta_semanal', e.target.value)}
+                        placeholder="Ex: A semana está só começando..."
+                        className="w-full bg-muted/40 border border-border/50 rounded-xl px-4 py-3 text-[11px] font-bold text-foreground outline-none focus:bg-background focus:border-sky-500/30 transition-all resize-none"
+                    />
                 </div>
 
                 {/* Dias da Semana Minimalistas */}

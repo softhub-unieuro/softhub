@@ -224,9 +224,7 @@ export const BaterPonto = memo(() => {
                                 <p className="text-[10px] text-muted-foreground/60 font-medium leading-relaxed italic">
                                     {porcentagemMeta >= 100 
                                         ? "Meta batida! Você completou suas horas da semana. Excelente trabalho!" 
-                                        : porcentagemMeta >= 50 
-                                            ? "Você já passou da metade! Continue assim para bater a meta."
-                                            : "A semana está só começando. Mantenha o foco e a consistência!"}
+                                        : configuracoes?.mensagem_meta_semanal || "A semana está só começando. Mantenha o foco e a consistência!"}
                                 </p>
                              </div>
 
