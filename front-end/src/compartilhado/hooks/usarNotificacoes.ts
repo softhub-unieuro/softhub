@@ -35,8 +35,8 @@ export function usarNotificacoes() {
     // Busca principal com Polling Inteligente a cada 60 segundos
     const { data: notificacoes = [], isLoading: carregando, refetch } = useQuery({
         queryKey: ['notificacoes'],
-        queryFn: async () => {
-            const { data } = await api.get('/api/notificacoes');
+        queryFn: async ({ signal }) => {
+            const { data } = await api.get('/api/notificacoes', { signal });
             const novasNotificacoes: Notificacao[] = data.notificacoes ?? [];
             
             // Lógica de Notificação Nativa (Apenas as novas que não estavam na lista local armazenada no ref)

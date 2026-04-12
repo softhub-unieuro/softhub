@@ -47,7 +47,7 @@ export const GerenciarEquipes = memo(() => {
     [equipesAtivas, idEquipeAtiva]);
 
     const gruposDaEquipe = useMemo(() => 
-        grupos.filter((g: Grupo) => !g.equipe_id || g.equipe_id === idEquipeAtiva),
+        grupos.filter((g: Grupo) => g.equipe_id === idEquipeAtiva),
     [grupos, idEquipeAtiva]);
 
     const handleSalvarOrg = useCallback(async (dados: any) => {
@@ -173,13 +173,6 @@ export const GerenciarEquipes = memo(() => {
                     {podeCriarEquipe && (
                         <div className="flex items-center gap-3">
                             <Botao
-                                variante="secundario"
-                                onClick={() => setModalOrg({ aberto: true, tipo: 'grupo', dados: {} })}
-                                className="h-11 w-11 rounded-full flex items-center justify-center transition-all bg-primary/5 border border-primary/20 text-primary hover:bg-primary/10 hover:border-primary/40 shadow-sm active:scale-95"
-                                icone={<Plus size={20} strokeWidth={3} />}
-                                title="Novo Grupo Global"
-                            />
-                            <Botao
                                 variante="primario"
                                 onClick={() => setModalOrg({ aberto: true, tipo: 'equipe' })}
                                 className={`h-11 px-6 rounded-full flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all ${idEquipeAtiva ? 'hidden lg:flex' : 'flex'}`}
@@ -304,7 +297,7 @@ export const GerenciarEquipes = memo(() => {
             <ModalSelecaoLider
                 aberto={!!modalLider?.aberto}
                 aoFechar={() => setModalLider(null)}
-                membros={membros as any}
+                membros={(membros as any).filter((m: any) => m.equipe_id === idEquipeAtiva)}
                 aoConfirmar={handleDefinirLider}
                 titulo={modalLider?.tipo === 'lider' ? 'Definir Líder' : 'Definir Sub-líder'}
                 valorAtual={modalLider?.tipo === 'lider' ? equipeAtiva?.lider_id : equipeAtiva?.sub_lider_id}

@@ -29,9 +29,12 @@ export function PerfilProvider({ children, customUsuarioId }: { children: ReactN
  
     const { data, isLoading: carregando, error, refetch } = useQuery<PerfilData>({
         queryKey,
-        queryFn: async () => {
+        queryFn: async ({ signal }) => {
             const url = customUsuarioId ? `/api/perfil/${customUsuarioId}` : '/api/perfil/me';
-            const res = await api.get(url, { params: { projetoId: projetoAtivoId || 'global' } });
+            const res = await api.get(url, { 
+                params: { projetoId: projetoAtivoId || 'global' },
+                signal
+            });
             return res.data;
         },
         enabled: estaAutenticado || !!customUsuarioId

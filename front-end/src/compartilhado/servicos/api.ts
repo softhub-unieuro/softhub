@@ -44,6 +44,7 @@ async function executarRequisicao(metodo: string, url: string, dados?: any, conf
         headers: obterCabecalhos(),
         body: dados ? JSON.stringify(dados) : undefined,
         keepalive: configuracao?.keepalive,
+        signal: configuracao?.signal, // Suporte a cancelamento (AbortController)
     };
 
     let urlCompleta = url.startsWith('http') ? url : `${ambiente.apiUrl}${url}`;

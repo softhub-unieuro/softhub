@@ -125,10 +125,10 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
     /**
      * Sincroniza os dados do perfil atual com o servidor.
      */
-    const sincronizarPerfil = useCallback(async () => {
+    const sincronizarPerfil = useCallback(async (signal?: AbortSignal) => {
         if (!localStorage.getItem(CHAVE_TOKEN)) return;
         try {
-            const { data } = await api.get('/api/perfil/me');
+            const { data } = await api.get('/api/perfil/me', { signal });
             if (data.perfil) {
                 const perfilAtualizado: Usuario = {
                     id: data.perfil.id,
@@ -170,9 +170,9 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
     /**
      * Busca as configurações públicas e governança do servidor.
      */
-    const buscarConfiguracoesPublicas = useCallback(async () => {
+    const buscarConfiguracoesPublicas = useCallback(async (signal?: AbortSignal) => {
         try {
-            const { data } = await api.get('/api/configuracoes/publico');
+            const { data } = await api.get('/api/configuracoes/publico', { signal });
             const novasConfigs: IConfiguracoesUX = {
                 hierarquia_roles: data.hierarquia_roles || [],
                 permissoes_roles: data.permissoes_roles || {},
@@ -193,6 +193,7 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
             setConfiguracoes(novasConfigs);
             localStorage.setItem(CHAVE_CONFIGS, JSON.stringify(novasConfigs));
         } catch (erro) {
+             if (erro instanceof Error && erro.name === 'AbortError') return;
             logger.erro("Auth", "Falha ao carregar matriz de governança", erro);
         } finally {
             setCarregando(false);
@@ -200,12 +201,14 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
     }, []);
 
     useEffect(() => {
+        const controller = new AbortController();
         if (token) {
-            buscarConfiguracoesPublicas();
-            sincronizarPerfil();
+            buscarConfiguracoesPublicas(controller.signal);
+            sincronizarPerfil(controller.signal);
         } else {
             setCarregando(false);
         }
+        return () => controller.abort();
     }, [token, buscarConfiguracoesPublicas, sincronizarPerfil]);
 
     /**
@@ -241,12 +244,16 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
     // Pulsação de presença para o ponto eletrônico (SEG-015)
     useEffect(() => {
         if (!token || !usuarioOriginal) return;
-        const enviarPulsacao = async () => {
-            try { await api.post('/api/ponto/presenca'); } catch (e) { /* Suprime logs silenciosos */ }
+        const controller = new AbortController();
+        const enviarPulsacao = async (signal?: AbortSignal) => {
+            try { await api.post('/api/ponto/presenca', undefined, { signal }); } catch (e) { /* Suprime logs silenciosos */ }
         };
-        enviarPulsacao();
-        const intervalo = setInterval(enviarPulsacao, 300000); // 5 minutos
-        return () => clearInterval(intervalo);
+        enviarPulsacao(controller.signal);
+        const intervalo = setInterval(() => enviarPulsacao(controller.signal), 300000); // 5 minutos
+        return () => {
+            clearInterval(intervalo);
+            controller.abort();
+        };
     }, [token, usuarioOriginal]);
 
     return (

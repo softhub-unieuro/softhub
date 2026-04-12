@@ -43,9 +43,10 @@ export function usarDashboard(projetoId?: string) {
         error 
     } = useQuery<DadosDashboard>({
         queryKey: ['dashboard', projetoId || 'global'],
-        queryFn: async () => {
+        queryFn: async ({ signal }) => {
             const res = await api.get('/api/dashboard', { 
-                params: { projetoId: projetoId || 'global' } 
+                params: { projetoId: projetoId || 'global' },
+                signal
             });
             return res.data;
         },

@@ -54,11 +54,6 @@ export const PaginaDashboard = memo(() => {
     
     const [modalPerfilAberto, setModalPerfilAberto] = useState(false);
     
-    useEffect(() => {
-        if (!projetoAtivoId && projetos.length > 0) {
-            setProjetoAtivoId(projetos[0].id);
-        }
-    }, [projetoAtivoId, projetos, setProjetoAtivoId]);
     
     const { 
         metricas: metricasGlobais, 

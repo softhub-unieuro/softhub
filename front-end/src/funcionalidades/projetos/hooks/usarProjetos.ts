@@ -37,8 +37,8 @@ export function usarProjetos() {
 
     const { data: projetos = [], isLoading: carregando, error } = useQuery<Projeto[]>({
         queryKey,
-        queryFn: async () => {
-            const res = await api.get('/api/projetos');
+        queryFn: async ({ signal }) => {
+            const res = await api.get('/api/projetos', { signal });
             return res.data || [];
         },
         staleTime: 5 * 60 * 1000, // 5 minutos

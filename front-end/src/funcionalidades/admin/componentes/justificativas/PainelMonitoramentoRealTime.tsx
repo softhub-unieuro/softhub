@@ -9,8 +9,8 @@ import { Users, Clock, MapPin, Activity } from 'lucide-react';
 export const PainelMonitoramentoRealTime = memo(() => {
     const { data: membrosOnline = [], isLoading, error } = useQuery({
         queryKey: ['membros-online-full'],
-        queryFn: async () => {
-            const res = await api.get('/api/ponto/online');
+        queryFn: async ({ signal }) => {
+            const res = await api.get('/api/ponto/online', { signal });
             return res.data.online || [];
         },
         refetchInterval: 30000 // 30 segundos

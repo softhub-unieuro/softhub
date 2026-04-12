@@ -35,9 +35,10 @@ export const PainelHistoricoPorMembro = memo(() => {
 
     const { data: membros = [], isLoading } = useQuery({
         queryKey: ['admin', 'ponto', 'frequencia-membros', datasSemana],
-        queryFn: async () => {
+        queryFn: async ({ signal }) => {
             const res = await api.get('/api/relatorios/frequencia/membros', {
-                params: { data_inicio: datasSemana.inicio, data_fim: datasSemana.fim }
+                params: { data_inicio: datasSemana.inicio, data_fim: datasSemana.fim },
+                signal
             });
             return res.data.membros || [];
         },
@@ -47,8 +48,8 @@ export const PainelHistoricoPorMembro = memo(() => {
 
     const { data: onlineMembers = [] } = useQuery({
         queryKey: ['ponto', 'online'],
-        queryFn: async () => {
-            const res = await api.get('/api/ponto/online');
+        queryFn: async ({ signal }) => {
+            const res = await api.get('/api/ponto/online', { signal });
             return res.data.online || [];
         },
         refetchInterval: intervaloMs, 
@@ -136,41 +137,6 @@ export const PainelHistoricoPorMembro = memo(() => {
                     </div>
                 ) : (
                     <>
-                        {/* 📊 PAINEL DE MÉTRICAS RÁPIDAS */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-8 bg-slate-50/50 border-b border-slate-100">
-                             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-5 group hover:border-indigo-200 transition-all">
-                                <div className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl group-hover:scale-110 transition-transform">
-                                    <Users size={22} strokeWidth={2.5} />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Membros Online</p>
-                                    <p className="text-2xl font-black text-emerald-600 leading-none">{onlineMembers.length}</p>
-                                </div>
-                             </div>
-                             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-5 group hover:border-emerald-200 transition-all">
-                                <div className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl group-hover:scale-110 transition-transform">
-                                    <CalendarDays size={22} strokeWidth={2.5} />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Carga Horária (Semana)</p>
-                                    <p className="text-2xl font-black text-slate-800 leading-none">
-                                        {formatarHoras(filtrados.reduce((acc: number, m: any) => acc + (m.total_minutos || 0), 0))}
-                                    </p>
-                                </div>
-                             </div>
-                             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-5 group hover:border-amber-200 transition-all">
-                                <div className="p-4 bg-amber-50 text-amber-600 rounded-2xl group-hover:scale-110 transition-transform">
-                                    <History size={22} strokeWidth={2.5} />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total de Sessões</p>
-                                    <p className="text-2xl font-black text-slate-800 leading-none">
-                                        {filtrados.reduce((acc: number, m: any) => acc + (m.dias_presentes || 0), 0)}
-                                    </p>
-                                </div>
-                             </div>
-                        </div>
-
                         {/* 🖥️ VISÃO DESKTOP: TABELA */}
                         <div className="hidden lg:block overflow-x-auto">
                             <table className="w-full text-left">

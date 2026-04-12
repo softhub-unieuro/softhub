@@ -14,17 +14,20 @@ export const SeletorProjetoGlobal = memo(() => {
 
     // Sincroniza o projeto inicial se houver projetos mas nenhum selecionado ou se o selecionado sumir
     useEffect(() => {
+        if (carregando) return; // 🛑 Não sincroniza/limpa enquanto está carregando (Evita resetar para vazio no refresh)
+
         if (projetos.length > 0) {
             const projetoExiste = projetos.some(p => p.id === projetoAtivoId);
             if (projetoAtivoId && !projetoExiste) {
-                // Se o projeto selecionado sumiu, tenta o primeiro da lista
+                // Se o projeto selecionado sumiu da base, volta para o padrão ou primeiro
                 const padrao = projetos.find(p => p.id === PROJETO_PADRAO_ID) || projetos[0];
                 setProjetoAtivoId(padrao.id);
             }
-        } else if (projetos.length === 0 && projetoAtivoId) {
+        } else if (!carregando && projetos.length === 0 && projetoAtivoId) {
+            // Só limpa se a carga terminou e realmente não há projetos
             setProjetoAtivoId('');
         }
-    }, [projetos, projetoAtivoId, setProjetoAtivoId]);
+    }, [projetos, projetoAtivoId, setProjetoAtivoId, carregando]);
 
     const projetoAtual = projetos.find(p => p.id === projetoAtivoId);
 
