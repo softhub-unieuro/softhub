@@ -19,6 +19,7 @@ export interface LogSistema {
     ip: string | null;
     dados_anteriores: string | null;
     dados_novos: string | null;
+    quantidade?: number;
 }
 
 export interface EstatisticaLog {
@@ -36,7 +37,9 @@ export function usarLogs() {
     const [erro, setErro] = useState<string | null>(null);
 
     const [pagina, setPagina] = useState(1);
-    const [itensPorPagina, setItensPorPagina] = useState(100);
+    const [itensPorPagina, setItensPorPagina] = useState(() => {
+        return Number(localStorage.getItem('softhub_logs_itens_pag') || 100);
+    });
     const [totalPaginas, setTotalPaginas] = useState(1);
     const [totalRegistros, setTotalRegistros] = useState(0);
 
@@ -59,6 +62,11 @@ export function usarLogs() {
         }, 500);
         return () => clearTimeout(timer);
     }, [busca]);
+
+    // Salva preferência de itens por página
+    useEffect(() => {
+        localStorage.setItem('softhub_logs_itens_pag', String(itensPorPagina));
+    }, [itensPorPagina]);
 
     // Polling de 30s (Regra 14)
     useEffect(() => {

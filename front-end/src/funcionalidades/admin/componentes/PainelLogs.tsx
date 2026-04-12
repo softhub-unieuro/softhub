@@ -11,7 +11,10 @@ import { BarraFiltros, FiltroSelect, FiltroDataRange, FiltroToggle } from '@/com
 import { DetalheLog } from './logs/DetalheLog';
 import { LinhaLog } from './logs/LinhaLog';
 
-/** Painel de auditoria com tabela semântica padronizada. */
+/** 
+ * Painel de auditoria com unificação híbrida (Frontend + Backend).
+ * Garante limpeza visual mesmo se os dados vierem de APIs sem agrupamento nativo.
+ */
 export const PainelLogs = memo(() => {
     const {
         logs, carregando, erro, pagina, setPagina, totalPaginas, totalRegistros,
@@ -55,6 +58,37 @@ export const PainelLogs = memo(() => {
         setItensPorPagina(num);
         setPagina(1);
     }, [setItensPorPagina, setPagina]);
+
+    /** 
+     * 🛡️ CAMADA DE PROTEÇÃO FRONTEND (Essential):
+     * Unifica logs idênticos que escaparam do agrupamento do backend.
+     * Isso garante que o usuário NUNCA veja linhas repetidas na tela.
+     */
+    const logsUnificados = useMemo(() => {
+        if (!logs || logs.length === 0) return [];
+        
+        return logs.reduce((acc, log) => {
+            const ultimoLog = acc[acc.length - 1];
+            
+            // Critério de comparação rigoroso (limpando espaços e ignorando caixa)
+            const getChave = (l: LogSistema) => `${l.usuario_id}-${l.acao?.trim().toLowerCase()}-${l.modulo?.trim().toLowerCase()}-${l.descricao?.trim().toLowerCase()}`;
+            
+            const ehIgual = ultimoLog && getChave(ultimoLog) === getChave(log);
+            
+            if (ehIgual) {
+                // Soma as quantidades (se o backend já mandou agrupado, soma os dois)
+                ultimoLog.quantidade = (ultimoLog.quantidade || 1) + (log.quantidade || 1);
+                // Mantém o timestamp mais recente
+                if (new Date(log.criado_em) > new Date(ultimoLog.criado_em)) {
+                    ultimoLog.criado_em = log.criado_em;
+                }
+                return acc;
+            }
+            
+            acc.push({ ...log, quantidade: log.quantidade || 1 });
+            return acc;
+        }, [] as (LogSistema & { quantidade?: number })[]);
+    }, [logs]);
 
     return (
         <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -139,7 +173,7 @@ export const PainelLogs = memo(() => {
                                 <div key={i} className="h-12 w-full bg-muted/10 rounded-xl" />
                             ))}
                         </div>
-                    ) : logs.length === 0 ? (
+                    ) : logsUnificados.length === 0 ? (
                         <EstadoVazio 
                             tipo="pesquisa"
                             titulo="Nenhum registro localizado"
@@ -159,7 +193,7 @@ export const PainelLogs = memo(() => {
                                     </tr>
                                 </thead>
                                 <tbody className={`divide-y divide-border/10 even:bg-muted/5 transition-opacity duration-300 ${carregando ? 'opacity-50' : 'opacity-100'}`}>
-                                    {logs.map(log => (
+                                    {logsUnificados.map(log => (
                                         <Fragment key={log.id}>
                                             <LinhaLog
                                                 log={log}
@@ -180,7 +214,7 @@ export const PainelLogs = memo(() => {
 
                             {/* 📱 VISÃO MOBILE: LISTA DE CARDS OPERACIONAIS */}
                             <div className="lg:hidden flex flex-col divide-y divide-border/10 bg-card">
-                                {logs.map(log => (
+                                {logsUnificados.map(log => (
                                     <div key={log.id} className="flex flex-col bg-card hover:bg-muted/5 transition-colors">
                                         <div 
                                             onClick={() => handleAlternarExpansao(log.id)}
@@ -251,7 +285,8 @@ export const PainelLogs = memo(() => {
                     totalPaginas={totalPaginas}
                     totalRegistros={totalRegistros}
                     itensPorPagina={itensPorPagina}
-                    itensListados={logs.length}
+                    itensListados={logsUnificados.length}
+                    infoAdicional={`${logsUnificados.length} Linhas de ${totalRegistros} Logs`}
                     aoMudarPagina={setPagina}
                     aoMudarItensPorPagina={handleMudarItensPorPagina}
                     desabilitado={carregando}
