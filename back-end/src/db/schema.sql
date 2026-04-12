@@ -216,6 +216,7 @@ CREATE TABLE IF NOT EXISTS avisos (
     conteudo TEXT NOT NULL,
     prioridade TEXT NOT NULL DEFAULT 'info', -- info, aviso, urgente
     criado_por TEXT NOT NULL REFERENCES usuarios(id),
+    projeto_id TEXT REFERENCES projetos(id) ON DELETE CASCADE, -- Vínculo opcional com projeto específico
     expira_em TEXT,
     arquivado INTEGER NOT NULL DEFAULT 0,
     criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))

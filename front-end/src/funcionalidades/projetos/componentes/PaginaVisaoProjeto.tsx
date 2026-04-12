@@ -57,7 +57,7 @@ export default function PaginaVisaoProjeto() {
     const { configuracoes } = usarConfiguracoes();
     const githubOrg = configuracoes?.github_org || import.meta.env.VITE_GITHUB_STORAGE_OWNER;
 
-    const urGitHubDocs = projeto.github_repo ? `https://github.com/${githubOrg}/${projeto.github_repo}/tree/main/docs/softhub` : '#';
+    const urGitHubDocs = projeto.github_repo ? `https://github.com/${githubOrg}/${projeto.github_repo}` : '#';
 
     const pctConcluido = projeto.total_tarefas && projeto.total_tarefas > 0 
         ? Math.round(((projeto.tarefas_concluidas || 0) / projeto.total_tarefas) * 100) 

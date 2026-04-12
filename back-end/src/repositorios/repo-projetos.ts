@@ -147,7 +147,7 @@ export async function buscarAvisosProjeto(DB: D1Database, projetoId: string) {
     const { results } = await DB.prepare(`
         SELECT a.*, u.nome as autor_nome, u.foto_perfil as autor_foto
         FROM avisos a
-        JOIN usuarios u ON a.autor_id = u.id
+        JOIN usuarios u ON a.criado_por = u.id
         WHERE a.projeto_id = ? AND a.arquivado = 0
         ORDER BY a.criado_em DESC
         LIMIT 3

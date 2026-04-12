@@ -115,6 +115,7 @@ const CriarAvisoSchema = z.object({
     titulo: z.string().min(3),
     conteudo: z.string().optional().default(''),
     prioridade: z.enum(['info', 'importante', 'urgente']),
+    projeto_id: z.string().uuid().nullable().optional(),
     expira_em: z.string().nullable().optional()
 });
 
@@ -125,25 +126,26 @@ const CriarAvisoSchema = z.object({
 rotasAvisos.post('/', autenticacaoRequerida(), verificarPermissao('avisos:criar'), zValidator('json', CriarAvisoSchema), async (c: Context) => {
     const { DB, softhub_kv } = c.env;
     const usuario = c.get('usuario') as any;
-    const { titulo, conteudo, prioridade, expira_em } = (c.req as any).valid('json');
+    const { titulo, conteudo, prioridade, expira_em, projeto_id } = (c.req as any).valid('json');
 
     try {
         const novoId = crypto.randomUUID();
         const conteudoSani = sanitizarHTML(conteudo || '');
 
         await DB.prepare(`
-            INSERT INTO avisos (id, titulo, conteudo, prioridade, expira_em, criado_por)
-            VALUES (?, ?, ?, ?, ?, ?)
-        `).bind(novoId, titulo, conteudoSani, prioridade, expira_em || null, usuario.id).run();
+            INSERT INTO avisos (id, titulo, conteudo, prioridade, expira_em, criado_por, projeto_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).bind(novoId, titulo, conteudoSani, prioridade, expira_em || null, usuario.id, projeto_id || null).run();
 
         // Workflow 12 - Notificações
-        // Simplificado para 'todosOsUsuarios' já que backend da tabela Grupos/Equipes precisaria expansão (e schema atual de avisos não suporta)
+        // Se houver projeto_id, notifica apenas quem está no projeto (implementação simplificada para todos se não houver projeto)
         await criarNotificacoes(DB, {
-            todosOsUsuarios: true,
+            todosOsUsuarios: !projeto_id,
+            todosDoProjetoId: projeto_id || undefined,
             titulo: `Novo Aviso: ${titulo}`,
             mensagem: conteudo,
             tipo: 'aviso',
-            link: '/app/avisos',
+            link: projeto_id ? `/app/projeto` : '/app/avisos',
             entidadeId: novoId
         }, softhub_kv);
 
