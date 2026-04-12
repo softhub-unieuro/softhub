@@ -150,14 +150,19 @@ rotasRelatorios.get('/frequencia/membros', autenticacaoRequerida(), verificarPer
                  FROM justificativas_ponto 
                  WHERE usuario_id = u.id AND status = 'aprovado' AND data BETWEEN ? AND ?) as justificativas_aprovadas,
                 (SELECT 
-                    SUM((julianday(p2.registrado_em) - julianday(p1.registrado_em)) * 1440)
+                    SUM(
+                        (julianday(COALESCE(p2.registrado_em, datetime('now'))) - julianday(p1.registrado_em)) * 1440
+                    )
                  FROM ponto_registros p1
-                 JOIN ponto_registros p2 ON p2.usuario_id = p1.usuario_id 
-                    AND date(p2.registrado_em) = date(p1.registrado_em)
-                    AND p2.registrado_em > p1.registrado_em
-                    AND p2.tipo = 'SAIDA'
+                 LEFT JOIN ponto_registros p2 ON p2.usuario_id = p1.usuario_id 
+                    AND p2.tipo = 'saida'
+                    AND p2.registrado_em = (
+                        SELECT MIN(registrado_em) 
+                        FROM ponto_registros 
+                        WHERE usuario_id = p1.usuario_id AND tipo = 'saida' AND registrado_em > p1.registrado_em
+                    )
                  WHERE p1.usuario_id = u.id 
-                   AND p1.tipo = 'ENTRADA'
+                   AND p1.tipo = 'entrada'
                    AND p1.registrado_em BETWEEN ? AND ?
                 ) as total_minutos
             FROM usuarios u
@@ -348,8 +353,8 @@ rotasRelatorios.get('/exportar/mapa-semestral', autenticacaoRequerida(), verific
             JOIN ponto_registros p2 ON p2.usuario_id = p1.usuario_id 
                 AND date(p2.registrado_em) = date(p1.registrado_em)
                 AND p2.registrado_em > p1.registrado_em
-                AND p2.tipo = 'SAIDA'
-            WHERE p1.tipo = 'ENTRADA' 
+                AND p2.tipo = 'saida'
+            WHERE p1.tipo = 'entrada' 
               AND p1.registrado_em BETWEEN ? AND ?
             GROUP BY p1.usuario_id, date(p1.registrado_em)
         `).bind(ini, `${fim} 23:59:59`).all();

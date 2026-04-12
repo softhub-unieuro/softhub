@@ -46,6 +46,24 @@ export function SecaoJornada({ configuracoes, atualizarConfiguracao, podeEditar 
                     </div>
                 </div>
 
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Meta Semanal (Horas)</label>
+                    <div className="relative">
+                        <input 
+                            type="number"
+                            min="1"
+                            max="168"
+                            disabled={!podeEditar}
+                            value={configuracoes?.meta_semanal_horas || 20}
+                            onChange={(e) => atualizarConfiguracao('meta_semanal_horas', Number(e.target.value))}
+                            className="w-full bg-muted/40 border border-border/50 rounded-xl px-4 py-3 text-[13px] font-black text-foreground outline-none focus:bg-background focus:border-sky-500/30 transition-all"
+                        />
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-muted-foreground/30 uppercase tracking-widest pointer-events-none">
+                            Horas / Semana
+                        </div>
+                    </div>
+                </div>
+
                 {/* Dias da Semana Minimalistas */}
                 <div className="space-y-3 pt-4 border-t border-border/40">
                     <label className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 px-1 block">Frequência Semanal</label>

@@ -22,6 +22,7 @@ export function usarInterfacePonto() {
     const [justificativaEditando, setJustificativaEditando] = useState<JustificativaPonto | null>(null);
     const [idExcluindo, setIdExcluindo] = useState<string | null>(null);
     const [abaAtiva, setAbaAtiva] = useState<'registro' | 'justificativas'>('registro');
+    const [busca, setBusca] = useState('');
     const [semanaSelecionada, setSemanaSelecionada] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }).getTime());
     const [tentativaBloqueada, setTentativaBloqueada] = useState(false);
     const [janelaTrabalho, setJanelaTrabalho] = useState({ inicio: '13:00', fim: '17:00' });
@@ -96,15 +97,6 @@ export function usarInterfacePonto() {
     }, [usuario, diasTrabalhoFabrica]);
 
 
-    const foraDoDia = useMemo(() => {
-        const diaHoje = agoraRelogio.getDay();
-        return !diasTrabalho.includes(diaHoje);
-    }, [agoraRelogio, diasTrabalho]);
-
-    const foraDaFabrica = useMemo(() => {
-        const diaHoje = agoraRelogio.getDay();
-        return !diasTrabalhoFabrica.includes(diaHoje);
-    }, [agoraRelogio, diasTrabalhoFabrica]);
 
     const foraDoHorario = useMemo(() => {
         const horaBrasiliaStr = agoraRelogio.toLocaleTimeString('pt-BR', { 
@@ -116,36 +108,37 @@ export function usarInterfacePonto() {
         
         const converterParaMinutos = (h: string) => {
             const [horas, minutos] = h.split(':').map(Number);
-            return horas * 60 + minutos;
+            return (horas || 0) * 60 + (minutos || 0);
         };
 
         const agoraMinutos = converterParaMinutos(horaBrasiliaStr);
         const inicioMinutos = converterParaMinutos(janelaTrabalho.inicio);
         const fimMinutos = converterParaMinutos(janelaTrabalho.fim);
 
-        // O frontend agora permite registrar sempre, a regra de negócio do aviso é tratada no backend
-        return false;
-    }, [agoraRelogio, janelaTrabalho, proximoTipo, registrosHoje]);
+        // Tolerância de 15 minutos para entrada/saída
+        const TOLERANCIA = 15;
 
-    const foraDoHorarioReal = useMemo(() => {
-        const horaBrasiliaStr = agoraRelogio.toLocaleTimeString('pt-BR', { 
-            timeZone: 'America/Sao_Paulo', 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            hour12: false 
-        });
+        // Se for SAÍDA e estiver logado, permitimos sempre (Regra de Ouro)
+        if (proximoTipo === 'saida') return false;
+
+        return agoraMinutos < (inicioMinutos - TOLERANCIA) || agoraMinutos > (fimMinutos + TOLERANCIA);
+    }, [agoraRelogio, janelaTrabalho, proximoTipo]);
+
+    const foraDoDia = useMemo(() => {
+        const diaHoje = agoraRelogio.getDay();
+        // Se for SAÍDA, permitimos mesmo que o dia tenha virado (ex: passou de meia noite)
+        if (proximoTipo === 'saida') return false;
         
-        const converterParaMinutos = (h: string) => {
-            const [horas, minutos] = h.split(':').map(Number);
-            return horas * 60 + minutos;
-        };
+        return !diasTrabalho.includes(diaHoje);
+    }, [agoraRelogio, diasTrabalho, proximoTipo]);
 
-        const agoraMinutos = converterParaMinutos(horaBrasiliaStr);
-        const inicioMinutos = converterParaMinutos(janelaTrabalho.inicio);
-        const fimMinutos = converterParaMinutos(janelaTrabalho.fim);
+    const foraDaFabrica = useMemo(() => {
+        const diaHoje = agoraRelogio.getDay();
+        // Se for SAÍDA, permitimos registrar a saída mesmo se a fábrica fechar (ex: fim do expediente)
+        if (proximoTipo === 'saida') return false;
 
-        return agoraMinutos < inicioMinutos || agoraMinutos > fimMinutos;
-    }, [agoraRelogio, janelaTrabalho]);
+        return !diasTrabalhoFabrica.includes(diaHoje);
+    }, [agoraRelogio, diasTrabalhoFabrica, proximoTipo]);
 
 
     const semanasDisponiveis = useMemo(() => {
@@ -198,7 +191,7 @@ export function usarInterfacePonto() {
         erroPonto,
         proximoTipo,
         agoraRelogio,
-        foraDoHorario: foraDoHorarioReal,
+        foraDoHorario,
         foraDoDia,
         foraDaFabrica,
 
@@ -208,6 +201,8 @@ export function usarInterfacePonto() {
         setSemanaSelecionada,
         abaAtiva,
         setAbaAtiva,
+        busca,
+        setBusca,
         tentativaBloqueada,
 
         setTentativaBloqueada,

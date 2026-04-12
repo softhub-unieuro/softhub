@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react';
 import { format, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Clock, Bot } from 'lucide-react';
+import { Clock, Bot, CalendarRange } from 'lucide-react';
 import { formatarHoras } from '@/utilitarios/formatadores';
 import type { RegistroPonto } from '../hooks/usarPonto';
 
@@ -35,34 +35,32 @@ export const DayCard = memo(({ dia, registros, hoje }: DayCardProps) => {
 
     return (
         <div className={`
-            flex flex-col items-center w-full h-full p-4 sm:p-5 rounded-2xl border transition-all duration-500 relative group
+            flex flex-col items-center w-full h-full p-5 sm:p-6 rounded-[32px] border transition-all duration-700 relative group
             ${hoje
-                ? 'bg-white border-primary/20 shadow-[0_25px_60px_-15px_rgba(var(--primary-rgb),0.15)] ring-1 ring-primary/5'
-                : 'bg-white/40 border-slate-200/60 hover:bg-white hover:border-slate-300 hover:shadow-xl'
+                ? 'bg-white border-primary/20 shadow-[0_40px_80px_-20px_rgba(var(--primary-rgb),0.15)] ring-1 ring-primary/5'
+                : 'bg-white/40 border-slate-200/60 hover:bg-white hover:border-slate-300 hover:shadow-2xl'
             }
         `}>
-            {/* Top Identity Line */}
-            {hoje && (
-                <div className="absolute top-0 inset-x-8 sm:inset-x-12 h-1 bg-gradient-to-r from-transparent via-primary to-transparent rounded-b-full opacity-60" />
-            )}
-
             {/* Header: Clean Typography */}
-            <div className="flex flex-col items-center justify-center w-full mb-4 sm:mb-6 pt-1 sm:pt-2">
-                <span className={`text-[8px] sm:text-[10px] font-black uppercase tracking-[0.2em] mb-1 sm:mb-2 ${hoje ? 'text-primary' : 'text-slate-400'}`}>
+            <div className="flex flex-col items-center justify-center w-full mb-8 pt-2">
+                <span className={`text-[10px] font-black uppercase tracking-[0.3em] mb-2 ${hoje ? 'text-primary' : 'text-slate-400/60'}`}>
                     {format(dia, 'EEEE', { locale: ptBR }).split('-')[0]}
                 </span>
-                <div className="relative flex items-center justify-center mb-1">
-                    <span className={`text-4xl sm:text-5xl font-black tabular-nums tracking-tighter transition-all ${hoje ? 'text-slate-900 scale-105' : 'text-slate-200'}`}>
+                <div className="relative flex items-center justify-center mb-3">
+                    <span className={`text-5xl sm:text-6xl font-black tabular-nums tracking-tighter transition-all duration-700 ${hoje ? 'text-slate-900 scale-110' : 'text-slate-200 group-hover:text-slate-300'}`}>
                         {format(dia, 'dd')}
                     </span>
                     {hoje && (
-                        <div className="absolute -right-2 sm:-right-3 -top-1 w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.8)] animate-pulse" />
+                        <div className="absolute -right-3 -top-1 w-3 h-3 rounded-full bg-primary shadow-[0_0_20px_rgba(var(--primary-rgb),0.6)] animate-pulse" />
                     )}
                 </div>
                 {temRegistros && (
-                    <div className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border ${hoje ? 'bg-primary/5 border-primary/10 text-primary' : 'bg-slate-50 border-slate-100 text-slate-500'}`}>
-                        <Clock size={11} className="sm:w-[13px] sm:h-[13px]" strokeWidth={2.5} />
-                        <span className="text-[10px] sm:text-[11px] font-black tabular-nums tracking-tight">
+                    <div className={`
+                        flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-500
+                        ${hoje ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-slate-100/50 border-slate-200 text-slate-500 group-hover:bg-slate-900 group-hover:text-white group-hover:border-slate-800'}
+                    `}>
+                        <Clock size={12} strokeWidth={3} />
+                        <span className="text-[11px] font-black tabular-nums tracking-tight">
                             {formatarHoras(totalMinutos)}
                         </span>
                     </div>
@@ -70,57 +68,50 @@ export const DayCard = memo(({ dia, registros, hoje }: DayCardProps) => {
             </div>
 
             {/* activity records - chronological log ribbon with internal scroll */}
-            <div className="flex flex-col w-full h-[220px] sm:h-[320px] px-1 overflow-y-auto scrollbar-none scroll-smooth">
+            <div className="flex flex-col w-full h-[250px] sm:h-[350px] px-1 overflow-y-auto scrollbar-none space-y-4">
 
                 {temRegistros ? (
-                    <div className="flex flex-col gap-5 py-2">
-                        {registrosOrdenados.map((reg, idx, arr) => (
-                            <div key={reg.id} className="relative flex items-center gap-3 group/item">
-                                {/* Visual Connector */}
-                                {idx < arr.length - 1 && (
-                                    <div className="absolute left-[7px] top-4 w-[2px] h-7 bg-slate-100/80 rounded-full" />
-                                )}
-                                
-                                {/* Dynamic Node */}
+                    <div className="relative flex flex-col gap-6 py-2">
+                        {/* Continuous Timeline Line */}
+                        <div className="absolute left-[7px] top-4 bottom-4 w-[2px] bg-slate-100 group-hover:bg-slate-200/60 transition-colors rounded-full" />
+                        
+                        {registrosOrdenados.map((reg, idx) => (
+                            <div key={reg.id} className="relative flex items-start gap-4 group/item">
+                                {/* Visual Node */}
                                 {reg.ip_origem === 'SISTEMA-AUTOMATICO' ? (
-                                    <div 
-                                        title="Ponto encerrado automaticamente pelo sistema"
-                                        className="z-10 shrink-0 bg-white rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(244,63,94,0.2)] group-hover/item:shadow-[0_0_15px_rgba(244,63,94,0.4)]"
-                                    >
-                                        <Bot size={16} className="text-rose-500" strokeWidth={2.5} />
+                                    <div className="z-10 shrink-0 w-[16px] h-[16px] flex items-center justify-center transition-transform group-hover/item:scale-125">
+                                        <Bot size={16} className="text-rose-500" strokeWidth={3} />
+                                    </div>
+                                ) : reg.aviso ? (
+                                    <div className="z-10 shrink-0 w-[16px] h-[16px] flex items-center justify-center transition-transform group-hover/item:scale-125">
+                                        <CalendarRange size={16} className="text-emerald-500" strokeWidth={3} />
                                     </div>
                                 ) : (
                                     <div className={`
-                                        w-4 h-4 rounded-full border-2 bg-white z-10 shrink-0 transition-all duration-300
-                                        ${reg.tipo === 'entrada' 
-                                            ? 'border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.2)] group-hover/item:shadow-[0_0_15px_rgba(16,185,129,0.4)]' 
-                                            : 'border-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.2)] group-hover/item:shadow-[0_0_15px_rgba(244,63,94,0.4)]'}
+                                        w-[16px] h-[16px] rounded-full border-[3px] bg-white z-10 shrink-0 transition-all duration-300
+                                        ${reg.tipo === 'entrada' ? 'border-emerald-500' : 'border-rose-500'}
+                                        group-hover/item:scale-110 shadow-sm
                                     `} />
                                 )}
 
-                                <div className="flex flex-col justify-center">
-                                    <span className="text-sm font-black text-slate-800 tabular-nums leading-none">
+                                <div className="flex flex-col gap-0.5 -mt-0.5">
+                                    <span className="text-[13px] font-black text-slate-900 tabular-nums">
                                         {format(new Date(reg.registrado_em), 'HH:mm')}
                                     </span>
-                                    <span className={`text-[8px] font-black uppercase tracking-[0.15em] mt-1 ${reg.tipo === 'entrada' ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                        {reg.tipo} {reg.ip_origem === 'SISTEMA-AUTOMATICO' && '(AUTO)'}
-                                    </span>
-                                    {reg.aviso && (
-                                        <div className="flex items-center gap-1 mt-1">
-                                            <div className="w-1 h-1 rounded-full bg-amber-500 animate-pulse" />
-                                            <span className="text-[7.5px] font-black uppercase tracking-widest text-amber-600 bg-amber-500/5 px-1.5 py-0.5 rounded-md border border-amber-500/10">
-                                                {reg.aviso}
-                                            </span>
-                                        </div>
-                                    )}
+                                    <div className={`
+                                        text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded
+                                        ${reg.tipo === 'entrada' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-rose-500/10 text-rose-600'}
+                                    `}>
+                                        {reg.tipo} {reg.ip_origem === 'SISTEMA-AUTOMATICO' ? 'AUTO' : (reg.aviso ? 'FORA' : '')}
+                                    </div>
                                 </div>
-
                             </div>
                         ))}
                     </div>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center py-6 border border-dashed border-slate-100 rounded-2xl opacity-30">
-                        <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest mt-2">Sem atividade</span>
+                    <div className="flex-1 flex flex-col items-center justify-center opacity-20 group-hover:opacity-40 transition-opacity">
+                        <div className="w-px h-12 bg-gradient-to-b from-transparent via-slate-400 to-transparent mb-4" />
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] vertical-text">Vazio</span>
                     </div>
                 )}
             </div>

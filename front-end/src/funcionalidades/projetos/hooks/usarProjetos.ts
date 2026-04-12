@@ -2,6 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/compartilhado/servicos/api';
 import { logger } from '@/utilitarios/gerenciador-logs';
 
+export interface MembroResumo {
+    nome: string;
+    foto: string | null;
+}
+
 export interface ProjetoEquipe {
     equipe_id: string;
     acesso: 'LEITURA' | 'EDICAO' | 'GESTAO';
@@ -17,7 +22,9 @@ export interface Projeto {
     figma_url?: string | null;
     setup_url?: string | null;
     total_tarefas?: number;
+    tarefas_concluidas?: number;
     equipes?: ProjetoEquipe[];
+    membros?: MembroResumo[];
     criado_em: string;
 }
 

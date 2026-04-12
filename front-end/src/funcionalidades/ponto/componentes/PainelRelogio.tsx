@@ -34,7 +34,6 @@ export const PainelRelogio = memo(({
 }: PainelRelogioProps) => {
     return (
         <div className="flex flex-col h-full relative">
-            {/* Ultra-Premium Animation Suite */}
             <style dangerouslySetInnerHTML={{
                 __html: `
                 @keyframes shake {
@@ -49,79 +48,69 @@ export const PainelRelogio = memo(({
                     100% { opacity: 0; transform: scale(1.1); }
                 }
                 .animate-security { animation: security-pulse 2s infinite; }
-                @keyframes shine-sweep {
-                    0% { left: -100%; opacity: 0; }
-                    20% { opacity: 0.5; }
-                    40% { left: 100%; opacity: 0; }
-                    100% { left: 100%; opacity: 0; }
+                @keyframes clock-glow {
+                    0% { text-shadow: 0 0 0px transparent; }
+                    50% { text-shadow: 0 0 30px rgba(var(--primary-rgb), 0.2); }
+                    100% { text-shadow: 0 0 0px transparent; }
                 }
-                .animate-shine { position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); transform: skewX(-20deg); animation: shine-sweep 6s infinite; }
-                @keyframes fade-up {
-                    from { opacity: 0; transform: translateY(20px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                .animate-fade-up { animation: fade-up 0.8s cubic-bezier(.22,1,.36,1) forwards; }
-                @keyframes progress-scan {
-                    0% { left: -10%; }
-                    100% { left: 110%; }
-                }
-                .animate-scan { animation: progress-scan 2s linear infinite; }
+                .animate-clock { animation: clock-glow 4s ease-in-out infinite; }
             `}} />
 
             <div
                 className={`
                     card-glass flex flex-col items-center justify-center text-center relative overflow-hidden group 
-                    h-[320px] sm:h-[400px] transition-all duration-700
+                    h-[350px] sm:h-[400px] transition-all duration-700
                     animate-fade-up hover:bg-card/60 hover:border-primary/30 hover:shadow-primary/5
                     ${tentativaBloqueada ? 'animate-shake border-rose-500/40 shadow-rose-500/5' : ''}
                 `}
             >
-                {/* Visual Shine Effect */}
-                <div className="animate-shine z-0" />
-
-                {/* Visual Security Overlay - Active when locked (Horário ou Rede) */}
-                {(foraDaRede || foraDoHorario || (foraDoDia && foraDaFabrica)) && (
-                    <div className="absolute inset-0 bg-rose-500/5 animate-security pointer-events-none z-0" />
-                )}
-
                 {/* Aurora Accent */}
                 <div className="absolute -top-10 -right-10 w-64 h-64 bg-primary/10 rounded-full blur-[120px] z-0 opacity-20 pointer-events-none group-hover:opacity-40 transition-all duration-1000 group-hover:scale-125" />
 
-                <div className="relative z-10 space-y-8 sm:space-y-12 w-full px-6">
-                    <div className="space-y-3 sm:space-y-5">
-                        <div className="inline-flex items-center gap-3 px-5 py-2 bg-slate-950/[0.04] rounded-full border border-slate-900/5 mb-2 backdrop-blur-sm group-hover:bg-primary/5 group-hover:border-primary/10 transition-colors">
-                            <div className={`w-2 h-2 rounded-full ${foraDaRede || foraDoHorario ? 'bg-rose-500' : 'bg-primary animate-pulse'}`} />
-                            <span className="text-[9px] sm:text-[11px] font-black uppercase tracking-[0.25em] text-slate-500 group-hover:text-primary transition-colors">
-                                {foraDaRede || foraDoHorario || (foraDoDia && foraDaFabrica) ? 'Acesso Restrito' : 'Horário de Brasília'}
-                            </span>
-                        </div>
-                        <div className="flex flex-col items-center">
-                            {/* Aviso de Fora de Escala (Soft) */}
-                            {foraDoDia && !foraDaFabrica && (
-                                <div className="mb-4 flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full animate-in fade-in zoom-in duration-500 shadow-sm shadow-amber-500/5 cursor-help" title="Você não está escalado para hoje, mas pode registrar se necessário.">
-                                    <AlertTriangle className="w-3 h-3 text-amber-500" />
-                                    <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Fora da Escala Selecionada</span>
+                <div className="relative z-10 space-y-6 sm:space-y-10 w-full px-6">
+                    <div className="flex flex-col items-center gap-4">
+                        {/* Status Badges Group */}
+                        <div className="flex flex-wrap items-center justify-center gap-3 scale-90 sm:scale-110">
+                             {(foraDaRede || foraDoHorario || (foraDoDia && foraDaFabrica)) && (
+                                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-sm animate-in zoom-in duration-500">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                                    Acesso Restrito
                                 </div>
                             )}
-                            {/* Aviso de Fábrica Fechada (Hard) */}
                             {foraDoDia && foraDaFabrica && (
-                                <div className="mb-4 flex items-center gap-2 px-3 py-1 bg-rose-500/10 border border-rose-500/20 rounded-full animate-in fade-in zoom-in duration-500 shadow-sm shadow-rose-500/5">
-                                    <AlertTriangle className="w-3 h-3 text-rose-500" />
-                                    <span className="text-[9px] font-black text-rose-600 uppercase tracking-widest">Atenção: Fábrica Fechada</span>
+                                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-rose-600 text-white border border-rose-700 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-lg shadow-rose-500/20 animate-in slide-in-from-right-2 duration-700">
+                                    <AlertTriangle size={11} strokeWidth={3} /> Fábrica Fechada
                                 </div>
                             )}
-                            <h2 className="text-6xl sm:text-8xl font-black tracking-[-0.05em] text-foreground tabular-nums flex items-baseline justify-center drop-shadow-sm">
+                            {foraDoDia && !foraDaFabrica && (
+                                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 text-amber-600 border border-amber-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em] animate-in slide-in-from-right-3 duration-500">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                    Fora da Escala
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex flex-col items-center">
+                            <h2 className={`
+                                text-7xl sm:text-9xl font-black tracking-[-0.05em] text-foreground tabular-nums flex items-baseline justify-center select-none animate-clock
+                                ${foraDaRede || (foraDoDia && foraDaFabrica) ? 'opacity-40' : ''}
+                            `}>
                                 {agoraRelogio.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                <span className="text-lg sm:text-2xl text-muted-foreground/40 font-bold ml-2 sm:ml-3 select-none tracking-widest">
+                                <span className="text-xl sm:text-3xl text-muted-foreground/30 font-bold ml-2 sm:ml-4 tracking-widest">
                                     {agoraRelogio.toLocaleTimeString('pt-BR', { second: '2-digit' })}
                                 </span>
                             </h2>
-                            <div className="w-16 sm:w-20 h-1 bg-muted/30 rounded-full mt-3 sm:mt-4 overflow-hidden relative border border-border/20">
+                            
+                            {/* Segunda Linha de Contexto */}
+                            <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/40 mt-1">
+                                {foraDaRede || foraDoHorario ? 'CONEXÃO PROTEGIDA' : 'Sincronizado com Brasília'}
+                            </p>
+
+                            <div className="w-20 sm:w-24 h-1 bg-muted/30 rounded-full mt-6 sm:mt-8 overflow-hidden relative border border-border/20">
                                 <div
                                     className="absolute inset-y-0 left-0 bg-primary transition-all duration-1000"
                                     style={{ width: `${(agoraRelogio.getSeconds() / 60) * 100}%` }}
                                 />
-                                <div className="absolute inset-y-0 w-8 bg-gradient-to-r from-transparent via-primary/20 to-transparent animate-scan z-10" />
                             </div>
                         </div>
                     </div>
@@ -131,41 +120,37 @@ export const PainelRelogio = memo(({
                             <Botao
                                 onMouseDown={aoTentarRegistrar}
                                 onClick={aoBaterPonto}
-                                disabled={carregando || salvando || foraDaRede || !podeRegistrar}
-
+                                disabled={carregando || salvando || foraDaRede || !podeRegistrar || foraDoHorario || foraDoDia || foraDaFabrica}
                                 carregando={salvando}
                                 className={`
-                                    w-full py-3.5 sm:py-4 rounded-2xl sm:rounded-3xl text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] 
-                                    transition-all active:scale-[0.97] border shadow-xl relative z-10
-                                    disabled:cursor-not-allowed
+                                    w-full py-4 sm:py-5 rounded-[24px] sm:rounded-[32px] text-[11px] sm:text-[12px] font-black uppercase tracking-[0.3em] 
+                                    transition-all active:scale-[0.95] border shadow-xl relative z-10
                                     ${proximoTipo === 'entrada'
-                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-emerald-600/20 hover:bg-emerald-700'
-                                        : 'bg-rose-600 text-white border-rose-600 shadow-rose-600/20 hover:bg-rose-700'
+                                        ? 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-emerald-600/40'
+                                        : 'bg-rose-600 text-white border-rose-500 shadow-rose-600/20 hover:bg-rose-700 hover:shadow-rose-600/40'
                                     }
-                                    ${(foraDaRede || foraDoHorario || foraDoDia) ? 'saturate-[0.2] opacity-80' : ''}
+                                    ${(foraDaRede || foraDoHorario || (foraDoDia && foraDaFabrica)) ? 'saturate-[0.1] opacity-60' : ''}
                                 `}
                                 icone={
-                                    foraDaRede || foraDoHorario || (foraDoDia && foraDaFabrica) ? (
-                                        <AlertTriangle size={14} className="sm:w-4 sm:h-4" strokeWidth={3} />
-                                    ) : proximoTipo === 'entrada' ? (
-                                        <LogIn size={14} className="sm:w-4 sm:h-4" strokeWidth={3} />
+                                    proximoTipo === 'entrada' ? (
+                                        <LogIn size={18} strokeWidth={3} />
                                     ) : (
-                                        <LogOut size={14} className="sm:w-4 sm:h-4" strokeWidth={3} />
+                                        <LogOut size={18} strokeWidth={3} />
                                     )
                                 }
                                 rotulo={`Registrar ${proximoTipo}`}
                             />
                         ) : (
                             <div className="p-4 bg-muted/20 border border-dashed border-border rounded-2xl text-center">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/30 italic">Função de Ponto Restrita</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/30 italic">Função de Ponto Administrativa</p>
                             </div>
                         )}
 
-                        {/* Locked State Tooltip-like hint */}
-                        {(foraDaRede || foraDoHorario || foraDoDia) && tentativaBloqueada && (
-                            <div className="absolute -bottom-14 inset-x-0 animate-bounce">
-                                <span className="bg-rose-600 text-white text-[9px] font-black py-1.5 px-4 rounded-full uppercase tracking-widest shadow-lg text-center">
-                                    {foraDaRede ? 'Fora da Rede UNIEURO' : (foraDoHorario ? 'Fora do Horário Permitido' : 'Fábrica Fechada Hoje')}
+                        {/* Erro Flutuante Localizado */}
+                        {(foraDaRede || foraDoHorario || (foraDoDia && foraDaFabrica)) && tentativaBloqueada && (
+                            <div className="absolute -top-12 inset-x-0 animate-bounce z-50">
+                                <span className="bg-rose-600 text-white text-[9px] font-black py-2 px-5 rounded-full uppercase tracking-widest shadow-2xl border border-rose-500 mx-auto table">
+                                    {foraDaRede ? 'Mudar para Rede UNIEURO' : (foraDoHorario ? 'Fora da Janela de Ponto' : 'Fábrica Bloqueada')}
                                 </span>
                             </div>
                         )}

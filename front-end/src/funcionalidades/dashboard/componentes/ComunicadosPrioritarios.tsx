@@ -58,7 +58,7 @@ export const ComunicadosPrioritarios = memo(({ avisos }: ComunicadosProps) => {
                         key={aviso.id}
                         variante="fantasma"
                         onClick={() => navegar(`/app/avisos?destaque=${aviso.id}`)}
-                        className="w-full text-left group bg-card/30 hover:bg-card/50 border border-white/[0.06] hover:border-white/10 rounded-2xl p-4 transition-all duration-300 active:scale-[0.98]"
+                        className="w-full justify-start text-left group bg-card/30 hover:bg-card/50 border border-white/[0.06] hover:border-white/10 rounded-2xl p-4 transition-all duration-300 active:scale-[0.98]"
                     >
                         <div className="flex items-center gap-3.5">
                             {/* Ícone de prioridade */}

@@ -64,13 +64,15 @@ export async function validarHorarioBatida(
     const fimMinutos = converterParaMinutos(horaFim.replace(/"/g, ''));
     const TOLERANCIA = 15;
 
-    // Validação de Funcionamento da Fábrica (Sempre permite, mas avisa)
-
+    // Validação de Funcionamento da Fábrica (Agora bloqueia ENTRADAS fora de hora/dia)
     const foraDosDias = !diasPermitidos.includes(diaSemana);
     const foraDoHorario = agoraMinutos < (inicioMinutos - TOLERANCIA) || agoraMinutos > (fimMinutos + TOLERANCIA);
 
     if (foraDosDias || foraDoHorario) {
-        aviso = 'Fora da Escala Selecionada';
+        return { 
+            valido: false, 
+            aviso: foraDosDias ? 'Fábrica Fechada Hoje' : `Fora do Horário Permitido (${horaInicio}-${horaFim})`
+        };
     }
 
     return { valido: true, aviso };
@@ -109,6 +111,10 @@ export async function registrarPonto(env: { DB: D1Database, KV: KVNamespace | un
     `).bind(usuario.id).first() as { escala_dias: string | null, escala_tipo: string } | null;
 
     const validacao = await validarHorarioBatida(DB, KV, tipo, ultimo?.tipo, escala);
+
+    if (!validacao.valido) {
+        throw new Error(validacao.aviso || 'Registro não permitido fora da escala oficial.');
+    }
 
     // 3. Persistência
     const pontoId = (crypto as any).randomUUID();

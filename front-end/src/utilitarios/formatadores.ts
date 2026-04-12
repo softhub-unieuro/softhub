@@ -102,14 +102,28 @@ export function formatarEventoHistorico(campo: string, anterior: string, novo: s
     /**
      * Tenta converter uma string que pode ser JSON em um objeto legível.
      */
-    const tratarValor = (v: string): any => {
+    const tratarValor = (v: string, campoParente?: string): any => {
         if (!v || v === 'null') return null;
         try {
             const obj = JSON.parse(v);
             if (typeof obj === 'object' && obj !== null) {
+                // Se o objeto tiver chaves de status ou prioridade, tentamos traduzir
+                const entries = Object.entries(obj);
+                if (entries.length === 1) {
+                    const [key, val] = entries[0];
+                    if (typeof val === 'string') {
+                        return labels[key]?.[val] ?? val;
+                    }
+                }
+
                 if (obj.concluido !== undefined) return obj.concluido ? 'concluído' : 'pendente';
                 if (obj.texto !== undefined) return obj.texto;
                 if (obj.nome !== undefined) return obj.nome;
+                if (obj.status !== undefined) return labels.status[obj.status] ?? obj.status;
+                if (obj.prioridade !== undefined) return labels.prioridade[obj.prioridade] ?? obj.prioridade;
+                
+                // Fallback: se for objeto, tenta retornar os valores como string
+                return JSON.stringify(obj);
             }
             return obj;
         } catch {
@@ -137,24 +151,45 @@ export function formatarEventoHistorico(campo: string, anterior: string, novo: s
         }
     }
 
-    // 4. Tratamento padrão para alterações de campos da tabela 'tarefas'
+    // 4. Tratamento para TAREFA_MOVIDA (Log unificado)
+    if (campo === 'TAREFA_MOVIDA') {
+        const vAnter = tratarValor(anterior);
+        const vNovo = tratarValor(novo);
+        return `moveu a tarefa de "${vAnter}" para "${vNovo}"`;
+    }
+
+    // 5. Tratamento de Comentários
+    if (campo.startsWith('TAREFA_COMENTARIO')) {
+        if (campo === 'TAREFA_COMENTADA') return 'adicionou um comentário';
+        if (campo === 'TAREFA_COMENTARIO_EDITADO') return 'editou um comentário';
+        if (campo === 'TAREFA_COMENTARIO_REMOVIDO') return 'removeu um comentário';
+    }
+
+    // 6. Tratamento de Feedback
+    if (campo === 'TAREFA_FEEDBACK_REGISTRADO') return 'registrou o feedback de mentoria';
+
+    // 7. Tratamento padrão para alterações de campos da tabela 'tarefas'
     const campoAmigavel = nomesCampos[campo] || campo;
     let labelAnterior = labels[campo]?.[anterior] ?? anterior;
     let labelNovo = labels[campo]?.[novo] ?? novo;
 
     // Se os valores forem JSON (ex: responsavel_id alterado)
-    if (typeof labelAnterior === 'string' && labelAnterior.startsWith('{')) labelAnterior = tratarValor(labelAnterior);
-    if (typeof labelNovo === 'string' && labelNovo.startsWith('{')) labelNovo = tratarValor(labelNovo);
+    if (typeof labelAnterior === 'string' && labelAnterior.startsWith('{')) labelAnterior = tratarValor(labelAnterior, campo);
+    if (typeof labelNovo === 'string' && labelNovo.startsWith('{')) labelNovo = tratarValor(labelNovo, campo);
 
     if (!anterior || anterior === 'null') {
-        return `definiu ${campoAmigavel} como "${labelNovo}"`;
+        const val = typeof labelNovo === 'object' ? JSON.stringify(labelNovo) : labelNovo;
+        return `definiu ${campoAmigavel} como "${val}"`;
     }
 
     if (labelAnterior === labelNovo) {
         return `atualizou ${campoAmigavel}`;
     }
 
-    return `alterou ${campoAmigavel} de "${labelAnterior}" para "${labelNovo}"`;
+    const sAnter = typeof labelAnterior === 'object' ? JSON.stringify(labelAnterior) : labelAnterior;
+    const sNovo = typeof labelNovo === 'object' ? JSON.stringify(labelNovo) : labelNovo;
+
+    return `alterou ${campoAmigavel} de "${sAnter}" para "${sNovo}"`;
 }
 
 

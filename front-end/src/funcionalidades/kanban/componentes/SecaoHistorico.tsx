@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/compartilhado/servicos/api';
 import { formatarTempoAtras, formatarEventoHistorico } from '@/utilitarios/formatadores';
-import { History, UserPlus, Tag, Layout } from 'lucide-react';
+import { History, CheckSquare, Star, Trash2, Plus, ArrowLeftRight, Pencil } from 'lucide-react';
 
 interface EventoHistorico {
     id: string;
@@ -37,13 +37,25 @@ export function SecaoHistorico({ tarefaId }: SecaoHistoricoProps) {
 
     const carregarMais = () => setPagina(prev => prev + 1);
 
-    const getIcone = (campo: string) => {
-        switch (campo) {
-            case 'status': return <Layout className="w-3 h-3" />;
-            case 'responsavel': return <UserPlus className="w-3 h-3" />;
-            case 'prioridade': return <Tag className="w-3 h-3" />;
-            default: return <History className="w-3 h-3" />;
-        }
+    const getIcone = (evento: EventoHistorico) => {
+        const c = evento.campo_alterado.toUpperCase();
+        
+        // Ações de Remoção
+        if (c.includes('REMOVIDO') || c.includes('EXCLUIDO') || c.includes('REMOVER')) return <Trash2 className="w-3 h-3 text-rose-500/70" />;
+        
+        // Ações de Adição
+        if (c.includes('ADICIONADO') || c.includes('CRIADO') || c.includes('COMENTADA')) return <Plus className="w-3 h-3 text-emerald-500/70" />;
+        
+        // Ações de Movimentação/Status
+        if (c.includes('STATUS') || c === 'TAREFA_MOVIDA') return <ArrowLeftRight className="w-3 h-3 text-blue-500/70" />;
+        
+        // Ações de Edição/Alteração
+        if (c.includes('CHECKLIST')) return <CheckSquare className="w-3 h-3 text-amber-500/70" />;
+        if (c.includes('COMENTARIO_EDITADO')) return <Pencil className="w-3 h-3 text-amber-500/70" />;
+        if (c.includes('FEEDBACK')) return <Star className="w-3 h-3 text-indigo-500/70" />;
+        
+        // Padrão para alteração de campos (Título, Descrição, etc)
+        return <Pencil className="w-3 h-3 text-muted-foreground/70" />;
     };
 
     if (carregando) return <div className="text-xs text-muted-foreground py-4 animate-pulse">Carregando histórico...</div>;
@@ -65,7 +77,7 @@ export function SecaoHistorico({ tarefaId }: SecaoHistoricoProps) {
 
                         {/* Círculo do ícone */}
                         <div className="absolute left-0 top-0 w-6 h-6 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground z-10">
-                            {getIcone(evento.campo_alterado)}
+                            {getIcone(evento)}
                         </div>
 
                         <div className="flex flex-col">

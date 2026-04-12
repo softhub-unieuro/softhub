@@ -192,4 +192,22 @@ rotasProjetos.delete('/:id/repositorio', autenticacaoRequerida(), verificarPermi
     }
 });
 
+/**
+ * GET /api/projetos/:id/visao
+ * Retorna dados enriquecidos para o dashboard do projeto (feed, avisos, metas).
+ */
+rotasProjetos.get('/:id/visao', autenticacaoRequerida(), async (c) => {
+    const id = c.req.param('id');
+    const { DB } = c.env;
+    
+    try {
+        const feed = await repo.buscarFeedProjeto(DB, id!, 5);
+        const avisos = await repo.buscarAvisosProjeto(DB, id!);
+        
+        return c.json({ feed, avisos });
+    } catch (e: any) {
+        return c.json({ erro: 'Falha ao buscar visão do projeto' }, 500);
+    }
+});
+
 export default rotasProjetos;

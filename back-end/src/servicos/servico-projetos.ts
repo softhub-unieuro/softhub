@@ -21,9 +21,11 @@ export async function listarProjetos(env: Env, usuario: UsuarioDB, c: Context) {
     
     const projetos = await repo.buscarProjetosVisiveis(DB, usuario.id, podeVerTudo);
 
-    for (const p of (projetos as (ProjetoDB & { equipes_json?: string, equipes?: unknown[] })[])) {
+    for (const p of (projetos as (ProjetoDB & { equipes_json?: string, equipes?: unknown[], membros_json?: string, membros?: unknown[] })[])) {
         p.equipes = p.equipes_json ? JSON.parse(p.equipes_json) : [];
+        p.membros = p.membros_json ? JSON.parse(p.membros_json) : [];
         delete p.equipes_json;
+        delete p.membros_json;
     }
 
     return projetos;
@@ -89,7 +91,7 @@ export async function editarProjeto(
     env: Env, 
     usuario: UsuarioDB, 
     id: string, 
-    corpo: Partial<ProjetoDB> & { equipes?: { equipe_id: string; acesso: string }[] }, 
+    corpo: Omit<Partial<ProjetoDB>, 'publico'> & { publico?: boolean, equipes?: { equipe_id: string; acesso: string }[] }, 
     c: Context
 ) {
     const { DB, softhub_kv } = env;

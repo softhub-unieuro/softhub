@@ -10,32 +10,48 @@ interface PainelStatusJornadaProps {
 export const PainelStatusJornada = memo(({ ultimoRegistro, cronometroJornada }: PainelStatusJornadaProps) => {
     return (
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            {/* TILE 2: STATUS */}
-            <div className="card-glass p-4 sm:p-6 flex flex-col justify-between gap-3 sm:gap-4 card-glass-hover group transition-all">
-                <div className="flex items-start justify-between">
-                    <div className="p-2 sm:p-3 bg-slate-950/[0.03] text-slate-950 rounded-xl sm:rounded-2xl border border-slate-950/5 group-hover:bg-emerald-500/5 group-hover:text-emerald-600 transition-colors">
-                        <LayoutDashboard size={18} className="sm:w-[22px] sm:h-[22px]" strokeWidth={2.5} />
+            {/* SITUAÇÃO ATUAL */}
+            <div className={`
+                card-glass p-5 sm:p-7 flex flex-col justify-between gap-6 card-glass-hover group transition-all relative overflow-hidden
+                ${ultimoRegistro?.tipo === 'entrada' ? 'bg-emerald-500/[0.02] border-emerald-500/20' : ''}
+            `}>
+                <div className="flex items-start justify-between relative z-10">
+                    <div className={`
+                        p-3 rounded-2xl border transition-all duration-500
+                        ${ultimoRegistro?.tipo === 'entrada' 
+                            ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 rotate-3' 
+                            : 'bg-slate-950/[0.03] text-slate-400 border-slate-950/5 group-hover:rotate-6'}
+                    `}>
+                        <LayoutDashboard size={20} className="sm:w-[24px] sm:h-[24px]" strokeWidth={2.5} />
                     </div>
-                    <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full mt-1 sm:mt-2 ring-2 sm:ring-4 ${ultimoRegistro?.tipo === 'entrada' ? 'bg-emerald-500 ring-emerald-500/10 animate-pulse' : 'bg-slate-200 ring-slate-100'}`} />
                 </div>
-                <div className="space-y-0.5 sm:space-y-1">
-                    <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Minha Situação</p>
-                    <p className="text-lg sm:text-2xl font-black text-slate-900 leading-tight tracking-tight">
+                <div className="space-y-1 relative z-10">
+                    <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-slate-400/80">Minha Situação</p>
+                    <p className={`
+                        text-xl sm:text-2xl font-black leading-tight tracking-tight
+                        ${ultimoRegistro?.tipo === 'entrada' ? 'text-emerald-600' : 'text-slate-900'}
+                    `}>
                         {ultimoRegistro?.tipo === 'entrada' ? 'Trabalhando' : 'Descanso'}
                     </p>
                 </div>
+                {ultimoRegistro?.tipo === 'entrada' && (
+                    <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl" />
+                )}
             </div>
 
-            {/* TILE 3: JORNADA */}
-            <div className="card-glass p-4 sm:p-6 flex flex-col justify-between gap-3 sm:gap-4 card-glass-hover group transition-all">
-                <div className="flex items-start justify-between">
-                    <div className="p-2 sm:p-3 bg-amber-500/5 text-amber-600 rounded-xl sm:rounded-2xl border border-amber-500/5">
-                        <Clock size={18} className="sm:w-[22px] sm:h-[22px]" strokeWidth={2.5} />
+            {/* CRONÔMETRO DE HOJE */}
+            <div className="card-glass p-5 sm:p-7 flex flex-col justify-between gap-6 card-glass-hover group transition-all relative overflow-hidden bg-slate-900 text-white border-slate-800">
+                <div className="flex items-start justify-between relative z-10">
+                    <div className="p-3 bg-white/5 text-amber-400 rounded-2xl border border-white/10 group-hover:scale-110 transition-transform">
+                        <Clock size={20} className="sm:w-[24px] sm:h-[24px]" strokeWidth={2.5} />
                     </div>
+                    {cronometroJornada && (
+                         <div className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded text-[9px] font-black tracking-widest">LIVE</div>
+                    )}
                 </div>
-                <div className="space-y-0.5 sm:space-y-1">
-                    <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Horas de Hoje</p>
-                    <p className="text-lg sm:text-2xl font-black text-slate-900 leading-tight tabular-nums tracking-tight">
+                <div className="space-y-1 relative z-10">
+                    <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">Horas de Hoje</p>
+                    <p className="text-xl sm:text-2xl font-black leading-tight tabular-nums tracking-tight text-white">
                         {cronometroJornada?.texto || '00:00:00'}
                     </p>
                 </div>

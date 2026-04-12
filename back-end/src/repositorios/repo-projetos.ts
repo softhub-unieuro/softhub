@@ -8,11 +8,20 @@ export async function buscarProjetosVisiveis(DB: D1Database, usuarioId: string, 
     const query = `
         SELECT p.*, 
                (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id) as total_tarefas,
+               (SELECT COUNT(*) FROM tarefas WHERE projeto_id = p.id AND status = 'concluida') as tarefas_concluidas,
                (
                    SELECT JSON_GROUP_ARRAY(JSON_OBJECT('equipe_id', pe.equipe_id, 'acesso', pe.acesso))
                    FROM projetos_equipes pe
                    WHERE pe.projeto_id = p.id
-               ) as equipes_json
+               ) as equipes_json,
+               (
+                   SELECT JSON_GROUP_ARRAY(JSON_OBJECT('nome', u.nome, 'foto', u.foto_perfil))
+                   FROM usuarios u
+                   JOIN usuarios_organizacao uo ON u.id = uo.usuario_id
+                   JOIN projetos_equipes pe ON uo.equipe_id = pe.equipe_id
+                   WHERE pe.projeto_id = p.id
+                   LIMIT 10
+               ) as membros_json
         FROM projetos p 
         WHERE p.arquivado = 0 AND (? = 1 OR p.publico = 1 OR NOT EXISTS (SELECT 1 FROM projetos_equipes WHERE projeto_id = p.id) OR EXISTS (
             SELECT 1 FROM projetos_equipes pe
@@ -22,7 +31,7 @@ export async function buscarProjetosVisiveis(DB: D1Database, usuarioId: string, 
         ORDER BY p.criado_em DESC
     `;
     const { results } = await DB.prepare(query).bind(podeVerTudo ? 1 : 0, usuarioId).all();
-    return (results || []) as unknown as (ProjetoDB & { equipes_json?: string })[];
+    return (results || []) as unknown as (ProjetoDB & { equipes_json?: string, membros_json?: string, tarefas_concluidas?: number })[];
 }
 
 /**
@@ -109,4 +118,39 @@ export async function atualizarEquipesProjeto(DB: D1Database, projetoId: string,
  */
 export async function arquivarProjeto(DB: D1Database, id: string) {
     await DB.prepare('UPDATE projetos SET arquivado = 1 WHERE id = ?').bind(id).run();
+}
+
+/**
+ * Busca o feed de atividades recentes de um projeto específico.
+ */
+export async function buscarFeedProjeto(DB: D1Database, projetoId: string, limite: number = 5) {
+    const query = `
+        SELECT 
+            l.id, l.usuario_id, u.nome as usuario_nome, u.foto_perfil as usuario_foto,
+            l.acao as campo_alterado, l.dados_anteriores as valor_antigo, l.dados_novos as valor_novo, 
+            l.criado_em as alterado_em, l.descricao, t.titulo as tarefa_titulo, t.id as tarefa_id
+        FROM logs l
+        JOIN usuarios u ON l.usuario_id = u.id
+        JOIN tarefas t ON l.entidade_id = t.id
+        WHERE t.projeto_id = ? AND l.entidade_tipo = 'tarefas'
+        ORDER BY l.criado_em DESC
+        LIMIT ?
+    `;
+    const { results } = await DB.prepare(query).bind(projetoId, limite).all();
+    return results || [];
+}
+
+/**
+ * Busca avisos específicos vinculados a um projeto.
+ */
+export async function buscarAvisosProjeto(DB: D1Database, projetoId: string) {
+    const { results } = await DB.prepare(`
+        SELECT a.*, u.nome as autor_nome, u.foto_perfil as autor_foto
+        FROM avisos a
+        JOIN usuarios u ON a.autor_id = u.id
+        WHERE a.projeto_id = ? AND a.arquivado = 0
+        ORDER BY a.criado_em DESC
+        LIMIT 3
+    `).bind(projetoId).all();
+    return results || [];
 }
