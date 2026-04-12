@@ -31,6 +31,7 @@ import rotasEquipesAlocacao from './rotas/equipes-alocacao';
 import rotasNotificacoes from './rotas/notificacoes';
 import rotasIA from './rotas/ia';
 import rotasPerfil from './rotas/perfil';
+import rotasConvites from './rotas/convites';
 
 export type Env = {
     DB: D1Database;
@@ -144,6 +145,7 @@ app.route('/api/equipes', rotasEquipesAlocacao);
 app.route('/api/notificacoes', rotasNotificacoes);
 app.route('/api/ia', rotasIA);
 app.route('/api/perfil', rotasPerfil);
+app.route('/api/convites', rotasConvites);
 
 // ─── Health check (Rota pública) ──────────────────────────────────────────────
 app.get('/api/status', async (c) => {

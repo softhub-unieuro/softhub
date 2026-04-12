@@ -305,7 +305,23 @@ CREATE TABLE IF NOT EXISTS tokens_revogados (
 );
 
 -- ============================================================================
--- 10. CONFIGURAÇÕES DINÂMICAS DO SISTEMA
+-- 10. SISTEMA DE CONVITES (Auto-alocação)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS convites (
+    id TEXT NOT NULL PRIMARY KEY,
+    token TEXT NOT NULL UNIQUE,
+    criado_por_id TEXT NOT NULL REFERENCES usuarios(id),
+    limite_usos INTEGER NOT NULL DEFAULT 1,
+    usos_atuais INTEGER NOT NULL DEFAULT 0,
+    expira_em TEXT, -- ISO 8601
+    criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_convites_token ON convites(token);
+
+-- ============================================================================
+-- 11. CONFIGURAÇÕES DINÂMICAS DO SISTEMA
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS configuracoes_sistema (

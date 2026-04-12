@@ -96,7 +96,9 @@ export const TabelaMembros = memo(({
                                             </div>
                                             {m.equipe_nome && (
                                                 <div className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                                                    <span className="text-[8px] font-black uppercase tracking-[0.1em] text-emerald-600 truncate max-w-[80px] inline-block">{m.equipe_nome}</span>
+                                                    <span className="text-[8px] font-black uppercase tracking-[0.1em] text-emerald-600 truncate max-w-[120px] inline-block">
+                                                        {m.equipe_nome}{m.grupo_nome ? ` | ${m.grupo_nome}` : ''}
+                                                    </span>
                                                 </div>
                                             )}
                                         </div>

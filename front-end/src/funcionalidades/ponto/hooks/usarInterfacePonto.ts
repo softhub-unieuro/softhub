@@ -14,7 +14,7 @@ import type { RegistroPonto } from '@/funcionalidades/ponto/hooks/usarPonto';
  */
 export function usarInterfacePonto() {
     const { usuario } = usarAutenticacao();
-    const { registrosHoje, historico, carregando, erro, baterPonto } = usarPonto();
+    const { registrosHoje, historico, escala, escalaTipo, carregando, erro, baterPonto } = usarPonto();
     const { justificativas, enviarJustificativa, editarJustificativa, excluirJustificativa } = usarJustificativas();
 
     const [salvando, setSalvando] = useState(false);
@@ -75,27 +75,35 @@ export function usarInterfacePonto() {
     }, [registrosHoje]);
 
     const diasTrabalho = useMemo(() => {
-        if (!usuario?.escala_dias) return diasTrabalhoFabrica;
+        // Prioridade 1: Escala configurada no GRUPO (vinda da API de ponto)
+        // Prioridade 2: Escala configurada no PERFIL do usuário (legado/pessoal)
+        // Prioridade 3: Escala GLOBAL da fábrica (configurações)
+        const raw = (escala as string | null) || usuario?.escala_dias;
+        
+        if (!raw) return diasTrabalhoFabrica;
 
-        const raw = usuario.escala_dias;
         const nomesDias = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
 
-        // Se for o formato novo com PIPE
+        // Se for o formato avançado com PIPE ou PREFIXO
         if (raw.includes('|') || raw.includes(':')) {
             const partes = raw.split('|');
-            const fixos = (partes.find(p => p.startsWith('FIXO:'))?.split(':')[1]?.split(',') || []).map(d => d.trim().toLowerCase());
-            const altes = (partes.find(p => p.startsWith('ALTE:'))?.split(':')[1]?.split(',') || []).map(d => d.trim().toLowerCase());
+            const fixos = (partes.find((p: string) => p.startsWith('FIXO:'))?.split(':')[1]?.split(',') || []).map((d: string) => d.trim().toLowerCase());
+            const altes = (partes.find((p: string) => p.startsWith('ALTE:'))?.split(':')[1]?.split(',') || []).map((d: string) => d.trim().toLowerCase());
 
-            // Mapeia nomes para números
-            const diasFixo = fixos.map(n => nomesDias.indexOf(n)).filter(i => i !== -1);
-            const diasAlte = altes.map(n => nomesDias.indexOf(n)).filter(i => i !== -1);
+            const diasFixo = fixos.map((n: string) => nomesDias.indexOf(n)).filter((i: number) => i !== -1);
+            const diasAlte = altes.map((n: string) => nomesDias.indexOf(n)).filter((i: number) => i !== -1);
 
             return [...new Set([...diasFixo, ...diasAlte])];
         }
 
+        // Se for formato string simples (ex: "seg,qua,sex")
+        if (raw.includes(',') && isNaN(Number(raw.split(',')[0]))) {
+            return raw.split(',').map((n: string) => nomesDias.indexOf(n.trim().toLowerCase())).filter((i: number) => i !== -1);
+        }
+
         // Formato legatário (apenas números separados por vírgula)
         return raw.split(',').map(Number);
-    }, [usuario, diasTrabalhoFabrica]);
+    }, [escala, usuario, diasTrabalhoFabrica]);
 
 
 

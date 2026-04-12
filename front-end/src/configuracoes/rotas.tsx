@@ -46,6 +46,7 @@ const GerenciarProjetos = lazy(() => import('../funcionalidades/admin/componente
 const PaginaConfiguracoes = lazy(() => import('../funcionalidades/admin/componentes/PaginaConfiguracoes'));
 const ConfirmacaoLoginQR = lazy(() => import('../funcionalidades/autenticacao/componentes/ConfirmacaoLoginQR'));
 const Pagina404 = lazy(() => import('../compartilhado/componentes/Pagina404'));
+const PaginaConvite = lazy(() => import('../funcionalidades/admin/componentes/PaginaConvite'));
 
 /**
  * Layout raiz — renderizado em TODAS as rotas.
@@ -141,6 +142,7 @@ export const rotas = createBrowserRouter([
             { path: '/app/admin/equipes', element: <RotaProtegida permissaoRequerida="equipes:visualizar"><LayoutPrincipal><GerenciarEquipes /></LayoutPrincipal></RotaProtegida> },
             { path: '/app/admin/projetos', element: <RotaProtegida permissaoRequerida="projetos:visualizar"><LayoutPrincipal><GerenciarProjetos /></LayoutPrincipal></RotaProtegida> },
             { path: '/app/admin/configuracoes', element: <RotaProtegida permissaoRequerida="configuracoes:visualizar"><LayoutPrincipal><PaginaConfiguracoes /></LayoutPrincipal></RotaProtegida> },
+            { path: '/identificar-convite/:token', element: <PaginaConvite /> },
             // Rota de fallback
             { path: '*', element: <Pagina404 /> },
         ],

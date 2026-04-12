@@ -15,17 +15,28 @@ const rotasPonto = new Hono<{ Bindings: Env, Variables: { usuario: any } }>({ st
  */
 rotasPonto.get('/', autenticacaoRequerida(), async (c: Context) => {
     const usuario = c.get('usuario');
+    const { DB } = c.env;
     try {
-        const [hojeRes, historicoRes] = await Promise.all([
-            repo.buscarRegistrosHoje(c.env.DB, usuario.id),
-            repo.buscarHistoricoPonto(c.env.DB, usuario.id)
+        const [hojeRes, historicoRes, escalaRes] = await Promise.all([
+            repo.buscarRegistrosHoje(DB, usuario.id),
+            repo.buscarHistoricoPonto(DB, usuario.id),
+            DB.prepare(`
+                SELECT g.escala_dias, g.escala_tipo 
+                FROM usuarios_organizacao uo
+                JOIN grupos g ON uo.grupo_id = g.id
+                WHERE uo.usuario_id = ?
+                LIMIT 1
+            `).bind(usuario.id).first() as Promise<{ escala_dias: string, escala_tipo: string } | null>
         ]);
 
         return c.json({
             hoje: hojeRes.results || [],
-            historico: historicoRes.results || []
+            historico: historicoRes.results || [],
+            escala: escalaRes?.escala_dias || null,
+            escalaTipo: escalaRes?.escala_tipo || 'fixa'
         });
     } catch (e: any) {
+        log('error', '[PONTO] Falha ao buscar dados de ponto', { erro: e.message, usuarioId: usuario.id });
         return c.json({ erro: 'Falha ao buscar dados de ponto', detalhe: e.message }, 500);
     }
 });

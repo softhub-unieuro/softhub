@@ -135,15 +135,22 @@ rotasGrupos.delete('/:id', autenticacaoRequerida(), verificarPermissao('equipes:
     const id = c.req.param('id');
 
     try {
-        await DB.prepare('UPDATE grupos SET arquivado = 1 WHERE id = ?').bind(id).run();
+        const atual = await DB.prepare('SELECT nome FROM grupos WHERE id = ?').bind(id).first() as any;
+        if (!atual) return c.json({ erro: 'Grupo não encontrado.' }, 404);
+
+        // Remoção definitiva solicitada pelo usuário (Ignora Soft Delete apenas para Equipe/Grupo)
+        await DB.prepare('DELETE FROM grupos WHERE id = ?').bind(id).run();
+        
+        // Limpa vínculos órfãos de usuários (Regra: Se o grupo morre, o vínculo morre)
+        await DB.prepare('DELETE FROM usuarios_organizacao WHERE grupo_id = ?').bind(id).run();
 
         if (id) await removerNotificacoesPorEntidade(DB, id);
 
         await registrarLog(DB, {
             usuarioId: usuarioLogado.id,
-            acao: 'GRUPO_REMOVIDO_HARD',
+            acao: 'GRUPO_EXCLUIDA_REAL',
             modulo: 'equipes',
-            descricao: `Grupo ${id} removido permanentemente`,
+            descricao: `Grupo "${atual.nome}" removido definitivamente do sistema.`,
             ip: c.req.header('CF-Connecting-IP') ?? '',
             entidadeTipo: 'grupos',
             entidadeId: id,

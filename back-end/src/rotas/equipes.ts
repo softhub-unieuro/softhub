@@ -194,25 +194,27 @@ rotasEquipes.delete('/:id', autenticacaoRequerida(), verificarPermissao('equipes
     const id = c.req.param('id');
 
     try {
-        const atual = await DB.prepare('SELECT lider_id, sub_lider_id FROM equipes WHERE id = ?').bind(id).first() as any;
+        const atual = await DB.prepare('SELECT nome, lider_id, sub_lider_id FROM equipes WHERE id = ?').bind(id).first() as any;
+        if (!atual) return c.json({ erro: 'Equipe não encontrada.' }, 404);
         
-        await DB.prepare('UPDATE equipes SET arquivado = 1 WHERE id = ?').bind(id).run();
+        // Remoção definitiva solicitada pelo usuário (Ignora Soft Delete apenas para Equipe/Grupo)
+        await DB.prepare('DELETE FROM equipes WHERE id = ?').bind(id).run();
 
         if (id) await removerNotificacoesPorEntidade(DB, id);
 
-        // Sincronizar roles após remoção
+        // Sincronizar roles após remoção (já que eles deixam de ser líderes dessa equipe)
         if (atual?.lider_id) await sincronizarLiderancaUsuario(c.env, atual.lider_id);
         if (atual?.sub_lider_id) await sincronizarLiderancaUsuario(c.env, atual.sub_lider_id);
 
         await registrarLog(DB, {
             usuarioId: usuarioLogado.id,
-            acao: 'EQUIPE_REMOVIDA_HARD',
+            acao: 'EQUIPE_EXCLUIDA_REAL',
             modulo: 'equipes',
-            descricao: `Equipe ${id} removida permanentemente do sistema.`,
+            descricao: `Equipe "${atual.nome}" removida definitivamente do sistema.`,
             ip: c.req.header('CF-Connecting-IP') ?? '',
             entidadeTipo: 'equipes',
             entidadeId: id,
-            dadosAnteriores: { lider_id: atual.lider_id, sub_lider_id: atual.sub_lider_id }
+            dadosAnteriores: { nome: atual.nome, lider_id: atual.lider_id, sub_lider_id: atual.sub_lider_id }
         });
 
         return c.json({ sucesso: true });

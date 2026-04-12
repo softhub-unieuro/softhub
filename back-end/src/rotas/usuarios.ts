@@ -34,10 +34,12 @@ rotasUsuarios.get('/', autenticacaoRequerida(), verificarPermissao('membros:gere
                 u.github_url, u.linkedin_url, u.website_url,
                 GROUP_CONCAT(uo.grupo_id) as grupos_ids,
                 GROUP_CONCAT(e.nome) as equipe_nome,
+                GROUP_CONCAT(g.nome) as grupo_nome,
                 MAX(uo.equipe_id) as equipe_id
             FROM usuarios u
             LEFT JOIN usuarios_organizacao uo ON uo.usuario_id = u.id
-            LEFT JOIN equipes e ON e.id = uo.equipe_id
+            LEFT JOIN equipes e ON e.id = uo.equipe_id AND e.arquivado = 0
+            LEFT JOIN grupos g ON g.id = uo.grupo_id AND g.arquivado = 0
             GROUP BY u.id
             ORDER BY u.nome ASC
         `;

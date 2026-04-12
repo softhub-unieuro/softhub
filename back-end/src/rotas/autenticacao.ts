@@ -63,13 +63,10 @@ rotasAuth.post('/msal', kvRateLimit({ windowMs: 60 * 1000, limit: 5, keyPrefix: 
 
     } catch (e: any) {
         log('error', '[AUTH-MSAL] Erro na autenticação Microsoft', { erro: e.message, ip });
-        return c.json({ erro: 'Autenticação falhou.', detalhe: e.message }, 401);
+        // Retornamos 401 com o erro real obtido do MsalAuthService para facilitar o debug pelo desenvolvedor
+        return c.json({ erro: e.message || 'Autenticação falhou.' }, 401);
     }
 });
-
-/**
- * Realiza logout da sessão atual (Revoga JTI).
- */
 rotasAuth.post('/logout', async (c) => {
     const authHeader = c.req.header('Authorization');
     if (!authHeader?.startsWith('Bearer ')) return c.json({ sucesso: true });

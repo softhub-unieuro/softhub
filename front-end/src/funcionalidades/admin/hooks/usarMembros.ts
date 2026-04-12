@@ -13,6 +13,7 @@ export interface Membro {
     equipe_id: string | null;
     equipe_nome: string | null;
     grupo_id: string | null;
+    grupo_nome: string | null;
     criado_em: string;
     is_bootstrap?: boolean; // Flag para administradores protegidos pelo sistema (Bootstrap)
 }

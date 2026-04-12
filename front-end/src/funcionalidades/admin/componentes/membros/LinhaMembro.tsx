@@ -127,11 +127,17 @@ export const LinhaMembro = memo(({ membro, salvando, selecionado, onToggleSelect
             <td className="px-5 py-3.5 hidden xl:table-cell">
                 <div className="flex flex-wrap gap-1">
                     {membro.equipe_nome ? (
-                        membro.equipe_nome.split(',').map((eq: string, i: number) => (
-                            <span key={i} className="px-2 py-0.5 rounded-md bg-muted/30 text-[9px] font-medium text-muted-foreground/60">
-                                {eq.trim()}
-                            </span>
-                        ))
+                        membro.equipe_nome.split(',').map((eq: string, i: number) => {
+                            const grupoArr = membro.grupo_nome?.split(',') || [];
+                            const gNome = grupoArr[i]?.trim();
+                            const nomeCompleto = gNome ? `${eq.trim()} | ${gNome}` : eq.trim();
+                            
+                            return (
+                                <span key={i} className="px-2 py-0.5 rounded-md bg-muted/30 text-[9px] font-medium text-muted-foreground/60">
+                                    {nomeCompleto}
+                                </span>
+                            );
+                        })
                     ) : (
                         <span className="text-[10px] text-muted-foreground/20">—</span>
                     )}

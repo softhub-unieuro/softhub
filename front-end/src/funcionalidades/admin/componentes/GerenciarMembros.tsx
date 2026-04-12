@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, memo } from 'react';
-import { UserCog, Plus, LayersPlus, Search } from 'lucide-react';
+import { UserCog, Plus, LayersPlus, Search, UserPlus } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 
 import { api } from '@/compartilhado/servicos/api';
@@ -52,6 +52,8 @@ export const GerenciarMembros = memo(() => {
     const [membroAlocacao, setMembroAlocacao] = useState<Membro | null>(null);
     const [idPerfilParaVer, setIdPerfilParaVer] = useState<string | null>(null);
     const [membroParaPromover, setMembroParaPromover] = useState<Membro | null>(null);
+    const [modalConviteAberto, setModalConviteAberto] = useState(false);
+    const [linkGerado, setLinkGerado] = useState<string | null>(null);
 
     // Queries de Apoio (Online / Justificativas)
     const { data: membrosOnline = [] } = useQuery({
@@ -134,7 +136,15 @@ export const GerenciarMembros = memo(() => {
         } catch (e: any) {
             exibirToast(e.response?.data?.erro || 'Erro ao promover membro.', 'erro');
         }
-    }, [alterarRole, exibirToast]);
+    const handleGerarConvite = useCallback(async () => {
+        try {
+            const res = await api.post('/api/convites', { limite_usos: 100, validade_horas: 168 });
+            const url = `${window.location.origin}/identificar-convite/${res.data.token}`;
+            setLinkGerado(url);
+        } catch (e: any) {
+            exibirToast(e.response?.data?.erro || 'Erro ao gerar convite.', 'erro');
+        }
+    }, [exibirToast]);
 
     return (
         <div className="flex flex-col h-full w-full min-w-0 overflow-hidden space-y-6 animar-entrada">
@@ -171,6 +181,16 @@ export const GerenciarMembros = memo(() => {
                                     onClick={() => { setModoModal('lote'); setModalAberto(true); }}
                                     className="h-11 w-11 bg-muted/30 text-muted-foreground rounded-2xl flex items-center justify-center hover:bg-muted/50 active:scale-95 transition-all border border-border/40"
                                     icone={<LayersPlus size={18} strokeWidth={3} />}
+                                />
+                            </Tooltip>
+
+                            <Tooltip texto="Link de Convite">
+                                <Botao
+                                    variante="fantasma"
+                                    tamanho="icone"
+                                    onClick={() => setModalConviteAberto(true)}
+                                    className="h-11 w-11 bg-indigo-500/10 text-indigo-500 rounded-2xl flex items-center justify-center hover:bg-indigo-500/20 active:scale-95 transition-all border border-indigo-500/20"
+                                    icone={<UserPlus size={18} strokeWidth={3} />}
                                 />
                             </Tooltip>
                         </div>
@@ -244,6 +264,50 @@ export const GerenciarMembros = memo(() => {
                 setMembroParaPromover={setMembroParaPromover}
                 handleConfirmarPromocao={handleConfirmarPromocao}
             />
+
+            <Modal 
+                aberto={modalConviteAberto} 
+                aoFechar={() => { setModalConviteAberto(false); setLinkGerado(null); }} 
+                titulo="Convidar Membros"
+                largura="sm"
+            >
+                <div className="flex flex-col gap-6 py-4">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                        Gere um link para que novos membros se cadastrem e escolham suas equipes sozinhos. 
+                        Este link expirará em 7 dias e permite até 100 usos.
+                    </p>
+
+                    {!linkGerado ? (
+                        <Botao 
+                            variante="primario" 
+                            rotulo="Gerar Link Único" 
+                            aoClicar={handleGerarConvite} 
+                            className="w-full h-12 rounded-2xl font-bold uppercase tracking-widest"
+                        />
+                    ) : (
+                        <div className="flex flex-col gap-2">
+                            <label className="text-[10px] font-black uppercase text-muted-foreground/50 ml-1">Seu Link de Convite</label>
+                            <div className="flex items-center gap-2 p-3 bg-muted/30 border border-border/50 rounded-2xl group/link">
+                                <input 
+                                    readOnly 
+                                    value={linkGerado} 
+                                    className="bg-transparent border-none text-xs text-indigo-400 font-medium flex-1 outline-none"
+                                />
+                                <button 
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(linkGerado);
+                                        exibirToast('Link copiado!');
+                                    }}
+                                    className="p-2 hover:bg-white/5 rounded-xl text-muted-foreground transition-colors active:scale-95"
+                                >
+                                    <Plus className="rotate-45" size={16} /> {/* X icon workaround for copy if needed, but I'll use text */}
+                                    <span className="text-[10px] font-bold uppercase ml-1">Copiar</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </Modal>
         </div>
     );
 });

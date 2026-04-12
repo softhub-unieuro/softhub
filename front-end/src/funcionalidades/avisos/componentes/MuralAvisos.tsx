@@ -71,20 +71,20 @@ export const MuralAvisos = memo(() => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
                 {carregando && avisos.length === 0 ? (
-                    <div className="space-y-4">
-                        {[1, 2, 3].map(i => (
-                            <div key={i} className="h-32 w-full bg-card/60 border border-border/40 rounded-3xl animate-pulse" />
-                        ))}
+                    <div className="col-span-full py-20 flex justify-center">
+                         <Carregando rotulo="Sincronizando Avisos..." />
                     </div>
                 ) : erro ? (
-                    <div className="py-24 max-w-lg mx-auto w-full">
+                    <div className="col-span-full py-24 max-w-lg mx-auto w-full">
                          <EstadoErro titulo="Erro no Mural" mensagem={erro} />
                     </div>
                 ) : avisosOrdenados.length === 0 ? (
-                    <EstadoVazio 
-                        titulo="Tudo Tranquilo"
-                        descricao="Nenhum aviso novo por aqui. Continue o bom trabalho!"
-                    />
+                    <div className="col-span-full py-20 flex items-center justify-center min-h-[50vh]">
+                        <EstadoVazio 
+                            titulo="Tudo Tranquilo"
+                            descricao="Nenhum aviso novo por aqui. Continue o bom trabalho!"
+                        />
+                    </div>
                 ) : (
                     avisosOrdenados.map((aviso, index) => {
                         const corDestaque: Record<string, string> = {

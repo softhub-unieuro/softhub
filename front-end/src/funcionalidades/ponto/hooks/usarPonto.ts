@@ -26,7 +26,7 @@ export function usarPonto() {
     const intervaloMs = (configuracoes?.intervalo_sincronia_segundos || 30) * 1000;
 
     const { 
-        data: { registrosHoje = [], historico = [] } = {}, 
+        data: { registrosHoje = [], historico = [], escala = null, escalaTipo = 'fixa' } = {}, 
         isLoading: carregando, 
         error: erroQuery,
         refetch
@@ -36,7 +36,9 @@ export function usarPonto() {
              const res = await api.get('/api/ponto');
              return {
                  registrosHoje: (res.data?.hoje ?? []) as RegistroPonto[],
-                 historico: (res.data?.historico ?? []) as RegistroPonto[]
+                 historico: (res.data?.historico ?? []) as RegistroPonto[],
+                 escala: res.data?.escala as string | null,
+                 escalaTipo: res.data?.escalaTipo as string
              };
         },
         enabled: estaAutenticado,
