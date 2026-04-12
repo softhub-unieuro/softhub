@@ -24,13 +24,11 @@ rotasLogs.get('/', autenticacaoRequerida(), async (c: Context) => {
     const dataFim = c.req.query('dataFim');
     const apenasMeus = c.req.query('meus') === 'true';
 
-    // 🛡️ NOVO SISTEMA: Bypass de Admin/Bootstrap sem simulação
     const ehAdminOuDono = usuarioLogado.role === 'ADMIN';
 
     let whereClause = 'WHERE 1=1';
     const bParams: any[] = [];
 
-    // Lógica de "Meus Logs" vs "Todos os Logs"
     if (!ehAdminOuDono || apenasMeus) {
         whereClause += ' AND l.usuario_id = ?';
         bParams.push(usuarioLogado.id);
@@ -59,18 +57,32 @@ rotasLogs.get('/', autenticacaoRequerida(), async (c: Context) => {
     }
 
     try {
-        const queryCount = `SELECT COUNT(*) as total FROM logs l LEFT JOIN usuarios u ON l.usuario_id = u.id ${whereClause}`;
+        // Query para contar GRUPOS UNIFICADOS
+        const queryCount = `
+            SELECT COUNT(*) as total FROM (
+                SELECT 1 FROM logs l 
+                LEFT JOIN usuarios u ON l.usuario_id = u.id
+                ${whereClause} 
+                GROUP BY CAST(l.usuario_id AS TEXT), TRIM(l.modulo), TRIM(l.acao), TRIM(l.descricao)
+            )
+        `;
         const countRes = (await DB.prepare(queryCount).bind(...bParams).first()) as { total: number };
         const total = countRes?.total || 0;
 
+        // Query principal com unificação forçada (Subquery + Group By)
         const querySelect = `
-            SELECT l.id, l.usuario_id, u.nome, u.email, u.role, u.foto_perfil,
-                   l.acao, l.modulo, l.descricao, l.ip, l.entidade_tipo, l.entidade_id, 
-                   l.dados_anteriores, l.dados_novos, l.criado_em
-            FROM logs l
-            LEFT JOIN usuarios u ON l.usuario_id = u.id
-            ${whereClause}
-            ORDER BY l.criado_em DESC 
+            SELECT MAX(id) as id, usuario_id, nome, email, role, foto_perfil,
+                   TRIM(acao) as acao, TRIM(modulo) as modulo, TRIM(descricao) as descricao,
+                   MAX(criado_em) as criado_em, COUNT(*) as quantidade
+            FROM (
+                SELECT l.id, l.usuario_id, u.nome, u.email, u.role, u.foto_perfil,
+                       l.acao, l.modulo, l.descricao, l.criado_em
+                FROM logs l
+                LEFT JOIN usuarios u ON l.usuario_id = u.id
+                ${whereClause}
+            )
+            GROUP BY CAST(usuario_id AS TEXT), TRIM(modulo), TRIM(acao), TRIM(descricao)
+            ORDER BY criado_em DESC 
             LIMIT ? OFFSET ?
         `;
         const { results: dados } = await DB.prepare(querySelect).bind(...bParams, itensPorPagina, offset).all();

@@ -1,14 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Settings2 } from 'lucide-react';
 import type { ConfiguracoesSistema } from '@/funcionalidades/admin/hooks/usarConfiguracoes';
 
 interface Props {
     configuracoes: ConfiguracoesSistema | null;
     atualizarConfiguracao: (chave: keyof ConfiguracoesSistema, valor: any) => Promise<any>;
+    podeEditar: boolean;
 }
 
-export function SecaoSistema({ configuracoes, atualizarConfiguracao }: Props) {
+/**
+ * Módulo de Sistema: Manutenção, Branding e Sincronia.
+ */
+export function SecaoSistema({ configuracoes, atualizarConfiguracao, podeEditar }: Props) {
     const [salvandoGov, setSalvandoGov] = useState<string | null>(null);
+    const [sincroniaLocal, setSincroniaLocal] = useState(String(configuracoes?.intervalo_sincronia_segundos || 30));
+    const [corLocal, setCorLocal] = useState(configuracoes?.cor_primaria || '#4f46e2');
+
+    useEffect(() => {
+        if (configuracoes) {
+            setSincroniaLocal(String(configuracoes.intervalo_sincronia_segundos));
+            setCorLocal(configuracoes.cor_primaria);
+        }
+    }, [configuracoes]);
 
     return (
         <div className={`border rounded-2xl shadow-lg transition-all duration-500 overflow-hidden animar-entrada atraso-1 ${
@@ -31,6 +44,7 @@ export function SecaoSistema({ configuracoes, atualizarConfiguracao }: Props) {
             </div>
             <div className="p-5">
                 <button 
+                    disabled={!podeEditar || salvandoGov === 'modo_manutencao'}
                     onClick={async () => {
                         if (!configuracoes) return;
                         setSalvandoGov('modo_manutencao');
@@ -60,16 +74,33 @@ export function SecaoSistema({ configuracoes, atualizarConfiguracao }: Props) {
                         <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Cor Primária (Branding)</label>
                         <div className="flex gap-3">
                             <input 
+                                disabled={!podeEditar}
                                 type="color"
-                                value={configuracoes?.cor_primaria || '#4f46e2'}
-                                onChange={(e) => atualizarConfiguracao('cor_primaria', e.target.value)}
-                                className="w-12 h-10 p-1 bg-muted/40 border border-border/50 rounded-xl cursor-pointer"
+                                value={corLocal}
+                                onChange={(e) => setCorLocal(e.target.value)}
+                                onBlur={() => {
+                                    if (corLocal !== configuracoes?.cor_primaria) {
+                                        atualizarConfiguracao('cor_primaria', corLocal);
+                                    }
+                                }}
+                                className="w-12 h-10 p-1 bg-muted/40 border border-border/50 rounded-xl cursor-pointer disabled:opacity-50"
                             />
                             <input 
+                                disabled={!podeEditar}
                                 type="text"
-                                value={configuracoes?.cor_primaria || '#4f46e2'}
-                                onChange={(e) => atualizarConfiguracao('cor_primaria', e.target.value)}
-                                className="flex-1 bg-muted/40 border border-border/50 rounded-xl px-4 py-2 text-[11px] font-black pointer-events-none"
+                                value={corLocal}
+                                onChange={(e) => setCorLocal(e.target.value)}
+                                onBlur={() => {
+                                    if (corLocal !== configuracoes?.cor_primaria) {
+                                        // Validação básica de HEX antes de salvar
+                                        if (/^#[0-9A-F]{6}$/i.test(corLocal)) {
+                                            atualizarConfiguracao('cor_primaria', corLocal);
+                                        } else {
+                                            setCorLocal(configuracoes?.cor_primaria || '#4f46e2');
+                                        }
+                                    }
+                                }}
+                                className="flex-1 bg-muted/40 border border-border/50 rounded-xl px-4 py-2 text-[11px] font-black text-foreground outline-none focus:bg-background focus:border-indigo-500/30 transition-all disabled:opacity-50 uppercase"
                             />
                         </div>
                     </div>
@@ -77,12 +108,19 @@ export function SecaoSistema({ configuracoes, atualizarConfiguracao }: Props) {
                     <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Sincronia Global (Segundos)</label>
                         <input 
+                            disabled={!podeEditar}
                             type="number"
                             min="5"
                             max="3600"
-                            value={configuracoes?.intervalo_sincronia_segundos || 30}
-                            onChange={(e) => atualizarConfiguracao('intervalo_sincronia_segundos', Number(e.target.value))}
-                            className="w-full bg-muted/40 border border-border/50 rounded-xl px-4 py-3 text-[13px] font-black text-foreground outline-none focus:bg-background focus:border-indigo-500/30 transition-all"
+                            value={sincroniaLocal}
+                            onChange={(e) => setSincroniaLocal(e.target.value)}
+                            onBlur={() => {
+                                const val = Number(sincroniaLocal);
+                                if (!isNaN(val) && val !== configuracoes?.intervalo_sincronia_segundos) {
+                                    atualizarConfiguracao('intervalo_sincronia_segundos', val);
+                                }
+                            }}
+                            className="w-full bg-muted/40 border border-border/50 rounded-xl px-4 py-3 text-[13px] font-black text-foreground outline-none focus:bg-background focus:border-indigo-500/30 transition-all disabled:opacity-50"
                         />
                         <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest ml-1">Tempo entre atualizações de avisos e presença</p>
                     </div>

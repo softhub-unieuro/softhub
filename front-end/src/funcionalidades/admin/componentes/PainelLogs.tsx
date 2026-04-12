@@ -1,11 +1,11 @@
-import { ShieldAlert, ChevronRight } from 'lucide-react';
+import { ShieldAlert, ChevronRight, ChevronDown } from 'lucide-react';
 import { EstadoVazio } from '@/compartilhado/componentes/EstadoVazio';
 import { Paginacao } from '@/compartilhado/componentes/Paginacao';
-import { usarLogs } from '@/funcionalidades/admin/hooks/usarLogs';
+import { usarLogs, LogSistema } from '@/funcionalidades/admin/hooks/usarLogs';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
 import { Emblema } from '@/compartilhado/componentes/Emblema';
 import { EstadoErro } from '@/compartilhado/componentes/EstadoErro';
-import { useState, Fragment, memo, useCallback } from 'react';
+import { useState, Fragment, memo, useCallback, useMemo } from 'react';
 import { CabecalhoFuncionalidade } from '@/compartilhado/componentes/CabecalhoFuncionalidade';
 import { BarraFiltros, FiltroSelect, FiltroDataRange, FiltroToggle } from '@/compartilhado/componentes/BarraFiltros';
 import { DetalheLog } from './logs/DetalheLog';
@@ -55,8 +55,6 @@ export const PainelLogs = memo(() => {
         setItensPorPagina(num);
         setPagina(1);
     }, [setItensPorPagina, setPagina]);
-
-
 
     return (
         <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -127,9 +125,9 @@ export const PainelLogs = memo(() => {
                 </div>
             </BarraFiltros>
 
-            {/* Tabela de Auditoria */}
-            <div className="flex-1 min-h-0 bg-card border border-border rounded-2xl flex flex-col shadow-sm shadow-black/5 overflow-hidden">
-                <div className="flex-1 overflow-auto relative custom-scrollbar">
+            {/* Tabela de Auditoria - Estilo Enterprise Otimizado */}
+            <div className="flex-col bg-card border border-border rounded-2xl flex shadow-sm shadow-black/5 overflow-hidden min-h-[400px] max-h-full">
+                <div className="overflow-auto relative custom-scrollbar">
                     {erro ? (
                         <div className="h-full flex items-center justify-center p-12">
                             <EstadoErro titulo="Falha na Sincronização" mensagem={erro} />
@@ -148,19 +146,19 @@ export const PainelLogs = memo(() => {
                             descricao="Refine seus filtros ou busque em períodos anteriores."
                         />
                     ) : (
-                        <>
-                            {/* 🖥️ VISÃO DESKTOP: TABELA CLÁSSICA */}
-                            <table className="hidden lg:table w-full border-collapse table-fixed min-w-full">
-                                <thead className="sticky top-0 z-20 bg-card/95 backdrop-blur-xl border-b border-border/50 shadow-sm transition-all duration-300">
-                                    <tr className="divide-x divide-border/5">
-                                        <th className="px-5 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 w-[140px]">CRONÔMETRO</th>
-                                        <th className="px-3 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 w-[180px]">OPERAÇÃO</th>
-                                        <th className="px-3 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 w-[200px]">AGENTE</th>
-                                        <th className="px-3 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">DESCRIÇÃO DO EVENTO</th>
-                                        <th className="px-5 py-4 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 w-[150px] text-right">MÓDULO</th>
+                        <div className="min-w-fit w-full">
+                            {/* 🖥️ VISÃO DESKTOP: TABELA CLÁSSICA COM COLUNAS OTIMIZADAS */}
+                            <table className="hidden lg:table w-full border-collapse">
+                                <thead className="sticky top-0 z-20 bg-card/95 backdrop-blur-xl border-b border-border shadow-sm">
+                                    <tr>
+                                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.15em] text-foreground/40 w-[160px]">Cronômetro</th>
+                                        <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-[0.15em] text-foreground/40 w-[200px]">Operação</th>
+                                        <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-[0.15em] text-foreground/40 w-[260px]">Responsável</th>
+                                        <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-[0.15em] text-foreground/40">Log de Evento</th>
+                                        <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-[0.15em] text-foreground/40 w-[180px]">Contexto</th>
                                     </tr>
                                 </thead>
-                                <tbody className={`divide-y divide-border/20 transition-opacity duration-300 ${carregando ? 'opacity-50' : 'opacity-100'}`}>
+                                <tbody className={`divide-y divide-border/10 even:bg-muted/5 transition-opacity duration-300 ${carregando ? 'opacity-50' : 'opacity-100'}`}>
                                     {logs.map(log => (
                                         <Fragment key={log.id}>
                                             <LinhaLog
@@ -169,8 +167,8 @@ export const PainelLogs = memo(() => {
                                                 aoAlternar={handleAlternarExpansao}
                                             />
                                             {expandidoId === log.id && (
-                                                <tr className="bg-muted/10 animate-in slide-in-from-top-4 duration-500">
-                                                    <td colSpan={5} className="p-0">
+                                                <tr className="bg-muted/5 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                    <td colSpan={5} className="p-0 border-b border-border/50">
                                                         <DetalheLog log={log} />
                                                     </td>
                                                 </tr>
@@ -197,13 +195,20 @@ export const PainelLogs = memo(() => {
                                                 <span className="text-[10px] font-bold text-muted-foreground/50 tabular-nums">
                                                     {new Date(log.criado_em).toLocaleDateString('pt-BR')} às {new Date(log.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
-                                                <Emblema texto={log.modulo} variante="cinza" />
+                                                <div className="flex items-center gap-2">
+                                                    {(log.quantidade || 1) > 1 && (
+                                                        <span className="px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-black rounded-full border border-primary/20">
+                                                            x{log.quantidade}
+                                                        </span>
+                                                    )}
+                                                    <Emblema texto={log.modulo} variante="cinza" />
+                                                </div>
                                             </div>
 
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center border border-border shrink-0 overflow-hidden">
                                                     {log.foto_perfil ? (
-                                                        <img src={log.foto_perfil || ''} alt={log.nome || 'Avatar'} className="w-full h-full object-cover" />
+                                                        <img src={log.foto_perfil} alt={log.nome || ''} className="w-full h-full object-cover" />
                                                     ) : (
                                                         <div className="text-[10px] font-black text-muted-foreground/20">SYS</div>
                                                     )}
@@ -237,7 +242,7 @@ export const PainelLogs = memo(() => {
                                     </div>
                                 ))}
                             </div>
-                        </>
+                        </div>
                     )}
                 </div>
 
@@ -255,5 +260,5 @@ export const PainelLogs = memo(() => {
         </div>
     );
 });
- 
+
 export default PainelLogs;

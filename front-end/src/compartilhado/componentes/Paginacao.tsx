@@ -6,6 +6,7 @@ interface PaginacaoProps {
     totalRegistros: number;
     itensPorPagina: number;
     itensListados: number;
+    infoAdicional?: string;
     aoMudarPagina: (pagina: number) => void;
     aoMudarItensPorPagina: (itens: number) => void;
     opcoesItensPorPagina?: number[];
@@ -22,6 +23,7 @@ export function Paginacao({
     totalRegistros,
     itensPorPagina,
     itensListados,
+    infoAdicional,
     aoMudarPagina,
     aoMudarItensPorPagina,
     opcoesItensPorPagina = [20, 50, 100],
@@ -72,7 +74,11 @@ export function Paginacao({
                     <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.15em] mb-0.5">Exibição</span>
                     <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-foreground/80 tabular-nums">
-                            {itensListados} <span className="text-[10px] text-muted-foreground/40 font-normal mx-0.5">de</span> {totalRegistros}
+                            {infoAdicional || (
+                                <>
+                                    {itensListados} <span className="text-[10px] text-muted-foreground/40 font-normal mx-0.5">de</span> {totalRegistros}
+                                </>
+                            )}
                         </span>
                         <div className="h-3 w-[1px] bg-border/40 mx-1" />
                         <select

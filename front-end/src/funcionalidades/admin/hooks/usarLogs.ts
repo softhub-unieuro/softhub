@@ -36,7 +36,7 @@ export function usarLogs() {
     const [erro, setErro] = useState<string | null>(null);
 
     const [pagina, setPagina] = useState(1);
-    const [itensPorPagina, setItensPorPagina] = useState(20);
+    const [itensPorPagina, setItensPorPagina] = useState(100);
     const [totalPaginas, setTotalPaginas] = useState(1);
     const [totalRegistros, setTotalRegistros] = useState(0);
 

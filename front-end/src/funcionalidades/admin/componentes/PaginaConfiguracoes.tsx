@@ -83,6 +83,7 @@ export const PaginaConfiguracoes = memo(() => {
                             <SecaoSistema 
                                 configuracoes={configuracoes ?? null} 
                                 atualizarConfiguracao={atualizarConfiguracao} 
+                                podeEditar={podeEditar}
                             />
                             
                             <SecaoGovernanca 

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Clock, Info } from 'lucide-react';
 import type { ConfiguracoesSistema } from '@/funcionalidades/admin/hooks/usarConfiguracoes';
 
@@ -7,7 +8,22 @@ interface Props {
     podeEditar: boolean;
 }
 
+/**
+ * Módulo de Jornada: Horários, Metas e Tolerâncias.
+ */
 export function SecaoJornada({ configuracoes, atualizarConfiguracao, podeEditar }: Props) {
+    const [metaLocal, setMetaLocal] = useState(String(configuracoes?.meta_semanal_horas || 20));
+    const [toleranciaLocal, setToleranciaLocal] = useState(String(configuracoes?.tolerancia_ponto_minutos || 15));
+    const [mensagemLocal, setMensagemLocal] = useState(configuracoes?.mensagem_meta_semanal || '');
+
+    useEffect(() => {
+        if (configuracoes) {
+            setMetaLocal(String(configuracoes.meta_semanal_horas));
+            setToleranciaLocal(String(configuracoes.tolerancia_ponto_minutos));
+            setMensagemLocal(configuracoes.mensagem_meta_semanal);
+        }
+    }, [configuracoes]);
+
     return (
         <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden flex flex-col h-fit animar-entrada atraso-4">
             <div className="p-5 border-b border-border bg-muted/10 flex items-center gap-3">
@@ -20,8 +36,8 @@ export function SecaoJornada({ configuracoes, atualizarConfiguracao, podeEditar 
                 </div>
             </div>
 
-            <div className="p-6 space-y-6">
-                <div className="grid grid-cols-2 gap-4">
+            <div className="p-6 space-y-8">
+                <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Início</label>
                         <input 
@@ -55,9 +71,15 @@ export function SecaoJornada({ configuracoes, atualizarConfiguracao, podeEditar 
                                 min="1"
                                 max="168"
                                 disabled={!podeEditar}
-                                value={configuracoes?.meta_semanal_horas || 20}
-                                onChange={(e) => atualizarConfiguracao('meta_semanal_horas', Number(e.target.value))}
-                                className="w-full bg-muted/40 border border-border/50 rounded-xl px-4 py-3 text-[13px] font-black text-foreground outline-none focus:bg-background focus:border-sky-500/30 transition-all"
+                                value={metaLocal}
+                                onChange={(e) => setMetaLocal(e.target.value)}
+                                onBlur={() => {
+                                    const val = Number(metaLocal);
+                                    if (!isNaN(val) && val !== configuracoes?.meta_semanal_horas) {
+                                        atualizarConfiguracao('meta_semanal_horas', val);
+                                    }
+                                }}
+                                className="w-full bg-muted/40 border border-border/50 rounded-xl px-4 py-3 text-[13px] font-black text-foreground outline-none focus:bg-background focus:border-sky-500/30 transition-all disabled:opacity-50"
                             />
                         </div>
                     </div>
@@ -69,9 +91,15 @@ export function SecaoJornada({ configuracoes, atualizarConfiguracao, podeEditar 
                                 min="1"
                                 max="60"
                                 disabled={!podeEditar}
-                                value={configuracoes?.tolerancia_ponto_minutos || 15}
-                                onChange={(e) => atualizarConfiguracao('tolerancia_ponto_minutos', Number(e.target.value))}
-                                className="w-full bg-muted/40 border border-border/50 rounded-xl px-4 py-3 text-[13px] font-black text-foreground outline-none focus:bg-background focus:border-sky-500/30 transition-all"
+                                value={toleranciaLocal}
+                                onChange={(e) => setToleranciaLocal(e.target.value)}
+                                onBlur={() => {
+                                    const val = Number(toleranciaLocal);
+                                    if (!isNaN(val) && val !== configuracoes?.tolerancia_ponto_minutos) {
+                                        atualizarConfiguracao('tolerancia_ponto_minutos', val);
+                                    }
+                                }}
+                                className="w-full bg-muted/40 border border-border/50 rounded-xl px-4 py-3 text-[13px] font-black text-foreground outline-none focus:bg-background focus:border-sky-500/30 transition-all disabled:opacity-50"
                             />
                         </div>
                     </div>
@@ -82,10 +110,15 @@ export function SecaoJornada({ configuracoes, atualizarConfiguracao, podeEditar 
                     <textarea 
                         rows={2}
                         disabled={!podeEditar}
-                        value={configuracoes?.mensagem_meta_semanal || ''}
-                        onChange={(e) => atualizarConfiguracao('mensagem_meta_semanal', e.target.value)}
+                        value={mensagemLocal}
+                        onChange={(e) => setMensagemLocal(e.target.value)}
+                        onBlur={() => {
+                            if (mensagemLocal !== configuracoes?.mensagem_meta_semanal) {
+                                atualizarConfiguracao('mensagem_meta_semanal', mensagemLocal);
+                            }
+                        }}
                         placeholder="Ex: A semana está só começando..."
-                        className="w-full bg-muted/40 border border-border/50 rounded-xl px-4 py-3 text-[11px] font-bold text-foreground outline-none focus:bg-background focus:border-sky-500/30 transition-all resize-none"
+                        className="w-full bg-muted/40 border border-border/50 rounded-xl px-4 py-3 text-[11px] font-bold text-foreground outline-none focus:bg-background focus:border-sky-500/30 transition-all resize-none disabled:opacity-50"
                     />
                 </div>
 

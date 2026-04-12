@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Shield, UserPlus, Trash2, Plus } from 'lucide-react';
 import type { ConfiguracoesSistema } from '@/funcionalidades/admin/hooks/usarConfiguracoes';
 
@@ -8,9 +8,20 @@ interface Props {
     podeEditar: boolean;
 }
 
+/**
+ * Módulo de Governança: Auto-cadastro, Domínios e GitHub.
+ */
 export function SecaoGovernanca({ configuracoes, atualizarConfiguracao, podeEditar }: Props) {
     const [salvandoGov, setSalvandoGov] = useState<string | null>(null);
     const [novoDominio, setNovoDominio] = useState('');
+    const [valorGitHubLocal, setValorGitHubLocal] = useState(configuracoes?.github_org || '');
+
+    // Sincroniza o estado local quando a configuração mudar externamente
+    useEffect(() => {
+        if (configuracoes?.github_org !== undefined) {
+            setValorGitHubLocal(configuracoes.github_org);
+        }
+    }, [configuracoes?.github_org]);
 
     return (
         <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden flex flex-col h-fit animar-entrada atraso-2">
@@ -24,7 +35,7 @@ export function SecaoGovernanca({ configuracoes, atualizarConfiguracao, podeEdit
                 </div>
             </div>
 
-            <div className="p-5 space-y-6">
+            <div className="p-5 space-y-8">
                 {/* Switch de Auto-cadastro */}
                 <div className="space-y-3">
                     <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/50 block ml-1">Auto-cadastro</label>
@@ -67,8 +78,13 @@ export function SecaoGovernanca({ configuracoes, atualizarConfiguracao, podeEdit
                     <div className="relative">
                         <input 
                             disabled={!podeEditar}
-                            value={configuracoes?.github_org || ''}
-                            onChange={(e) => atualizarConfiguracao('github_org', e.target.value)}
+                            value={valorGitHubLocal}
+                            onChange={(e) => setValorGitHubLocal(e.target.value)}
+                            onBlur={() => {
+                                if (valorGitHubLocal !== configuracoes?.github_org) {
+                                    atualizarConfiguracao('github_org', valorGitHubLocal);
+                                }
+                            }}
                             placeholder="Ex: unieuro-softhub"
                             className="w-full bg-muted/40 border border-border/50 rounded-xl px-4 py-3 text-[11px] font-bold text-foreground outline-none focus:bg-background focus:border-indigo-500/30 transition-all placeholder:text-muted-foreground/30"
                         />
