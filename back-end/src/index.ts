@@ -52,7 +52,8 @@ app.use('*', cors({
     origin: (origin) => {
         const ALLOWED = [
             'https://softhub.pages.dev',
-            'https://app.softhub.com.br'
+            'https://app.softhub.com.br',
+            'https://fabricadesoftware.pages.dev'
         ];
         
         if (!origin || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || origin.includes('cloudworkstations.dev')) {
