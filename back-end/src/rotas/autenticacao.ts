@@ -72,18 +72,21 @@ rotasAuth.post('/logout', async (c) => {
     if (!authHeader?.startsWith('Bearer ')) return c.json({ sucesso: true });
 
     const token = authHeader.slice(7);
-    const { JWT_SECRET, softhub_kv } = c.env;
+    const { DB, JWT_SECRET, softhub_kv } = c.env;
 
     try {
         const payload = await verify(token, JWT_SECRET, 'HS256') as any;
         if (payload.jti && softhub_kv) {
             const timeLeft = (payload.exp * 1000) - Date.now();
             if (timeLeft > 0) {
-                // Adiciona JTI na blacklist até o token expirar naturalmente
+                // 1. Adiciona JTI na blacklist até o token expirar naturalmente
                 await softhub_kv.put(`revoked:${payload.jti}`, '1', {
                     expirationTtl: Math.ceil(timeLeft / 1000)
                 });
             }
+
+            // 2. Deleta a sessão física do banco D1 (Evita duplicatas e limpa histórico)
+            await DB.prepare('DELETE FROM usuarios_sessoes WHERE id = ?').bind(payload.jti).run();
         }
         return c.json({ sucesso: true });
     } catch {
@@ -103,24 +106,28 @@ rotasAuth.post('/logout-all', async (c) => {
 
     try {
         const payload = await verify(token, JWT_SECRET, 'HS256') as any;
-        
-        await DB.prepare('UPDATE usuarios SET versao_token = versao_token + 1 WHERE id = ?')
-            .bind(payload.id)
-            .run();
+        const usuarioId = payload.id;
 
+        // 1. Invalidar todas as sessões do usuário no D1
+        await DB.prepare('DELETE FROM usuarios_sessoes WHERE usuario_id = ?').bind(usuarioId).run();
+
+        // 2. Incrementar a versão do token no banco para invalidar access tokens antigos
+        await DB.prepare('UPDATE usuarios SET versao_token = versao_token + 1 WHERE id = ?').bind(usuarioId).run();
+
+        // 3. Cache de logout total no KV
         if (softhub_kv) {
-            await softhub_kv.delete(`sessao:${payload.id}`);
+            await softhub_kv.delete(`sessao:${usuarioId}`);
         }
 
         await registrarLog(DB, {
-            usuarioId: payload.id,
+            usuarioId,
             acao: 'LOGOUT_TOTAL',
             modulo: 'auth',
-            descricao: `Encerramento global de sessões`,
+            descricao: 'Encerramento global de sessões',
             ip: c.req.header('CF-Connecting-IP') ?? 'unknown'
         });
 
-        return c.json({ sucesso: true });
+        return c.json({ sucesso: true, mensagem: 'Todas as sessões foram encerradas.' });
     } catch {
         return c.json({ erro: 'Token inválido' }, 401);
     }
