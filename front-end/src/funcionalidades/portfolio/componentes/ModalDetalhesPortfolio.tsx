@@ -94,20 +94,20 @@ export function ModalDetalhesPortfolio({ projetoId, aberto, aoFechar }: ModalDet
             ) : projeto && (
                 <div className="flex flex-col gap-8 animar-entrada pb-6">
                     {/* Hero do Modal */}
-                    <div className="bg-slate-950 rounded-[32px] p-8 border border-white/5 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <Code2 size={120} strokeWidth={1} />
+                    <div className="bg-slate-50 rounded-[32px] p-8 border border-slate-200 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <Code2 size={120} strokeWidth={1} className="text-blue-600" />
                         </div>
                         <div className="relative z-10 space-y-4">
                             <div className="flex items-center gap-3">
-                                <span className="px-3 py-1 bg-primary/20 text-primary border border-primary/20 rounded-full text-[9px] font-black uppercase tracking-widest">Case de Sucesso</span>
-                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-white/40 uppercase tracking-widest">
+                                <span className="px-3 py-1 bg-blue-100 text-blue-600 border border-blue-200 rounded-full text-[9px] font-black uppercase tracking-widest">Case de Sucesso</span>
+                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                                     <Calendar size={12} />
                                     {new Date(projeto.criado_em).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
                                 </div>
                             </div>
-                            <h2 className="text-3xl font-black text-white tracking-tighter leading-none">{projeto.nome}</h2>
-                            <p className="text-sm text-white/60 font-medium max-w-xl leading-relaxed">
+                            <h2 className="text-3xl font-black text-slate-900 tracking-tighter leading-none">{projeto.nome}</h2>
+                            <p className="text-sm text-slate-500 font-medium max-w-xl leading-relaxed">
                                 {projeto.descricao || 'Este projeto representa o ápice da engenharia aplicada na Fábrica de Software Unieuro.'}
                             </p>
                         </div>

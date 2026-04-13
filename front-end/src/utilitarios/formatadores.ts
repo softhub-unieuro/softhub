@@ -200,9 +200,46 @@ export function formatarEventoHistorico(campo: string, anterior: string, novo: s
  * @param {string} plural Opcional. Forma plural (caso não seja apenas adicionar 's')
  * @returns {string} Singular ou Plural conforme a regra gramatical
  */
-export function pluralizar(quantidade: number, singular: string, plural?: string): string {
-    if (Math.abs(quantidade) === 1) {
+export function pluralizar(amount: number, singular: string, plural?: string): string {
+    if (Math.abs(amount) === 1) {
         return singular;
     }
     return plural || `${singular}s`;
+}
+
+/**
+ * Formata o nome de um membro para exibição amigável (Inteligente para nomes compostos brasileiros).
+ * @param {string} nome Nome completo (ex: "Ana Paula Silva", "Mateus Cotrim")
+ * @returns {string} Nome abreviado (ex: "Ana Paula", "Mateus")
+ */
+export function formatarNomeCurto(nome: string): string {
+    if (!nome) return '';
+    const partes = nome.trim().split(/\s+/);
+    if (partes.length <= 1) return nome;
+
+    const primeiro = partes[0];
+    const segundo = partes[1];
+    
+    // Conectores de sobrenome comuns em PT-BR (não indicam nome composto)
+    const conectores = ['de', 'da', 'do', 'das', 'dos', 'e'];
+    if (conectores.includes(segundo.toLowerCase())) return primeiro;
+
+    // Lista de nomes frequentes em nomes compostos no Brasil
+    const segundosNomesCompostos = [
+        'paula', 'vitoria', 'vitória', 'eduarda', 'maria', 'cristina', 'beatriz', 'luiza', 'luisa', 'clara', 'carolina', 'alice', 
+        'victor', 'vitor', 'gabriel', 'henrique', 'felipe', 'eduardo', 'roberto', 'ricardo', 'lucas', 'miguel', 'arthur', 'artur', 'guilherme',
+        'augusto', 'antonio', 'antônio', 'jose', 'josé', 'aparecida', 'inácio', 'inacio', 'francisco'
+    ];
+
+    // Heurística de inteligência:
+    // 1. O segundo nome é um conhecido nome composto
+    // 2. O nome tem 3 partes ou mais e o segundo nome é curto o suficiente para ser um prenome
+    if (
+        segundosNomesCompostos.includes(segundo.toLowerCase()) || 
+        (partes.length >= 3 && segundo.length <= 8)
+    ) {
+        return `${primeiro} ${segundo}`;
+    }
+
+    return primeiro;
 }
