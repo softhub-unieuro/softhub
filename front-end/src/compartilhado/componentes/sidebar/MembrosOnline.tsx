@@ -12,7 +12,7 @@ export const MembrosOnline = memo(() => {
         <div className="flex flex-col gap-2 p-3 bg-primary/5 border border-primary/10 rounded-2xl animate-in slide-in-from-bottom-2 duration-500">
             <div className="flex items-center justify-between">
                 <span className="text-[9px] font-black text-primary uppercase tracking-widest">Online Agora</span>
-                <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="flex h-1.5 w-1.5 rounded-sm bg-emerald-500 animate-pulse" />
             </div>
             <div className="flex items-center -space-x-2">
                 {membrosOnline.slice(0, 5).map((m: any) => (
@@ -26,7 +26,7 @@ export const MembrosOnline = memo(() => {
                     </Tooltip>
                 ))}
                 {membrosOnline.length > 5 && (
-                    <div className="h-6 w-6 rounded-full bg-sidebar-accent border border-sidebar-border flex items-center justify-center text-[8px] font-black text-muted-foreground z-10">
+                    <div className="h-6 w-6 rounded-lg bg-sidebar-accent border border-sidebar-border flex items-center justify-center text-[8px] font-black text-muted-foreground z-10">
                         +{membrosOnline.length - 5}
                     </div>
                 )}

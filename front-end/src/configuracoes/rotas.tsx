@@ -142,7 +142,7 @@ export const rotas = createBrowserRouter([
             { path: '/app/admin/equipes', element: <RotaProtegida permissaoRequerida="equipes:visualizar"><LayoutPrincipal><GerenciarEquipes /></LayoutPrincipal></RotaProtegida> },
             { path: '/app/admin/projetos', element: <RotaProtegida permissaoRequerida="projetos:visualizar"><LayoutPrincipal><GerenciarProjetos /></LayoutPrincipal></RotaProtegida> },
             { path: '/app/admin/configuracoes', element: <RotaProtegida permissaoRequerida="configuracoes:visualizar"><LayoutPrincipal><PaginaConfiguracoes /></LayoutPrincipal></RotaProtegida> },
-            { path: '/identificar-convite/:token', element: <PaginaConvite /> },
+            { path: '/convite/:token', element: <PaginaConvite /> },
             // Rota de fallback
             { path: '*', element: <Pagina404 /> },
         ],

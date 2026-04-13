@@ -79,7 +79,7 @@ export default function GerenciarProjetos() {
                 try {
                     await githubStorage.garantirRepositorio(
                         dados.github_repo, 
-                        dados.descricao || 'Repositório criado via SoftHub'
+                        dados.descricao || 'Repositório criado via Fábrica de Software'
                     );
                 } catch (e) {
                     console.warn('[GitHub Storage] Não foi possível garantir o repositório.', e);
@@ -146,7 +146,7 @@ export default function GerenciarProjetos() {
                         ))}
                     </div>
                 ) : projetos.length === 0 ? (
-                    <div className="bg-card border border-border rounded-[32px] p-16 shadow-sm flex flex-col items-center justify-center text-center relative overflow-hidden group">
+                    <div className="py-24 flex flex-col items-center justify-center text-center relative overflow-hidden group">
                         {/* Fundo Decorativo Animado */}
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-primary/5 rounded-full blur-[4rem] group-hover:bg-primary/10 transition-colors duration-700" />
                         

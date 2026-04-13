@@ -1,15 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { Avatar } from '@/compartilhado/componentes/Avatar';
 import { useParams, useNavigate } from 'react-router';
-import { UserPlus, CheckCircle2, AlertCircle, Building2, Users2, ArrowRight, LogIn } from 'lucide-react';
+import { 
+    UserPlus, CheckCircle2, AlertCircle, LogIn, 
+    Terminal, Layout, Database, FileText, ShieldCheck, 
+    Server, Smartphone, Palette, LayoutGrid, ChevronRight,
+    Search
+} from 'lucide-react';
 import { api } from '@/compartilhado/servicos/api';
 import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 import { usarToast } from '@/compartilhado/hooks/usarToast';
-import { Botao } from '@/compartilhado/componentes/ui/Botao';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
 
 /**
+ * Mapeia nomes de áreas para ícones específicos do Lucide.
+ */
+const obterIconePorNome = (nome: string) => {
+    const n = nome.toUpperCase();
+    if (n.includes('BACK-END') || n.includes('SERVER') || n.includes('API')) return Terminal;
+    if (n.includes('FRONT-END') || n.includes('UI') || n.includes('WEB')) return Layout;
+    if (n.includes('BANCO') || n.includes('DATA') || n.includes('SQL')) return Database;
+    if (n.includes('DOC') || n.includes('REQUISITO') || n.includes('WIKI')) return FileText;
+    if (n.includes('TESTE') || n.includes('QA') || n.includes('QUALIDADE')) return ShieldCheck;
+    if (n.includes('INFRA') || n.includes('DEVOPS') || n.includes('CLOUD')) return Server;
+    if (n.includes('MOBILE') || n.includes('APP') || n.includes('ANDROID') || n.includes('IOS')) return Smartphone;
+    if (n.includes('DESIGN') || n.includes('UX') || n.includes('ART')) return Palette;
+    return LayoutGrid;
+};
+
+/**
  * Página de Convite para novos membros.
- * Permite que o membro logue (via MSAL) e escolha sua alocação.
+ * Refatorada para um design minimalista com seletores visuais.
  */
 export default function PaginaConvite() {
     const { token } = useParams();
@@ -49,7 +70,7 @@ export default function PaginaConvite() {
         validar();
     }, [token]);
 
-    // 2. Carregar Equipes e Grupos (Só se o token for válido e o usuário estiver logado)
+    // 2. Carregar Equipes e Grupos
     useEffect(() => {
         if (status === 'valido' && estaAutenticado) {
             async function carregarOpcoes() {
@@ -68,12 +89,12 @@ export default function PaginaConvite() {
         }
     }, [status, estaAutenticado, exibirToast]);
 
-    const gruposFiltrados = grupos.filter(g => g.equipe_id === equipeSelecionada);
+    const gruposFiltrados = useMemo(() => 
+        grupos.filter(g => g.equipe_id === equipeSelecionada),
+    [grupos, equipeSelecionada]);
 
     const handleFinalizar = async () => {
-        if (!equipeSelecionada || !grupoSelecionado) {
-            return exibirToast('Selecione uma equipe e um grupo para continuar.');
-        }
+        if (!equipeSelecionada || !grupoSelecionado) return;
 
         setEnviando(true);
         try {
@@ -97,128 +118,169 @@ export default function PaginaConvite() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 sm:p-12 relative overflow-hidden">
-            {/* Background Decorativo */}
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-indigo-500/5 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2" />
+        <div className="min-h-screen bg-[#030712] flex flex-col items-center justify-center p-6 relative selection:bg-primary/20">
+            {/* Linhas de Grade Sutis */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-20 pointer-events-none" />
 
-            <div className="w-full max-w-md bg-card/40 backdrop-blur-xl border border-border/50 rounded-[32px] p-8 shadow-2xl relative z-10 animar-entrada">
-                {/* Cabeçalho do Convite */}
-                <div className="flex flex-col items-center text-center mb-10">
-                    <div className="w-20 h-20 rounded-[28px] bg-gradient-to-br from-indigo-500 to-primary flex items-center justify-center mb-6 shadow-xl shadow-primary/20">
-                        {status === 'erro' ? <AlertCircle size={32} className="text-white" /> : 
-                         status === 'sucesso' ? <CheckCircle2 size={32} className="text-white" /> : 
-                         <UserPlus size={32} className="text-white" />}
-                    </div>
+            {/* Container */}
+            <div className="w-full max-w-[400px] relative z-10 animar-entrada">
+                <div className="space-y-12">
                     
-                    {status === 'erro' ? (
-                        <>
-                            <h1 className="text-2xl font-black text-white uppercase tracking-tight">Convite Inválido</h1>
-                            <p className="text-muted-foreground text-sm mt-3 leading-relaxed">{erro}</p>
-                        </>
-                    ) : status === 'sucesso' ? (
-                        <>
-                            <h1 className="text-2xl font-black text-white uppercase tracking-tight text-emerald-400">Tudo Pronto!</h1>
-                            <p className="text-muted-foreground text-sm mt-3 leading-relaxed">Sua alocação foi concluída com sucesso. Redirecionando...</p>
-                        </>
-                    ) : (
-                        <>
-                            <h1 className="text-2xl font-black text-white uppercase tracking-tight">Convite SoftHub</h1>
-                            <p className="text-muted-foreground text-sm mt-3 leading-relaxed">
-                                <strong>{criador}</strong> te convidou para fazer parte de um projeto. 
-                                Logue com sua conta Unieuro e escolha sua equipe abaixo.
+                    {/* Brand / Logo */}
+                    <div className="flex flex-col items-center text-center space-y-4">
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border transition-all duration-700
+                            ${status === 'erro' ? 'border-red-900/30 bg-red-950/20 text-red-500' : 
+                              status === 'sucesso' ? 'border-emerald-900/30 bg-emerald-950/20 text-emerald-500' : 
+                              'border-slate-800 bg-slate-900/20 text-slate-400'}`}>
+                            {status === 'erro' ? <AlertCircle size={28} /> : 
+                             status === 'sucesso' ? <CheckCircle2 size={28} /> : 
+                             <UserPlus size={28} />}
+                        </div>
+                        
+                        <div className="space-y-1">
+                            <h1 className="text-xl font-medium text-white tracking-tight">
+                                {status === 'erro' ? 'Convite Expirado' : 
+                                 status === 'sucesso' ? 'Acesso Concedido' : 
+                                 'Fábrica de Software'}
+                            </h1>
+                            <p className="text-slate-500 text-sm">
+                                {status === 'erro' ? erro : 
+                                 status === 'sucesso' ? 'Preparando seu dashboard...' : 
+                                 `Convidado por ${criador}`}
                             </p>
-                        </>
-                    )}
-                </div>
-
-                {/* Corpo do Fluxo */}
-                {status === 'valido' && (
-                    <div className="space-y-6">
-                        {!estaAutenticado ? (
-                            <div className="flex flex-col gap-4">
-                                <p className="text-[10px] font-black uppercase text-muted-foreground/40 text-center tracking-widest">Acesso Necessário</p>
-                                <Botao 
-                                    variante="primario"
-                                    rotulo="Entrar com conta Unieuro"
-                                    onClick={() => navigate('/login')}
-                                    className="w-full h-14 rounded-2xl flex items-center justify-center gap-3 font-bold"
-                                    icone={<LogIn size={18} />}
-                                />
-                            </div>
-                        ) : (
-                            <div className="space-y-6 animar-entrada">
-                                <div className="flex items-center gap-3 p-3 bg-white/5 rounded-2xl border border-white/5">
-                                    <div className="w-10 h-10 rounded-xl bg-muted shrink-0 overflow-hidden">
-                                        <img src={usuario?.foto_perfil || ''} alt="" className="w-full h-full object-cover" />
-                                    </div>
-                                    <div className="flex flex-col min-w-0">
-                                        <span className="text-xs font-bold text-white truncate">{usuario?.nome}</span>
-                                        <span className="text-[10px] text-muted-foreground truncate">{usuario?.email}</span>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4">
-                                    {/* Seleção de Equipe */}
-                                    <div className="flex flex-col gap-2">
-                                        <label className="text-[10px] font-black uppercase text-muted-foreground/40 flex items-center gap-2">
-                                            <Building2 size={12} /> Equipe de Trabalho
-                                        </label>
-                                        <select 
-                                            value={equipeSelecionada}
-                                            onChange={(e) => { setEquipeSelecionada(e.target.value); setGrupoSelecionado(''); }}
-                                            className="w-full h-12 bg-muted/30 border border-border/50 rounded-2xl px-4 text-xs font-medium text-white appearance-none outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                                        >
-                                            <option value="">Selecione sua equipe...</option>
-                                            {equipes.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
-                                        </select>
-                                    </div>
-
-                                    {/* Seleção de Grupo */}
-                                    <div className={`flex flex-col gap-2 transition-all duration-300 ${!equipeSelecionada ? 'opacity-30 pointer-events-none grayscale' : ''}`}>
-                                        <label className="text-[10px] font-black uppercase text-muted-foreground/40 flex items-center gap-2">
-                                            <Users2 size={12} /> Grupo Específico
-                                        </label>
-                                        <select 
-                                            value={grupoSelecionado}
-                                            onChange={(e) => setGrupoSelecionado(e.target.value)}
-                                            className="w-full h-12 bg-muted/30 border border-border/50 rounded-2xl px-4 text-xs font-medium text-white appearance-none outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                                        >
-                                            <option value="">Selecione o grupo...</option>
-                                            {gruposFiltrados.map(g => <option key={g.id} value={g.id}>{g.nome}</option>)}
-                                            {gruposFiltrados.length === 0 && <option value="" disabled>Nenhum grupo disponível</option>}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <Botao 
-                                    variante="primario"
-                                    rotulo="Aceitar Convite"
-                                    onClick={handleFinalizar}
-                                    carregando={enviando}
-                                    disabled={!equipeSelecionada || !grupoSelecionado}
-                                    className="w-full h-14 rounded-2xl flex items-center justify-center gap-3 font-bold uppercase tracking-widest shadow-xl shadow-primary/10"
-                                    icone={<ArrowRight size={18} />}
-                                />
-                            </div>
-                        )}
+                        </div>
                     </div>
-                )}
 
-                {/* Rodapé Dinâmico */}
-                <div className="mt-8 border-t border-border/10 pt-6 flex justify-center">
-                    <span className="text-[9px] font-bold text-muted-foreground/30 uppercase tracking-[0.2em]">SoftHub {new Date().getFullYear()}</span>
+                    {/* Conteúdo Central */}
+                    {status === 'valido' && (
+                        <div className="space-y-10">
+                            {!estaAutenticado ? (
+                                <div className="space-y-6">
+                                    <p className="text-slate-400 text-xs text-center px-8 leading-relaxed">
+                                        Para validar sua identidade institucional, realize o login seguro.
+                                    </p>
+                                    <button 
+                                        onClick={() => navigate(`/login?returnTo=${encodeURIComponent(window.location.pathname)}`)}
+                                        className="w-full h-14 rounded-xl bg-white text-slate-950 text-xs font-bold uppercase tracking-[0.2em] hover:bg-slate-200 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
+                                    >
+                                        <LogIn size={16} /> Entrar com Unieuro
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="space-y-10 animar-fundo">
+                                    {/* Perfil */}
+                                    <div className="flex items-center gap-4 p-4 bg-slate-900/40 border border-slate-800 rounded-2xl animate-in fade-in slide-in-from-top-4 duration-700 delay-200">
+                                        <Avatar 
+                                            nome={usuario?.nome || 'Convidado'} 
+                                            fotoPerfil={usuario?.foto_perfil} 
+                                            tamanho="lg" 
+                                            className="rounded-xl shadow-lg shadow-black/20"
+                                        />
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="text-sm font-bold text-white truncate">{usuario?.nome}</span>
+                                            <span className="text-[10px] text-slate-500 truncate uppercase tracking-widest font-medium">{usuario?.email}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-12">
+                                        {/* Seleção de Equipe */}
+                                        <div className="space-y-4">
+                                            <span className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold px-1">Equipe</span>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {equipes.map(eq => {
+                                                    const selecionado = equipeSelecionada === eq.id;
+                                                    const Icone = obterIconePorNome(eq.nome);
+                                                    return (
+                                                        <button
+                                                            key={eq.id}
+                                                            onClick={() => { setEquipeSelecionada(eq.id); setGrupoSelecionado(''); }}
+                                                            className={`flex flex-col items-center justify-center p-3 py-4 rounded-xl border transition-all duration-300 group gap-2
+                                                                ${selecionado 
+                                                                    ? 'bg-primary/5 border-primary/50 text-white shadow-xl shadow-primary/10' 
+                                                                    : 'bg-slate-900/30 border-slate-800 text-slate-400 hover:border-slate-700 hover:bg-slate-900/60'}`}
+                                                        >
+                                                            <div className={`p-2 rounded-lg transition-all duration-500
+                                                                ${selecionado ? 'bg-primary text-white scale-110 shadow-lg shadow-primary/20' : 'bg-slate-800 text-slate-600 group-hover:text-slate-400 group-hover:scale-110'}`}>
+                                                                <Icone size={18} />
+                                                            </div>
+                                                            <span className="text-[9px] font-black uppercase tracking-tighter text-center truncate w-full px-0.5">{eq.nome}</span>
+                                                        </button>
+                                                    );
+                                                })}
+                                                {equipes.length === 0 && (
+                                                    <div className="col-span-3 p-8 text-center border-2 border-dashed border-slate-900 rounded-2xl">
+                                                        <span className="text-[10px] text-slate-600 uppercase font-bold tracking-widest">Nenhuma equipe disponível</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Seleção de Squad / Grupo */}
+                                        <div className={`space-y-4 transition-all duration-500 ${!equipeSelecionada ? 'opacity-20 pointer-events-none' : 'opacity-100'}`}>
+                                            <span className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold px-1">Grupo</span>
+                                            <div className="grid grid-cols-3 gap-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                                                {gruposFiltrados.map(g => {
+                                                    const selecionado = grupoSelecionado === g.id;
+                                                    const inicial = g.nome.charAt(0).toUpperCase();
+                                                    return (
+                                                        <button
+                                                            key={g.id}
+                                                            onClick={() => setGrupoSelecionado(g.id)}
+                                                            className={`flex items-center gap-2 p-2 rounded-xl border transition-all duration-300 group
+                                                                ${selecionado 
+                                                                    ? 'bg-primary/10 border-primary/40 text-white' 
+                                                                    : 'bg-slate-900/20 border-slate-800 text-slate-500 hover:border-slate-700 hover:bg-slate-900/40'}`}
+                                                        >
+                                                            <div className={`w-6 h-6 shrink-0 flex items-center justify-center font-black text-[9px] border rounded-lg transition-all
+                                                                ${selecionado ? 'bg-primary border-primary text-white' : 'bg-slate-800/80 border-slate-700/50 text-slate-500 group-hover:text-slate-300'}`}>
+                                                                {inicial}
+                                                            </div>
+                                                            <span className="text-[9px] font-black uppercase truncate flex-1 text-left">{g.nome}</span>
+                                                        </button>
+                                                    );
+                                                })}
+                                                {equipeSelecionada && gruposFiltrados.length === 0 && (
+                                                    <div className="col-span-3 p-8 text-center border-2 border-dashed border-slate-900 rounded-2xl">
+                                                        <span className="text-[10px] text-slate-600 uppercase font-bold tracking-widest">Aguardando grupos...</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button 
+                                        disabled={!equipeSelecionada || !grupoSelecionado || enviando}
+                                        onClick={handleFinalizar}
+                                        className="w-full h-16 rounded-2xl bg-primary text-white text-xs font-black uppercase tracking-[0.3em] hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-30 disabled:grayscale shadow-xl shadow-primary/10 flex items-center justify-center gap-3"
+                                    >
+                                        {enviando ? <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : 'Confirmar Alocação'}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Footer */}
+                    <div className="pt-10 text-center border-t border-slate-900">
+                        <button 
+                            onClick={() => navigate('/')}
+                            className="text-[10px] text-slate-700 hover:text-slate-400 uppercase tracking-[0.2em] transition-colors"
+                        >
+                            Voltar ao portal
+                        </button>
+                    </div>
                 </div>
             </div>
-            
-            {(status === 'erro' || status === 'sucesso') && (
-                <button 
-                    onClick={() => navigate('/')}
-                    className="mt-8 text-[10px] font-black text-muted-foreground hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2"
-                >
-                    Voltar para o início
-                </button>
-            )}
+
+            <style>{`
+                .animar-entrada { animation: fadeIn 1.2s cubic-bezier(0.16, 1, 0.3, 1); }
+                .animar-fundo { animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes slideUp { 
+                    from { opacity: 0; transform: translateY(10px); } 
+                    to { opacity: 1; transform: translateY(0); } 
+                }
+            `}</style>
         </div>
     );
 }

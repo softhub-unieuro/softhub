@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, memo } from 'react';
-import { UserCog, Plus, LayersPlus, Search, UserPlus } from 'lucide-react';
+import { UserCog, Plus, LayersPlus, Search, UserPlus, Copy, Sparkles, Link2, Check } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 
 import { api } from '@/compartilhado/servicos/api';
@@ -142,7 +142,7 @@ export const GerenciarMembros = memo(() => {
     const handleGerarConvite = useCallback(async () => {
         try {
             const res = await api.post('/api/convites', { limite_usos: 100, validade_horas: 168 });
-            const url = `${window.location.origin}/identificar-convite/${res.data.token}`;
+            const url = `${window.location.origin}/convite/${res.data.token}`;
             setLinkGerado(url);
         } catch (e: any) {
             exibirToast(e.response?.data?.erro || 'Erro ao gerar convite.', 'erro');
@@ -274,39 +274,69 @@ export const GerenciarMembros = memo(() => {
                 titulo="Convidar Membros"
                 largura="sm"
             >
-                <div className="flex flex-col gap-6 py-4">
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                        Gere um link para que novos membros se cadastrem e escolham suas equipes sozinhos. 
-                        Este link expirará em 7 dias e permite até 100 usos.
-                    </p>
+                <div className="flex flex-col gap-8 py-2 animar-entrada">
+                    {/* Card Informativo Premium */}
+                    <div className="relative overflow-hidden p-6 bg-slate-50 border border-slate-100 rounded-[24px] space-y-4">
+                        <div className="absolute top-0 right-0 p-3 opacity-[0.03] pointer-events-none">
+                            <Sparkles size={100} strokeWidth={1} />
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-blue-600 shadow-sm">
+                                <Link2 size={20} />
+                            </div>
+                            <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-800">Diretrizes de Acesso</h3>
+                        </div>
+
+                        <p className="text-[12px] text-slate-500 leading-relaxed font-medium">
+                            Gere um link para que novos membros se cadastrem e escolham suas equipes sozinhos. 
+                            Este link expirará em <span className="text-slate-900 font-bold">7 dias</span> e permite até <span className="text-slate-900 font-bold">100 usos</span>.
+                        </p>
+                    </div>
 
                     {!linkGerado ? (
-                        <Botao 
-                            variante="primario" 
-                            rotulo="Gerar Link Único" 
-                            onClick={handleGerarConvite} 
-                            className="w-full h-12 rounded-2xl font-bold uppercase tracking-widest"
-                        />
+                        <div className="space-y-4">
+                            <button 
+                                onClick={handleGerarConvite} 
+                                className="group w-full h-16 rounded-[24px] bg-slate-900 text-white text-[11px] font-black uppercase tracking-[0.25em] hover:bg-black active:scale-[0.98] transition-all flex items-center justify-center gap-4 shadow-xl shadow-slate-200"
+                            >
+                                <Sparkles size={18} className="text-blue-400 group-hover:rotate-12 transition-transform" />
+                                Gerar Link Único
+                            </button>
+                            <p className="text-[10px] text-center text-slate-400 uppercase tracking-widest font-bold">A segurança da rede é prioridade</p>
+                        </div>
                     ) : (
-                        <div className="flex flex-col gap-2">
-                            <label className="text-[10px] font-black uppercase text-muted-foreground/50 ml-1">Seu Link de Convite</label>
-                            <div className="flex items-center gap-2 p-3 bg-muted/30 border border-border/50 rounded-2xl group/link">
-                                <input 
-                                    readOnly 
-                                    value={linkGerado} 
-                                    className="bg-transparent border-none text-xs text-indigo-400 font-medium flex-1 outline-none"
-                                />
-                                <button 
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(linkGerado);
-                                        exibirToast('Link copiado!');
-                                    }}
-                                    className="p-2 hover:bg-white/5 rounded-xl text-muted-foreground transition-colors active:scale-95"
-                                >
-                                    <Plus className="rotate-45" size={16} /> {/* X icon workaround for copy if needed, but I'll use text */}
-                                    <span className="text-[10px] font-bold uppercase ml-1">Copiar</span>
-                                </button>
+                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Link Gerado com Sucesso</label>
+                                <div className="relative group">
+                                    <div className="w-full bg-slate-50 border border-slate-200 p-5 pr-14 rounded-[20px] text-[13px] text-blue-600 font-mono font-medium truncate select-all">
+                                        {linkGerado}
+                                    </div>
+                                    <div className="absolute inset-y-0 right-3 flex items-center">
+                                        <button 
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(linkGerado);
+                                                exibirToast('Link copiado com sucesso!');
+                                            }}
+                                            className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-600 hover:text-blue-600 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/10 transition-all active:scale-90"
+                                            title="Copiar Link"
+                                        >
+                                            <Copy size={16} />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
+
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(linkGerado);
+                                    exibirToast('Link copiado!');
+                                }}
+                                className="w-full h-14 rounded-2xl bg-blue-50 border border-blue-100 text-blue-600 text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-blue-100 transition-all active:scale-[0.98]"
+                            >
+                                <Copy size={14} /> Copiar para a Área de Transferência
+                            </button>
                         </div>
                     )}
                 </div>

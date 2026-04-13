@@ -333,7 +333,7 @@ rotasTarefasDetalhes.patch('/:id/feedback',
     async (c: Context) => {
     
     const { DB } = c.env;
-    const id = c.req.param('id');
+    const id = c.req.param('id') as string;
     const { feedback_lider, nota_aprendizado } = (c.req as any).valid('json');
     const usuario = c.get('usuario') as any;
 

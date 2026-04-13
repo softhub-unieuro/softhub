@@ -151,7 +151,7 @@ export function CabecalhoGlobal({ aoAbrirSidebar, aoAbrirScanner }: CabecalhoGlo
                     <button className="relative p-2.5 text-muted-foreground hover:text-primary hover:bg-primary/5 border border-transparent hover:border-primary/10 rounded-2xl transition-all group/notif">
                         <Bell size={20} strokeWidth={2.5} className="group-hover/notif:rotate-12 transition-transform" />
                         {totalNaoLidas > 0 && (
-                            <span className="absolute top-2 right-2 w-4.5 h-4.5 bg-primary text-[10px] font-black text-white rounded-full flex items-center justify-center ring-2 ring-background animate-in zoom-in duration-300">
+                            <span className="absolute top-2 right-2 w-4.5 h-4.5 bg-primary text-[10px] font-black text-white rounded-md flex items-center justify-center ring-2 ring-background animate-in zoom-in duration-300">
                                 {totalNaoLidas}
                             </span>
                         )}
@@ -206,7 +206,7 @@ export function CabecalhoGlobal({ aoAbrirSidebar, aoAbrirScanner }: CabecalhoGlo
                         </div>
                         
                         <div className="relative group/perfil">
-                            <div className="absolute inset-0 bg-primary/20 blur-xl opacity-0 group-hover/perfil:opacity-40 transition-opacity rounded-full" />
+                            <div className="absolute inset-0 bg-primary/20 blur-xl opacity-0 group-hover/perfil:opacity-40 transition-opacity rounded-2xl" />
                             <Avatar nome={usuario.nome} fotoPerfil={usuario.foto_perfil} tamanho="md" />
                             
                             {/* Menu de Perfil (Simples) */}

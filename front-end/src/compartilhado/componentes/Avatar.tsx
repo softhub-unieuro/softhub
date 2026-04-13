@@ -16,12 +16,12 @@ interface AvatarProps {
 export function Avatar({ nome, fotoPerfil, tamanho = 'md', className = '', coroa = false, status = 'none', onClick }: AvatarProps) {
     // Tamanhos mapeados por pixels
     const medidas = {
-        sm: { box: 'w-6 h-6 text-[10px]', corona: 'w-2.5 h-2.5 -top-1 -left-1' },
-        md: { box: 'w-8 h-8 text-xs', corona: 'w-3.5 h-3.5 -top-1.5 -left-1.5' },
-        lg: { box: 'w-10 h-10 text-sm', corona: 'w-4 h-4 -top-2 -left-2' },
-        xl: { box: 'w-16 h-16 text-xl', corona: 'w-6 h-6 -top-3 -left-3' },
-        '2xl': { box: 'w-24 h-24 text-3xl', corona: 'w-8 h-8 -top-4 -left-4' },
-        'full': { box: 'w-full h-full text-4xl', corona: 'w-10 h-10 -top-5 -left-5' }
+        sm: { box: 'w-6 h-6 text-[10px] rounded-lg', corona: 'w-2.5 h-2.5 -top-1 -left-1' },
+        md: { box: 'w-8 h-8 text-xs rounded-xl', corona: 'w-3.5 h-3.5 -top-1.5 -left-1.5' },
+        lg: { box: 'w-10 h-10 text-sm rounded-xl', corona: 'w-4 h-4 -top-2 -left-2' },
+        xl: { box: 'w-16 h-16 text-xl rounded-2xl', corona: 'w-6 h-6 -top-3 -left-3' },
+        '2xl': { box: 'w-24 h-24 text-3xl rounded-[32px]', corona: 'w-8 h-8 -top-4 -left-4' },
+        'full': { box: 'w-full h-full text-4xl rounded-3xl', corona: 'w-10 h-10 -top-5 -left-5' }
     };
 
     const statusCores = {
@@ -66,7 +66,7 @@ export function Avatar({ nome, fotoPerfil, tamanho = 'md', className = '', coroa
         return (
             <div 
                 onClick={onClick}
-                className={`relative rounded-2xl overflow-hidden flex-shrink-0 border border-white/10 ${tamanhoAtual} ${className}`}
+                className={`relative overflow-hidden flex-shrink-0 border border-white/10 ${tamanhoAtual} ${className}`}
             >
                 <img
                     src={fotoPerfil}
@@ -90,7 +90,7 @@ export function Avatar({ nome, fotoPerfil, tamanho = 'md', className = '', coroa
     return (
         <div
             onClick={onClick}
-            className={`relative rounded-2xl flex items-center justify-center flex-shrink-0 text-white font-medium border border-white/5 ${tamanhoAtual} ${corBg} ${className}`}
+            className={`relative flex items-center justify-center flex-shrink-0 text-white font-medium border border-white/5 ${tamanhoAtual} ${corBg} ${className}`}
             title={nome}
         >
             <span className="opacity-90 leading-none">{getIniciais(nome)}</span>
@@ -102,7 +102,7 @@ export function Avatar({ nome, fotoPerfil, tamanho = 'md', className = '', coroa
             )}
 
             {status !== 'none' && (
-                <span className={`absolute bottom-0 right-0 w-[25%] h-[25%] min-w-[6px] min-h-[6px] rounded-full border-2 border-white ring-1 ring-black/5 z-20 ${statusCores[status]} animate-in fade-in duration-300`} />
+                <span className={`absolute bottom-0 right-0 w-[25%] h-[25%] min-w-[6px] min-h-[6px] rounded-md border-2 border-white ring-1 ring-black/5 z-20 ${statusCores[status]} animate-in fade-in duration-300`} />
             )}
         </div>
     );

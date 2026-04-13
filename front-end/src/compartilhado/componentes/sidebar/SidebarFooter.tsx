@@ -31,7 +31,7 @@ export const SidebarFooter = memo(({
                 <div className="relative p-1.5 text-muted-foreground/30 group-hover/notif:text-primary transition-colors">
                     <Bell size={16} />
                     {totalNaoLidas > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-primary text-[8px] font-bold text-white rounded-full flex items-center justify-center">
+                        <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-primary text-[8px] font-bold text-white rounded-sm flex items-center justify-center">
                             {totalNaoLidas}
                         </span>
                     )}

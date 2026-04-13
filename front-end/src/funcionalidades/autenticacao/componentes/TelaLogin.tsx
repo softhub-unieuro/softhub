@@ -61,10 +61,12 @@ export default function TelaLogin() {
         carregarConfiguracoes();
     }, []);
 
-    // Redireciona para o dashboard se já estiver logado
     useEffect(() => {
-        if (estaAutenticado) navegar('/app/dashboard', { replace: true });
-    }, [estaAutenticado, navegar]);
+        if (estaAutenticado) {
+            const destino = parametrosBusca.get('returnTo') || '/app/dashboard';
+            navegar(destino, { replace: true });
+        }
+    }, [estaAutenticado, navegar, parametrosBusca]);
 
     // Processa retorno do MSAL automaticamente após o redirect (Checklist Part 2)
     const sincronizarComBackend = useCallback(async (conta: any) => {
