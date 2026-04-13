@@ -22,8 +22,9 @@ export const SeletorBuscavel = memo(({
     const containerRef = useRef<HTMLDivElement>(null);
     const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
 
-    const filtradas = opcoes.filter(o => o.nome.toLowerCase().includes(busca.toLowerCase()));
-    const selecionada = opcoes.find(o => o.id === valor);
+    const listaOpcoes = opcoes || [];
+    const filtradas = listaOpcoes.filter(o => o.nome.toLowerCase().includes(busca.toLowerCase()));
+    const selecionada = listaOpcoes.find(o => o.id === valor);
 
     // Calcula a posição do menu em tempo real ao abrir
     useLayoutEffect(() => {

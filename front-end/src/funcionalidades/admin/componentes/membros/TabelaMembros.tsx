@@ -56,7 +56,7 @@ export const TabelaMembros = memo(({
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border/20">
-                        {paginada.map(m => (
+                        {paginada?.map(m => (
                             <LinhaMembro
                                 key={m.id}
                                 membro={m}
@@ -75,7 +75,7 @@ export const TabelaMembros = memo(({
 
                 {/* 📱 VISÃO MOBILE: CARDS DE GESTÃO */}
                 <div className="lg:hidden flex flex-col divide-y divide-border/10">
-                    {paginada.map(m => (
+                    {paginada?.map(m => (
                         <div key={m.id} className="p-5 flex flex-col gap-5 bg-card hover:bg-muted/5 transition-colors">
                             {/* Topo: Identidade */}
                             <div className="flex items-start justify-between">
@@ -185,7 +185,7 @@ export const TabelaMembros = memo(({
                 totalPaginas={Math.ceil(listaFiltrada.length / itensPorPagina)}
                 totalRegistros={listaFiltrada.length}
                 itensPorPagina={itensPorPagina}
-                itensListados={paginada.length}
+                itensListados={paginada?.length || 0}
                 aoMudarPagina={handleMudarPagina}
                 aoMudarItensPorPagina={handleMudarItensPorPagina}
                 desabilitado={carregando}

@@ -72,7 +72,7 @@ export const MuralAvisos = memo(() => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
                 {carregando && avisos.length === 0 ? (
                     <div className="col-span-full py-20 flex justify-center">
-                         <Carregando rotulo="Sincronizando Avisos..." />
+                         <Carregando />
                     </div>
                 ) : erro ? (
                     <div className="col-span-full py-24 max-w-lg mx-auto w-full">

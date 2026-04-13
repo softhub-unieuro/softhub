@@ -285,7 +285,7 @@ export const ModalFormularioProjeto = memo(({
                                                 className="flex-1 h-9 bg-background border border-border rounded-xl px-2 text-[11px] font-bold focus:ring-2 focus:ring-primary/20 outline-none"
                                             >
                                                 <option value="">Equipe...</option>
-                                                {listaEquipes.map(eq => (
+                                                {listaEquipes?.map(eq => (
                                                     <option key={eq.id} value={eq.id}>{eq.nome}</option>
                                                 ))}
                                             </select>

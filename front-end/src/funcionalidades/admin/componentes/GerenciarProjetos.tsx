@@ -3,11 +3,12 @@ import { LayoutPrincipal } from '@/compartilhado/componentes/LayoutPrincipal';
 import { CabecalhoFuncionalidade } from '@/compartilhado/componentes/CabecalhoFuncionalidade';
 import { Carregando } from '@/compartilhado/componentes/Carregando';
 import { Alerta } from '@/compartilhado/componentes/Alerta';
+import { EstadoVazio } from '@/compartilhado/componentes/EstadoVazio';
 import { ConfirmacaoExclusao } from '@/compartilhado/componentes/ConfirmacaoExclusao';
 import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
 import { DocumentosProjetoModal } from '@/funcionalidades/projetos/componentes/DocumentosProjetoModal';
 import { githubStorage } from '@/funcionalidades/projetos/servicos/github-storage';
-import { FolderKanban, Plus } from 'lucide-react';
+import { FolderKanban, Plus, Ghost, Sparkles } from 'lucide-react';
 import { usarProjetos, Projeto } from '@/funcionalidades/projetos/hooks/usarProjetos';
 import { usarEquipes } from '@/funcionalidades/admin/hooks/usarEquipes';
 import { CardProjeto } from '@/funcionalidades/admin/componentes/projetos/CardProjeto';
@@ -145,22 +146,42 @@ export default function GerenciarProjetos() {
                         ))}
                     </div>
                 ) : projetos.length === 0 ? (
-                    <div className="bg-card border border-border rounded-3xl p-12 text-center">
-                        <FolderKanban className="w-12 h-12 mx-auto mb-4 text-muted-foreground/20" />
-                        <h3 className="text-foreground font-black uppercase tracking-widest mb-2">Sem Projetos</h3>
-                        <p className="text-muted-foreground text-sm mb-6">Comece criando o primeiro projeto da sua fábrica.</p>
+                    <div className="bg-card border border-border rounded-[32px] p-16 shadow-sm flex flex-col items-center justify-center text-center relative overflow-hidden group">
+                        {/* Fundo Decorativo Animado */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-primary/5 rounded-full blur-[4rem] group-hover:bg-primary/10 transition-colors duration-700" />
+                        
+                        <div className="relative mb-8 mt-4">
+                            <div className="w-24 h-24 rounded-[2.5rem] bg-gradient-to-br from-primary/10 to-transparent flex items-center justify-center border border-primary/20 shadow-xl shadow-primary/5 group-hover:scale-110 group-hover:-translate-y-2 transition-all duration-500">
+                                <Ghost size={52} strokeWidth={1.5} className="text-primary drop-shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]" style={{ animation: 'float 3s ease-in-out infinite' }} />
+                            </div>
+                            <Sparkles size={24} className="text-amber-400 absolute -top-3 -right-3 drop-shadow-sm" style={{ animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
+                        </div>
+                        
+                        <h3 className="text-2xl font-black text-foreground tracking-tighter mb-3 relative z-10">Oops, área meio fantasma!</h3>
+                        <p className="text-xs font-bold text-muted-foreground/60 max-w-sm mb-10 leading-relaxed relative z-10">
+                            Ainda não há nenhum projeto cadastrado na fábrica. Que tal invocar o seu primeiro para começar a organizar squads e demandas?
+                        </p>
+                        
                         {podeCriar && (
                             <Botao 
                                 variante="primario"
                                 onClick={handleAbrirCriar}
-                                className="px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest"
-                                rotulo="Criar Primeiro Projeto"
+                                className="h-12 px-8 rounded-full flex items-center gap-2 text-xs font-black uppercase tracking-widest shadow-xl shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-1 active:scale-95 transition-all relative z-10 group/btn"
+                                icone={<Plus size={18} strokeWidth={3} className="transition-transform group-hover/btn:rotate-90" />}
+                                rotulo="Invocarrrr Projeto"
                             />
                         )}
+                        <style>{`
+                            @keyframes float {
+                                0% { transform: translateY(0px); }
+                                50% { transform: translateY(-8px); }
+                                100% { transform: translateY(0px); }
+                            }
+                        `}</style>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {projetos.map((p, index) => (
+                        {projetos?.map((p, index) => (
                             <CardProjeto 
                                 key={p.id}
                                 projeto={p}

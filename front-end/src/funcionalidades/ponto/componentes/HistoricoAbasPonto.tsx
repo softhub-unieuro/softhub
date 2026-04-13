@@ -87,7 +87,7 @@ export const HistoricoAbasPonto = memo(({
                         className="flex sm:grid gap-3 w-max sm:w-full min-w-full"
                         style={{ gridTemplateColumns: `repeat(${registrosAgrupados.length}, minmax(0, 1fr))` }}
                     >
-                        {registrosAgrupados.map(({ dia, registros }) => (
+                        {registrosAgrupados?.map(({ dia, registros }) => (
                             <div key={dia.toISOString()} className="w-[140px] sm:w-full shrink-0 h-full">
                                 <DayCard
                                     dia={dia}

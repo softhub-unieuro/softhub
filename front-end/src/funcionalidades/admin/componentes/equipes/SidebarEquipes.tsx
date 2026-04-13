@@ -31,10 +31,10 @@ export const SidebarEquipes = memo(({
                         </div>
                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground leading-none">Equipes Ativas</h3>
                     </div>
-                    <span className="text-[9px] font-black text-muted-foreground/60">{equipes.length}</span>
+                    <span className="text-[9px] font-black text-muted-foreground/60">{equipes?.length || 0}</span>
                 </div>
                 <div className="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar">
-                    {equipes.map((e, index) => (
+                    {equipes?.map((e, index) => (
                         <div
                             key={e.id}
                             onClick={() => aoSelecionar(e.id)}
@@ -68,7 +68,7 @@ export const SidebarEquipes = memo(({
                         </div>
                     ))}
 
-                    {equipes.length === 0 && (
+                    {(equipes?.length === 0 || !equipes) && (
                         <div className="py-12 flex flex-col items-center justify-center">
                             <EstadoVazio 
                                 titulo="Sem Equipes"

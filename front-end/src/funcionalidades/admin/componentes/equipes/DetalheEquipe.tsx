@@ -221,7 +221,7 @@ export const DetalheEquipe = memo(({
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 grow">
-                        {grupos.map((g, index) => {
+                        {grupos?.map((g, index) => {
                             const partes = g.nome.trim().split(/\s+/);
                             const devePularPrimeira = partes.length > 1 && /^(grupo|grupos)$/i.test(partes[0]);
                             const inicial = devePularPrimeira ? partes[1].charAt(0).toUpperCase() : partes[0].charAt(0).toUpperCase();
@@ -337,7 +337,7 @@ export const DetalheEquipe = memo(({
                                                         )}
                                                     </div>
                                                     <div className="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1 custom-scrollbar flex flex-col pb-2">
-                                                        {membrosDoGrupo.map(membro => (
+                                                        {membrosDoGrupo?.map(membro => (
                                                             <CardMembroFino 
                                                                 key={membro.id} 
                                                                 membro={membro} 

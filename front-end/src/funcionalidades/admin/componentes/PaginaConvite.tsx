@@ -93,7 +93,7 @@ export default function PaginaConvite() {
     };
 
     if (status === 'validando' || (status === 'valido' && carregandoAuth)) {
-        return <Carregando Centralizar={true} legenda="Validando convite..." />;
+        return <Carregando Centralizar={true} />;
     }
 
     return (
@@ -141,7 +141,7 @@ export default function PaginaConvite() {
                                 <Botao 
                                     variante="primario"
                                     rotulo="Entrar com conta Unieuro"
-                                    aoClicar={() => navigate('/login')}
+                                    onClick={() => navigate('/login')}
                                     className="w-full h-14 rounded-2xl flex items-center justify-center gap-3 font-bold"
                                     icone={<LogIn size={18} />}
                                 />
@@ -194,9 +194,9 @@ export default function PaginaConvite() {
                                 <Botao 
                                     variante="primario"
                                     rotulo="Aceitar Convite"
-                                    aoClicar={handleFinalizar}
+                                    onClick={handleFinalizar}
                                     carregando={enviando}
-                                    desabilitado={!equipeSelecionada || !grupoSelecionado}
+                                    disabled={!equipeSelecionada || !grupoSelecionado}
                                     className="w-full h-14 rounded-2xl flex items-center justify-center gap-3 font-bold uppercase tracking-widest shadow-xl shadow-primary/10"
                                     icone={<ArrowRight size={18} />}
                                 />

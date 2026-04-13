@@ -83,6 +83,8 @@ export function usarPonto() {
     return { 
         registrosHoje, 
         historico, 
+        escala,
+        escalaTipo,
         carregando, 
         erro: erroFinal, 
         baterPonto, 
