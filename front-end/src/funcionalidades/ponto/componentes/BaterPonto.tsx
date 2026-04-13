@@ -1,6 +1,6 @@
 import { memo, useMemo, useCallback } from 'react';
 import { Layers } from 'lucide-react';
-import { isSameDay, addDays } from 'date-fns';
+import { isSameDay, addDays, isToday } from 'date-fns';
 import { usarInterfacePonto } from '@/funcionalidades/ponto/hooks/usarInterfacePonto';
 import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
 import { usarConfiguracoes } from '@/funcionalidades/admin/hooks/usarConfiguracoes';
@@ -60,7 +60,7 @@ export const BaterPonto = memo(() => {
         const diasSemana = Array.from({ length: 7 }, (_, i) => addDays(new Date(semanaSelecionada), i))
             .filter(dia => 
                 diasTrabalho.includes(dia.getDay()) || 
-                historico.some(reg => isSameDay(new Date(reg.registrado_em), dia))
+                [...historico, ...registrosHoje].some(reg => isSameDay(new Date(reg.registrado_em), dia))
             );
             
         const agrupados = diasSemana.map(dia => ({

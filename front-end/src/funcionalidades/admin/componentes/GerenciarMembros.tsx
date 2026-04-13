@@ -20,6 +20,7 @@ import { TabelaMembros } from '@/funcionalidades/admin/componentes/membros/Tabel
 import { BarraAcoesLote } from '@/funcionalidades/admin/componentes/membros/BarraAcoesLote';
 import { ModaisMembros } from '@/funcionalidades/admin/componentes/membros/ModaisMembros';
 import { Botao } from '@/compartilhado/componentes/ui/Botao';
+import { Modal } from '@/compartilhado/componentes/Modal';
 
 /**
  * Página de Administração de Membros.
@@ -136,6 +137,8 @@ export const GerenciarMembros = memo(() => {
         } catch (e: any) {
             exibirToast(e.response?.data?.erro || 'Erro ao promover membro.', 'erro');
         }
+    }, [alterarRole, exibirToast]);
+
     const handleGerarConvite = useCallback(async () => {
         try {
             const res = await api.post('/api/convites', { limite_usos: 100, validade_horas: 168 });
@@ -281,7 +284,7 @@ export const GerenciarMembros = memo(() => {
                         <Botao 
                             variante="primario" 
                             rotulo="Gerar Link Único" 
-                            aoClicar={handleGerarConvite} 
+                            onClick={handleGerarConvite} 
                             className="w-full h-12 rounded-2xl font-bold uppercase tracking-widest"
                         />
                     ) : (
