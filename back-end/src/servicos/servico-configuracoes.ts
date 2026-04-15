@@ -1,5 +1,5 @@
-import { D1Database } from '@cloudflare/workers-types';
 import { logger } from '../utilitarios/logger';
+import { processarListaIps, estaEmFaixaCIDR, normalizarIp } from '../utilitarios/rede-utils';
 
 /**
  * Interface para os bindings do ambiente necessários.
@@ -90,25 +90,23 @@ export async function salvarConfiguracao(env: EnvConfig, chave: string, valor: a
 
 /**
  * Verifica se um IP está na lista de IPs autorizados da UNIEURO.
- * REGRA: Se a lista estiver vazia, BLOQUEIA (Fail-Closed).
+ * REGRA: Se a lista estiver vazia, PERMITE (Fail-Open / Restrição Desativada).
  */
 export async function verificarIpAutorizado(env: EnvConfig, ip: string): Promise<boolean> {
-    const configIps = await obterConfiguracao(env, 'ips_autorizados_ponto') || [];
+    const configIps = await obterConfiguracao(env, 'ips_autorizados_ponto');
     
-    // Suporte para string única ou array vindo do banco/KV
-    const ipsAutorizados = (Array.isArray(configIps) ? configIps : [configIps])
-        .map(i => String(i).trim())
-        .filter(i => i.length > 0);
+    // Processamento robusto da lista (suporta string com vírgula, array, etc)
+    const ipsAutorizados = processarListaIps(configIps);
 
-    // 🛡️ SEGURANÇA: Se não houver IPs configurados, ninguém entra por padrão.
+    // 🛡️ REQUISITOS: Se não houver IPs configurados, a restrição é considerada DESATIVADA (permite todos).
     if (ipsAutorizados.length === 0) {
-        return false;
+        return true;
     }
 
-    const ipClient = String(ip || '').trim();
+    const ipClient = normalizarIp(ip);
 
-    // Verificação de Correspondência: Suporta IP Exato ou Prefixo de Rede
+    // Verificação de Correspondência: Suporta IP Exato, Prefixo de Rede ou CIDR
     return ipsAutorizados.some(regra => {
-        return ipClient === regra || ipClient.startsWith(regra);
+        return estaEmFaixaCIDR(ipClient, regra);
     });
 }

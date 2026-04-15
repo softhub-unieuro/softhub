@@ -35,7 +35,8 @@ export const BaterPonto = memo(() => {
     const podeJustificar = usarPermissaoAcesso('ponto:justificar');
 
     // UX Rule: Se a API falhou por causa da rede, tranca o botão proativamente
-    const foraDaRede = erro?.includes('rede da UNIEURO') || erroPonto?.includes('rede da UNIEURO');
+    const erroConhecidoRede = (e: string | null) => e ? (e.includes('restrição de rede') || e.includes('UNIEURO')) : false;
+    const foraDaRede = erroConhecidoRede(erro) || erroConhecidoRede(erroPonto);
 
     // Cronômetro de Jornada Progressivo
     const cronometroJornada = useMemo(() => {
@@ -58,11 +59,11 @@ export const BaterPonto = memo(() => {
 
     const { registrosAgrupados, totalAcumuladoSemana } = useMemo(() => {
         const diasSemana = Array.from({ length: 7 }, (_, i) => addDays(new Date(semanaSelecionada), i))
-            .filter(dia => 
-                diasTrabalho.includes(dia.getDay()) || 
+            .filter(dia =>
+                diasTrabalho.includes(dia.getDay()) ||
                 [...historico, ...registrosHoje].some(reg => isSameDay(new Date(reg.registrado_em), dia))
             );
-            
+
         const agrupados = diasSemana.map(dia => ({
             dia,
             registros: historico.filter(reg => isSameDay(new Date(reg.registrado_em), dia))
@@ -98,9 +99,9 @@ export const BaterPonto = memo(() => {
             }
         }
 
-        return { 
-            registrosAgrupados: agrupados, 
-            totalAcumuladoSemana: minutosTotais 
+        return {
+            registrosAgrupados: agrupados,
+            totalAcumuladoSemana: minutosTotais
         };
     }, [historico, semanaSelecionada, diasTrabalho, agoraRelogio]);
 
@@ -198,16 +199,16 @@ export const BaterPonto = memo(() => {
                             ultimoRegistro={registrosHoje.length > 0 ? registrosHoje[0] : null}
                             cronometroJornada={cronometroJornada}
                         />
-                         {/* Info Card: Meta e Escala */}
-                         <div className="mt-6 flex-1 bg-card border border-border/60 rounded-[32px] p-8 shadow-sm relative overflow-hidden group">
-                             <div className="flex items-center justify-between mb-6 relative z-10">
+                        {/* Info Card: Meta e Escala */}
+                        <div className="mt-6 flex-1 bg-card border border-border/60 rounded-[32px] p-8 shadow-sm relative overflow-hidden group">
+                            <div className="flex items-center justify-between mb-6 relative z-10">
                                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
                                     <Layers size={14} /> Meta Semanal
                                 </h3>
                                 <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded tracking-widest">OBJETIVO: {META_SEMANAL_MINUTOS / 60}H</span>
-                             </div>
-                             
-                             <div className="space-y-4 relative z-10">
+                            </div>
+
+                            <div className="space-y-4 relative z-10">
                                 <div className="flex items-end justify-between">
                                     <span className="text-3xl font-black text-foreground tracking-tighter">
                                         {formatarHoras(totalAcumuladoSemana)}
@@ -216,20 +217,20 @@ export const BaterPonto = memo(() => {
                                     <span className="text-[10px] font-black text-muted-foreground tracking-widest italic">{Math.round(porcentagemMeta)}% concluído</span>
                                 </div>
                                 <div className="h-2 w-full bg-muted/50 rounded-full overflow-hidden border border-border/20">
-                                    <div 
-                                        className="h-full bg-gradient-to-r from-primary to-indigo-500 rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),0.3)] transition-all duration-1000 origin-left" 
+                                    <div
+                                        className="h-full bg-gradient-to-r from-primary to-indigo-500 rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),0.3)] transition-all duration-1000 origin-left"
                                         style={{ width: `${porcentagemMeta}%` }}
                                     />
                                 </div>
                                 <p className="text-[10px] text-muted-foreground/60 font-medium leading-relaxed italic">
-                                    {porcentagemMeta >= 100 
-                                        ? "Meta batida! Você completou suas horas da semana. Excelente trabalho!" 
+                                    {porcentagemMeta >= 100
+                                        ? "Meta batida! Você completou suas horas da semana. Excelente trabalho!"
                                         : configuracoes?.mensagem_meta_semanal || "A semana está só começando. Mantenha o foco e a consistência!"}
                                 </p>
-                             </div>
+                            </div>
 
-                             {/* Pattern Decoration */}
-                             <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                            {/* Pattern Decoration */}
+                            <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                         </div>
                     </div>
                 </div>
