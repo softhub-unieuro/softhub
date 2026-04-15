@@ -4,6 +4,7 @@ import { isSameDay, addDays, isToday } from 'date-fns';
 import { usarInterfacePonto } from '@/funcionalidades/ponto/hooks/usarInterfacePonto';
 import { usarPermissaoAcesso } from '@/compartilhado/hooks/usarPermissao';
 import { usarConfiguracoes } from '@/funcionalidades/admin/hooks/usarConfiguracoes';
+import { usarAutenticacao } from '@/contexto/ContextoAutenticacao';
 import { Alerta } from '@/compartilhado/componentes/Alerta';
 
 import { CabecalhoPonto } from './CabecalhoPonto';
@@ -19,6 +20,7 @@ import { formatarHoras } from '@/utilitarios/formatadores';
  * Refatorado para separar lógica e componentes menores.
  */
 export const BaterPonto = memo(() => {
+    const { ehDonoReal } = usarAutenticacao();
     const {
         usuario, registrosHoje, historico, justificativas, carregando, erro,
         salvando, erroPonto, proximoTipo, agoraRelogio, foraDoHorario,
@@ -35,8 +37,8 @@ export const BaterPonto = memo(() => {
     const podeJustificar = usarPermissaoAcesso('ponto:justificar');
 
     // UX Rule: Se a API diz que não estamos na rede, ou se falou por causa da rede antes
-    // Administradores são SEMPRE considerados "na rede" na interface para não desabilitar o botão.
-    const ehAdmin = usuario?.role === 'ADMIN';
+    // Administradores REAIS são SEMPRE considerados "na rede" na interface para garantir gestão total.
+    const ehAdmin = ehDonoReal; 
     const erroConhecidoRede = (e: string | null) => e ? (e.includes('restrição de rede') || e.includes('UNIEURO')) : false;
     const foraDaRede = !ehAdmin && (!estaNaRede || erroConhecidoRede(erro) || erroConhecidoRede(erroPonto));
 
@@ -182,6 +184,7 @@ export const BaterPonto = memo(() => {
                             carregando={carregando}
                             proximoTipo={proximoTipo as 'entrada' | 'saida'}
                             ipDetectado={ipDetectado}
+                            estaNaRede={estaNaRede}
                             aoTentarRegistrar={() => {
                                 const bloqueado = (foraDoHorario || foraDoDia || foraDaFabrica);
                                 if (bloqueado || foraDaRede || !podeRegistrar) {
@@ -205,9 +208,14 @@ export const BaterPonto = memo(() => {
                         {/* Info Card: Meta e Escala */}
                         <div className="mt-6 flex-1 bg-card border border-border/60 rounded-[32px] p-8 shadow-sm relative overflow-hidden group">
                             <div className="flex items-center justify-between mb-6 relative z-10">
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
-                                    <Layers size={14} /> Meta Semanal
-                                </h3>
+                                <div className="flex flex-col">
+                                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
+                                        <Layers size={14} /> Meta Semanal
+                                    </h3>
+                                    <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/40 mt-1">
+                                        Seu Progresso Acumulado
+                                    </p>
+                                </div>
                                 <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded tracking-widest">OBJETIVO: {META_SEMANAL_MINUTOS / 60}H</span>
                             </div>
 

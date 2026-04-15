@@ -15,6 +15,7 @@ interface PainelRelogioProps {
     carregando: boolean;
     proximoTipo: 'entrada' | 'saida';
     ipDetectado?: string;
+    estaNaRede?: boolean;
     aoTentarRegistrar: () => void;
     aoBaterPonto: () => void;
 }
@@ -31,6 +32,7 @@ export const PainelRelogio = memo(({
     carregando,
     proximoTipo,
     ipDetectado,
+    estaNaRede,
     aoTentarRegistrar,
     aoBaterPonto
 }: PainelRelogioProps) => {
@@ -105,7 +107,7 @@ export const PainelRelogio = memo(({
                             
                             {/* Segunda Linha de Contexto */}
                             <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/40 mt-1">
-                                {foraDaRede || foraDoHorario ? 'CONEXÃO PROTEGIDA' : 'Sincronizado com Brasília'}
+                                {foraDaRede ? 'REDE NÃO RECONHECIDA' : (foraDoHorario ? 'CONEXÃO PROTEGIDA' : 'Sincronizado com Brasília')}
                             </p>
 
                             <div className="w-20 sm:w-24 h-1 bg-muted/30 rounded-full mt-6 sm:mt-8 overflow-hidden relative border border-border/20">
@@ -152,7 +154,7 @@ export const PainelRelogio = memo(({
                         {(foraDaRede || foraDoHorario || (foraDoDia && foraDaFabrica)) && tentativaBloqueada && (
                             <div className="absolute -top-12 inset-x-0 animate-bounce z-50">
                                 <span className="bg-rose-600 text-white text-[9px] font-black py-2 px-5 rounded-full uppercase tracking-widest shadow-2xl border border-rose-500 mx-auto table">
-                                    {foraDaRede ? `Mudar p/ Rede UNIEURO (${ipDetectado})` : (foraDoHorario ? 'Fora da Janela de Ponto' : 'Fábrica Bloqueada')}
+                                    {foraDaRede ? 'Conecte na Rede UNIEURO' : (foraDoHorario ? 'Fora da Janela de Ponto' : 'Fábrica Bloqueada')}
                                 </span>
                             </div>
                         )}

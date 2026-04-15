@@ -99,7 +99,26 @@ export function estaEmFaixaCIDR(ip: string, regra: string): boolean {
         }
     }
 
-    // 4. Fallback para prefixo de string (funciona bem para IPv6 e subredes IPv4 simples "192.168.")
+    // 4. Lógica Mágica de UX (Auto-Sub-rede): Se o admin colocar um IP cru sem máscara,
+    // nós convertemos automaticamente para abranger a rede do local inteiro!
+    if (!regraLimpa.includes('/')) {
+        if (regraLimpa.includes(':')) {
+            // Expansão implícita para /64 (IPv6)
+            const ipPartes = ipAlvo.split(':').filter(p => p.length > 0).slice(0, 4).join(':');
+            const regraPartes = regraLimpa.split(':').filter(p => p.length > 0).slice(0, 4).join(':');
+            if (ipPartes.length > 0 && ipPartes.startsWith(regraPartes)) return true;
+        } else if (regraLimpa.includes('.')) {
+            // Expansão implícita para /24 (IPv4)
+            const ipLong = ipv4ParaLong(ipAlvo);
+            const regraLong = ipv4ParaLong(regraLimpa);
+            if (ipLong !== null && regraLong !== null) {
+                const mascara24 = 0xFFFFFF00 >>> 0;
+                if ((ipLong & mascara24) === (regraLong & mascara24)) return true;
+            }
+        }
+    }
+
+    // 5. Fallback para prefixo de string legatário
     if (ipAlvo.startsWith(regraLimpa)) return true;
 
     return false;

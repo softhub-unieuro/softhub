@@ -194,6 +194,7 @@ export function usarInterfacePonto() {
 
     return {
         // Dados
+        usuario,
         registrosHoje,
         historico,
         justificativas,

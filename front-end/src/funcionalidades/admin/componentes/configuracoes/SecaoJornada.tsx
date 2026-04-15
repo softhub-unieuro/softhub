@@ -13,13 +13,13 @@ interface Props {
  */
 export function SecaoJornada({ configuracoes, atualizarConfiguracao, podeEditar }: Props) {
     const [metaLocal, setMetaLocal] = useState(String(configuracoes?.meta_semanal_horas || 20));
-    const [toleranciaLocal, setToleranciaLocal] = useState(String(configuracoes?.tolerancia_ponto_minutos || 15));
+    const [metaMensalLocal, setMetaMensalLocal] = useState(String(configuracoes?.meta_mensal_horas || 80));
     const [mensagemLocal, setMensagemLocal] = useState(configuracoes?.mensagem_meta_semanal || '');
 
     useEffect(() => {
         if (configuracoes) {
             setMetaLocal(String(configuracoes.meta_semanal_horas));
-            setToleranciaLocal(String(configuracoes.tolerancia_ponto_minutos));
+            setMetaMensalLocal(String(configuracoes.meta_mensal_horas));
             setMensagemLocal(configuracoes.mensagem_meta_semanal);
         }
     }, [configuracoes]);
@@ -84,19 +84,19 @@ export function SecaoJornada({ configuracoes, atualizarConfiguracao, podeEditar 
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Tolerância (Min)</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Meta Mensal (Horas)</label>
                         <div className="relative">
                             <input 
                                 type="number"
                                 min="1"
-                                max="60"
+                                max="750"
                                 disabled={!podeEditar}
-                                value={toleranciaLocal}
-                                onChange={(e) => setToleranciaLocal(e.target.value)}
+                                value={metaMensalLocal}
+                                onChange={(e) => setMetaMensalLocal(e.target.value)}
                                 onBlur={() => {
-                                    const val = Number(toleranciaLocal);
-                                    if (!isNaN(val) && val !== configuracoes?.tolerancia_ponto_minutos) {
-                                        atualizarConfiguracao('tolerancia_ponto_minutos', val);
+                                    const val = Number(metaMensalLocal);
+                                    if (!isNaN(val) && val !== configuracoes?.meta_mensal_horas) {
+                                        atualizarConfiguracao('meta_mensal_horas', val);
                                     }
                                 }}
                                 className="w-full bg-muted/40 border border-border/50 rounded-xl px-4 py-3 text-[13px] font-black text-foreground outline-none focus:bg-background focus:border-sky-500/30 transition-all disabled:opacity-50"
