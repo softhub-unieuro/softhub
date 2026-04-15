@@ -59,6 +59,25 @@ describe('Utilitários de Rede', () => {
             expect(estaEmFaixaCIDR('1.1.1.2', regra)).toBe(false);
         });
 
+        it('deve validar IPv6 usando prefixo string simples', () => {
+            const ip = '2804:d41:4ceb:3a00:f8c2:887c:846c:4525';
+            expect(estaEmFaixaCIDR(ip, '2804:d41:4ceb:3a00:')).toBe(true);
+        });
+
+        it('deve validar IPv6 usando notação CIDR /64 (exemplo real do usuário)', () => {
+            const ip1 = '2804:d41:4ceb:3a00:f8c2:887c:846c:4525';
+            const ip2 = '2804:d41:4ceb:3a00:398c:80ef:20f9:9038';
+            const regra = '2804:d41:4ceb:3a00::/64';
+            
+            expect(estaEmFaixaCIDR(ip1, regra)).toBe(true);
+            expect(estaEmFaixaCIDR(ip2, regra)).toBe(true);
+            expect(estaEmFaixaCIDR('2001:db8::1', regra)).toBe(false);
+        });
+
+        it('deve retornar false para CIDR IPv6 não suportado (ex: /32)', () => {
+            expect(estaEmFaixaCIDR('2001:db8::1', '2001:db8::/32')).toBe(false);
+        });
+
         it('deve validar prefixos simples (fallback)', () => {
             expect(estaEmFaixaCIDR('192.168.1.1', '192.168.')).toBe(true);
             expect(estaEmFaixaCIDR('2001:db8:', '2001:db8:')).toBe(true);

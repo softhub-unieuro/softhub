@@ -10,8 +10,11 @@ import { obterIpRequisicao } from '../utilitarios/rede-utils';
  */
 export const validarRedeLocal: MiddlewareHandler<{ Bindings: Env, Variables: any }> = async (c, next) => {
     
-    // 🛡️ REGRA DE EXCEÇÃO: Se o usuário tem permissão especial (ponto:registrar_fora_da_rede), ignora a trava de IP.
-    const podeBaterPontoRemoto = await verificarPermissaoManual(c, 'ponto:registrar_fora_da_rede');
+    // 🛡️ REGRA DE EXCEÇÃO 1: Se o usuário é ADMIN ou tem permissão especial, ignora a trava de IP.
+    const usuario = c.get('usuario');
+    const ehAdmin = usuario?.roleReal === 'ADMIN' || usuario?.role === 'ADMIN';
+    const podeBaterPontoRemoto = ehAdmin || await verificarPermissaoManual(c, 'ponto:registrar_fora_da_rede');
+    
     if (podeBaterPontoRemoto) {
         return await next();
     }
@@ -25,6 +28,7 @@ export const validarRedeLocal: MiddlewareHandler<{ Bindings: Env, Variables: any
     const permitido = await verificarIpAutorizado({ DB: c.env.DB, softhub_kv: c.env.softhub_kv }, ipClient);
 
     if (permitido) {
+        console.info(`[REDE] IP PERMITIDO: ${ipClient}`);
         return await next();
     } else {
         // 🛠️ DIAGNÓSTICO: Busca a lista atual para mostrar no log (útil para o admin debugar)

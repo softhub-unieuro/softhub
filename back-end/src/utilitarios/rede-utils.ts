@@ -86,7 +86,20 @@ export function estaEmFaixaCIDR(ip: string, regra: string): boolean {
         return match;
     }
 
-    // 3. Fallback para prefixo de string (funciona bem para IPv6 e subredes IPv4 simples "192.168.")
+    // 3. Lógica para IPv6 com CIDR (suporte essencial para /64)
+    if (regraLimpa.includes(':') && regraLimpa.includes('/')) {
+        const [bloco, prefixoStr] = regraLimpa.split('/');
+        const prefixo = parseInt(prefixoStr, 10);
+        
+        // Atalho para o caso mais comum em redes residenciais/empresariais (prefixo /64)
+        if (prefixo === 64) {
+            const ipPartes = ipAlvo.split(':').filter(p => p.length > 0).slice(0, 4).join(':');
+            const regraPartes = bloco.split(':').filter(p => p.length > 0).slice(0, 4).join(':');
+            return ipPartes.startsWith(regraPartes);
+        }
+    }
+
+    // 4. Fallback para prefixo de string (funciona bem para IPv6 e subredes IPv4 simples "192.168.")
     if (ipAlvo.startsWith(regraLimpa)) return true;
 
     return false;

@@ -68,11 +68,16 @@ export function usarPonto() {
              let msgErro = 'Erro ao registrar ponto. Verifique sua conexão ou se está na rede autorizada.';
              
              if (erro && typeof erro === 'object' && 'response' in erro) {
-                const axiosErr = erro as { response?: { data?: { erro?: string, detalhe?: string } } };
+                const axiosErr = erro as { response?: { data?: { erro?: string, detalhe?: string, diagnostico?: { seu_ip?: string } } } };
                 if (axiosErr.response?.data?.erro) {
-                    msgErro = axiosErr.response.data.detalhe 
-                        ? `${axiosErr.response.data.erro} ${axiosErr.response.data.detalhe}` 
-                        : axiosErr.response.data.erro;
+                    const data = axiosErr.response.data;
+                    msgErro = data.detalhe 
+                        ? `${data.erro} ${data.detalhe}` 
+                        : data.erro;
+                    
+                    if (data.diagnostico?.seu_ip) {
+                        msgErro += ` (Seu IP Detectado: ${data.diagnostico.seu_ip})`;
+                    }
                 }
              }
 

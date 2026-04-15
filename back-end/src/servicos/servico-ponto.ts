@@ -116,6 +116,12 @@ export async function registrarPonto(env: { DB: D1Database, KV: KVNamespace | un
     const validacao = await validarHorarioBatida(DB, KV, tipo, ultimo?.tipo, escala);
 
     if (!validacao.valido) {
+        log('warn', '[PONTO] Validação Recusada', { 
+            usuarioId: usuario.id, 
+            tipo, 
+            motivo: validacao.aviso,
+            escala: escala?.escala_dias
+        });
         throw new Error(validacao.aviso || 'Registro não permitido fora da escala oficial.');
     }
 
