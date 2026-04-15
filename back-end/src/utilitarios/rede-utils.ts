@@ -3,17 +3,39 @@
  * Focado em simplicidade e performance para Cloudflare Workers.
  */
 
+import { Context } from 'hono';
+
 /**
  * Normaliza um endereço IP recebido.
- * Remove prefixos IPv6-mapped IPv4 (::ffff:) e espaços.
+ * Remove prefixos IPv6-mapped IPv4 (::ffff:) e mapeia localhost IPv6 (::1) para IPv4.
  */
 export function normalizarIp(ip: string): string {
     if (!ip) return '0.0.0.0';
     let limpo = ip.trim();
+    
+    // Mapeamento de Localhost IPv6 para IPv4 para facilitar testes locais
+    if (limpo === '::1') return '127.0.0.1';
+
     if (limpo.startsWith('::ffff:')) {
         limpo = limpo.replace('::ffff:', '');
     }
     return limpo;
+}
+
+/**
+ * Captura o IP do cliente de forma centralizada e resiliente.
+ * Prioriza headers do Cloudflare, depois Forwarded-For e por fim o IP direto.
+ */
+export function obterIpRequisicao(c: Context): string {
+    const cfIp = c.req.header('CF-Connecting-IP');
+    const forwardedFor = c.req.header('x-forwarded-for')?.split(',')[0].trim();
+    const realIp = c.req.header('x-real-ip');
+    
+    // Fallback para remoteAddr se disponível (depende do runtime do Workers/Hono)
+    const remoteAddr = (c.req as any).raw?.socket?.remoteAddress;
+
+    const ipBruto = cfIp || forwardedFor || realIp || remoteAddr || '0.0.0.0';
+    return normalizarIp(ipBruto);
 }
 
 /**

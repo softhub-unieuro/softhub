@@ -10,6 +10,9 @@ describe('Utilitários de Rede', () => {
         it('deve remover espaços', () => {
             expect(normalizarIp(' 192.168.1.1 ')).toBe('192.168.1.1');
         });
+        it('deve mapear localhost IPv6 (::1) para IPv4', () => {
+            expect(normalizarIp('::1')).toBe('127.0.0.1');
+        });
         it('deve manter IPv6 puro', () => {
             expect(normalizarIp('2001:0db8:85a3:0000:0000:8a2e:0370:7334')).toBe('2001:0db8:85a3:0000:0000:8a2e:0370:7334');
         });

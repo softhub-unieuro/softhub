@@ -2,6 +2,7 @@ import { Hono, Context } from 'hono';
 import { Env } from '../index';
 import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
 import { validarRedeLocal } from '../middleware/rede';
+import { obterIpRequisicao } from '../utilitarios/rede-utils';
 import * as servico from '../servicos/servico-ponto';
 import * as repo from '../repositorios/repo-ponto';
 import { gerarLinhaCsv } from '../utilitarios/csv';
@@ -48,7 +49,7 @@ rotasPonto.get('/', autenticacaoRequerida(), async (c: Context) => {
 async function handlerRegistrarPonto(c: Context) {
     const { tipo } = await c.req.json();
     const usuario = c.get('usuario');
-    const ipOrigem = c.req.header('CF-Connecting-IP') ?? '0.0.0.0';
+    const ipOrigem = obterIpRequisicao(c);
 
     if (!['entrada', 'saida'].includes(tipo)) {
         return c.json({ erro: 'Tipo de registro inválido.' }, 400);
