@@ -2,9 +2,10 @@ import { Hono, Context } from 'hono';
 import { Env } from '../index';
 import { autenticacaoRequerida, verificarPermissao } from '../middleware/auth';
 import { validarRedeLocal } from '../middleware/rede';
-import { obterIpRequisicao } from '../utilitarios/rede-utils';
+import { verificarIpAutorizado } from '../servicos/servico-configuracoes';
 import * as servico from '../servicos/servico-ponto';
 import * as repo from '../repositorios/repo-ponto';
+import { obterIpRequisicao } from '../utilitarios/rede-utils';
 import { gerarLinhaCsv } from '../utilitarios/csv';
 import { kvRateLimit } from '../middleware/rate-limit';
 import { log } from '../utilitarios/logger';
@@ -30,11 +31,16 @@ rotasPonto.get('/', autenticacaoRequerida(), async (c: Context) => {
             `).bind(usuario.id).first() as Promise<{ escala_dias: string, escala_tipo: string } | null>
         ]);
 
+        const ipClient = obterIpRequisicao(c);
+        const estaNaRede = await verificarIpAutorizado({ DB: c.env.DB, softhub_kv: c.env.softhub_kv }, ipClient);
+
         return c.json({
             hoje: hojeRes.results || [],
             historico: historicoRes.results || [],
             escala: escalaRes?.escala_dias || null,
-            escalaTipo: escalaRes?.escala_tipo || 'fixa'
+            escalaTipo: escalaRes?.escala_tipo || 'fixa',
+            estaNaRede,
+            ipDetectado: ipClient
         });
     } catch (e: any) {
         log('error', '[PONTO] Falha ao buscar dados de ponto', { erro: e.message, usuarioId: usuario.id });

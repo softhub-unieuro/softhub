@@ -31,6 +31,15 @@ describe('Utilitários de Rede', () => {
             const entrada = ['1.1.1.1', '2.2.2.2'];
             expect(processarListaIps(entrada)).toEqual(['1.1.1.1', '2.2.2.2']);
         });
+        it('deve retornar array vazio para entrada nula ou vazia', () => {
+            expect(processarListaIps(null)).toEqual([]);
+            expect(processarListaIps('')).toEqual([]);
+            expect(processarListaIps([])).toEqual([]);
+        });
+        it('deve tratar strings com múltiplos espaços ou quebras de linha como vazias', () => {
+            expect(processarListaIps('   ')).toEqual([]);
+            expect(processarListaIps(',,,')).toEqual([]);
+        });
     });
 
     describe('estaEmFaixaCIDR', () => {

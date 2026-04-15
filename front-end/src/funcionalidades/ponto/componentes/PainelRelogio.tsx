@@ -14,6 +14,7 @@ interface PainelRelogioProps {
     salvando: boolean;
     carregando: boolean;
     proximoTipo: 'entrada' | 'saida';
+    ipDetectado?: string;
     aoTentarRegistrar: () => void;
     aoBaterPonto: () => void;
 }
@@ -29,6 +30,7 @@ export const PainelRelogio = memo(({
     salvando,
     carregando,
     proximoTipo,
+    ipDetectado,
     aoTentarRegistrar,
     aoBaterPonto
 }: PainelRelogioProps) => {
@@ -150,7 +152,7 @@ export const PainelRelogio = memo(({
                         {(foraDaRede || foraDoHorario || (foraDoDia && foraDaFabrica)) && tentativaBloqueada && (
                             <div className="absolute -top-12 inset-x-0 animate-bounce z-50">
                                 <span className="bg-rose-600 text-white text-[9px] font-black py-2 px-5 rounded-full uppercase tracking-widest shadow-2xl border border-rose-500 mx-auto table">
-                                    {foraDaRede ? 'Mudar para Rede UNIEURO' : (foraDoHorario ? 'Fora da Janela de Ponto' : 'Fábrica Bloqueada')}
+                                    {foraDaRede ? `Mudar p/ Rede UNIEURO (${ipDetectado})` : (foraDoHorario ? 'Fora da Janela de Ponto' : 'Fábrica Bloqueada')}
                                 </span>
                             </div>
                         )}

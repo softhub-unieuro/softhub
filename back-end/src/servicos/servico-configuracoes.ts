@@ -98,8 +98,11 @@ export async function verificarIpAutorizado(env: EnvConfig, ip: string): Promise
     // Processamento robusto da lista (suporta string com vírgula, array, etc)
     const ipsAutorizados = processarListaIps(configIps);
 
-    // 🛡️ REQUISITOS: Se não houver IPs configurados, a restrição é considerada DESATIVADA (permite todos).
-    if (ipsAutorizados.length === 0) {
+    // 🛡️ POLÍTICA DE SEGURANÇA (Fail-Open): 
+    // Se a lista estiver vazia, nula ou não configurada, a restrição é considerada DESATIVADA.
+    // Isso evita que o sistema fique inacessível antes da primeira configuração.
+    if (!ipsAutorizados || ipsAutorizados.length === 0) {
+        console.info('[REDE] Whitelist de IPs está vazia. Restrição DESATIVADA.');
         return true;
     }
 

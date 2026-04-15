@@ -14,7 +14,10 @@ import type { RegistroPonto } from '@/funcionalidades/ponto/hooks/usarPonto';
  */
 export function usarInterfacePonto() {
     const { usuario } = usarAutenticacao();
-    const { registrosHoje, historico, escala, escalaTipo, carregando, erro, baterPonto } = usarPonto();
+    const { 
+        registrosHoje, historico, escala, escalaTipo, 
+        carregando, erro, estaNaRede, ipDetectado, baterPonto 
+    } = usarPonto();
     const { justificativas, enviarJustificativa, editarJustificativa, excluirJustificativa } = usarJustificativas();
 
     const [salvando, setSalvando] = useState(false);
@@ -203,6 +206,8 @@ export function usarInterfacePonto() {
         foraDoHorario,
         foraDoDia,
         foraDaFabrica,
+        estaNaRede,
+        ipDetectado,
 
         diasTrabalho,
         semanasDisponiveis,

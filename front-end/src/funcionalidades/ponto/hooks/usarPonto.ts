@@ -26,7 +26,7 @@ export function usarPonto() {
     const intervaloMs = (configuracoes?.intervalo_sincronia_segundos || 30) * 1000;
 
     const { 
-        data: { registrosHoje = [], historico = [], escala = null, escalaTipo = 'fixa' } = {}, 
+        data: { registrosHoje = [], historico = [], escala = null, escalaTipo = 'fixa', estaNaRede = true, ipDetectado = '' } = {}, 
         isLoading: carregando, 
         error: erroQuery,
         refetch
@@ -38,7 +38,9 @@ export function usarPonto() {
                  registrosHoje: (res.data?.hoje ?? []) as RegistroPonto[],
                  historico: (res.data?.historico ?? []) as RegistroPonto[],
                  escala: res.data?.escala as string | null,
-                 escalaTipo: res.data?.escalaTipo as string
+                 escalaTipo: res.data?.escalaTipo as string,
+                 estaNaRede: !!res.data?.estaNaRede,
+                 ipDetectado: res.data?.ipDetectado as string
              };
         },
         enabled: estaAutenticado,
@@ -94,6 +96,8 @@ export function usarPonto() {
         escalaTipo,
         carregando, 
         erro: erroFinal, 
+        estaNaRede,
+        ipDetectado,
         baterPonto, 
         recarregar: refetch 
     };

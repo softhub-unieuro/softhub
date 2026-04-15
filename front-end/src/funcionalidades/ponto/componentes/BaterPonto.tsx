@@ -20,11 +20,11 @@ import { formatarHoras } from '@/utilitarios/formatadores';
  */
 export const BaterPonto = memo(() => {
     const {
-        registrosHoje, historico, justificativas, carregando, erro,
+        usuario, registrosHoje, historico, justificativas, carregando, erro,
         salvando, erroPonto, proximoTipo, agoraRelogio, foraDoHorario,
         semanasDisponiveis, semanaSelecionada, setSemanaSelecionada,
         abaAtiva, setAbaAtiva, busca, setBusca, tentativaBloqueada, setTentativaBloqueada,
-        foraDoDia, foraDaFabrica, diasTrabalho,
+        foraDoDia, foraDaFabrica, diasTrabalho, estaNaRede, ipDetectado,
         modalJustificativaAberto, setModalJustificativaAberto,
         justificativaEditando, setJustificativaEditando,
         idExcluindo, setIdExcluindo,
@@ -34,9 +34,11 @@ export const BaterPonto = memo(() => {
     const podeRegistrar = usarPermissaoAcesso('ponto:registrar');
     const podeJustificar = usarPermissaoAcesso('ponto:justificar');
 
-    // UX Rule: Se a API falhou por causa da rede, tranca o botão proativamente
+    // UX Rule: Se a API diz que não estamos na rede, ou se falou por causa da rede antes
+    // Administradores são SEMPRE considerados "na rede" na interface para não desabilitar o botão.
+    const ehAdmin = usuario?.role === 'ADMIN';
     const erroConhecidoRede = (e: string | null) => e ? (e.includes('restrição de rede') || e.includes('UNIEURO')) : false;
-    const foraDaRede = erroConhecidoRede(erro) || erroConhecidoRede(erroPonto);
+    const foraDaRede = !ehAdmin && (!estaNaRede || erroConhecidoRede(erro) || erroConhecidoRede(erroPonto));
 
     // Cronômetro de Jornada Progressivo
     const cronometroJornada = useMemo(() => {
@@ -179,6 +181,7 @@ export const BaterPonto = memo(() => {
                             salvando={salvando}
                             carregando={carregando}
                             proximoTipo={proximoTipo as 'entrada' | 'saida'}
+                            ipDetectado={ipDetectado}
                             aoTentarRegistrar={() => {
                                 const bloqueado = (foraDoHorario || foraDoDia || foraDaFabrica);
                                 if (bloqueado || foraDaRede || !podeRegistrar) {
