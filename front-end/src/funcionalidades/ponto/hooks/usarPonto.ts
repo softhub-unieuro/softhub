@@ -71,14 +71,15 @@ export function usarPonto() {
              
              if (erro && typeof erro === 'object' && 'response' in erro) {
                 const axiosErr = erro as { response?: { data?: { erro?: string, detalhe?: string, diagnostico?: { seu_ip?: string } } } };
-                if (axiosErr.response?.data?.erro) {
-                    const data = axiosErr.response.data;
-                    msgErro = data.detalhe 
-                        ? `${data.erro} ${data.detalhe}` 
-                        : data.erro;
+                const dadosErro = axiosErr.response?.data;
+
+                if (dadosErro?.erro) {
+                    msgErro = dadosErro.detalhe 
+                        ? `${dadosErro.erro} ${dadosErro.detalhe}` 
+                        : dadosErro.erro;
                     
-                    if (data.diagnostico?.seu_ip) {
-                        msgErro += ` (Seu IP Detectado: ${data.diagnostico.seu_ip})`;
+                    if (dadosErro.diagnostico?.seu_ip) {
+                        msgErro += ` (Seu IP Detectado: ${dadosErro.diagnostico.seu_ip})`;
                     }
                 }
              }
